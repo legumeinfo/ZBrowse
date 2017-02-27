@@ -1,0 +1,3 @@
+Medicago truncatula
+52991155,45729672,55515152,56582383,43630510,35275713,49172423,45569985
+./annotations/Medicago_truncatula_annotations.csv
