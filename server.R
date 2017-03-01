@@ -232,9 +232,9 @@ shinyServer(function(input, output, session) {
 #    thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]        
 #    thisAnnot
     reactiveAnnotTable()
-  }, options = list(bSortClasses = TRUE, bCaseInsensitive = TRUE,
-                    aLengthMenu = c(15, 50, 100, 200, 500), iDisplayLength = 15,
-                    "sDom" = 'T<"clear">lfrtip',
+  }, options = list(orderClasses = TRUE, bCaseInsensitive = TRUE,
+                    lengthMenu = c(15, 50, 100, 200, 500), pageLength = 15,
+                    "dom" = 'T<"clear">lfrtip',
                     "oTableTools" = list(
                       "sSwfPath" = "/tabletools/swf/copy_csv_xls_pdf.swf",
                       "aButtons" = list(
@@ -277,9 +277,9 @@ shinyServer(function(input, output, session) {
     # html <- sub("<TABLE border=1>","<table class='table table-condensed table-hover'>", html)
     # html
     
-  }, options = list(bSortClasses = TRUE, bCaseInsensitive = TRUE,
-                      aLengthMenu = c(15, 50, 100, 200, 500), iDisplayLength = 15,
-                      "sDom" = 'T<"clear">lfrtip',
+  }, options = list(orderClasses = TRUE, bCaseInsensitive = TRUE,
+                      lengthMenu = c(15, 50, 100, 200, 500), pageLength = 15,
+                      "dom" = 'T<"clear">lfrtip',
                       "oTableTools" = list(
                           "sSwfPath" = "/tabletools/swf/copy_csv_xls_pdf.swf",
                           "aButtons" = list(
