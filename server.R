@@ -828,7 +828,7 @@ shinyServer(function(input, output, session) {
    if(chromChart[1,input$yAxisColumn] != -1){    
       invisible(sapply(pkSeries, function(x) {if(length(x)==0){return()};a$series(data = x, type = "scatter", turboThreshold=5000, name = paste0(x[[1]]$trait), color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)])}))
     }
-    a$chart(zoomType="xy", alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
+    a$chart(zoomType="x", alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
     a$title(text=paste(input$datasets,"Results for Chromosome",input$chr,sep=" "))
     a$subtitle(text="Rollover for more info. Drag chart area to zoom. Click point for zoomed annotated plot.")
     
@@ -1045,7 +1045,7 @@ shinyServer(function(input, output, session) {
        invisible(sapply(genomeSeries, function(x) {if(length(x)==0){return()};c$series(data = x, turboThreshold=5000,type = "scatter", color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = paste0(x[[1]]$trait))}))
      }
      
-     c$chart(zoomType="xy",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
+     c$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
      c$title(text=paste(input$datasets," Results",sep=" "))
      c$subtitle(text="Rollover for more info. Drag chart area to zoom. Click point to switch to chromosome and annotation view.")
      
@@ -1481,7 +1481,7 @@ shinyServer(function(input, output, session) {
     #b$xAxis(title=list(text=zoomTitle), min= -0, max=1,startOnTick = FALSE,reversed=FALSE)
     #b$yAxis(title = list(text = "Base Pairs"),min=winLow,max=winHigh,startOnTick=TRUE,endOnTick=TRUE)
     #b$xAxis(list(title=list(text="RMIP"),min=-0,max=1,startOnTick=FALSE,reversed=FALSE),list(title=list(text="F-score"),min=0,max=1,startOnTick=FALSE,opposite=TRUE,reversed=FALSE))      
-    b$chart(zoomType="xy",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
+    b$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
     b$xAxis(title = list(text = "Base Pairs"),startOnTick=FALSE,min=winLow,max=winHigh,endOnTick=FALSE)      
 #     if(winTable$sumRMIP[1] != -5){
 #       b$yAxis(list(title=list(text="RMIP"),min=-0,max=1,startOnTick=FALSE),list(title=list(text="F-score"),min=0,startOnTick=FALSE,opposite=TRUE,gridLineWidth=0),
@@ -1576,7 +1576,7 @@ shinyServer(function(input, output, session) {
     )      
 
     #b$series(data = annotSeries[[1]], type = "columnrange", pointWidth=15,pointPadding=0,pointPlacement=0,name = "Genes")    
-    b$chart(zoomType="xy",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
+    b$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
     #b$title(text=paste("NAM GWAS Results",sep=" "))
     #b$subtitle(text="Rollover for more info. Drag chart area to zoom. Click point for zoomed annotated plot.")    
     b$plotOptions(
