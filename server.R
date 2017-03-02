@@ -1311,8 +1311,6 @@ shinyServer(function(input, output, session) {
     araburlBase <- 'http://arabidopsis.org/servlets/TairObject?type=locus&name='
     sorgurlBase <- 'http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:'
     medicago_truncatula_urlBase <- 'https://legumeinfo.org/feature/Medicago/truncatula/gene/'
-    # locus goes between medicago_truncatula_urlBase and medicago_truncatula_urlSuffix
-    medicago_truncatula_urlSuffix <- '.JCVIMt4.0v1'
 
     annotYvalReverse <- 0.01    
     #if(input$axisLimBool == TRUE){annotYvalReverse <- input$axisMin+0.01}
@@ -1393,7 +1391,7 @@ shinyServer(function(input, output, session) {
                                                                                      ),
                                                                                      stringsAsFactors=FALSE)})
     } else if (input$organism == "Medicago truncatula") { # strand is '+' or '-'
-      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(medicago_truncatula_urlBase, x$locus, medicago_truncatula_urlSuffix),
+      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(medicago_truncatula_urlBase, x$id),
         name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
           x$name,
           prettyNum(x$transcript_start, big.mark = ","),
@@ -1404,7 +1402,7 @@ shinyServer(function(input, output, session) {
         ),
         stringsAsFactors=FALSE)})
 
-      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(medicago_truncatula_urlBase, x$locus, medicago_truncatula_urlSuffix),
+      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(medicago_truncatula_urlBase, x$id),
         name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
           x$name,
           prettyNum(x$transcript_start, big.mark = ","),

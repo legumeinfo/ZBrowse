@@ -42,7 +42,7 @@ def replace_special_characters(s) :
   s = s.replace('%3F', '?')
   return s
 
-# Add the description and locus name (if any) from the transcript files.
+# Add the verbose description (if any) from the transcript files.
 def read_phytozome_transcript(transcript_filename, descriptions) :
   csvin = csv.reader(open(transcript_filename, 'rb'), delimiter = '\t')
   for fields in csvin :
@@ -58,8 +58,7 @@ def read_phytozome_transcript(transcript_filename, descriptions) :
       key = chromosome + '-' + transcript_start + '-' + transcript_end
       desc = extract(fields[8], 'Description')
       desc = replace_special_characters(desc)
-      locus = extract(fields[8], 'Locusname')
-      descriptions[key] = [ desc, locus ]
+      descriptions[key] = desc
   return
 
 # Create an annotations file for input to ZBrowse.
@@ -72,36 +71,36 @@ def create_annotations() :
   csvin = csv.reader(open('medtr.A17_HM341.v4.0.gff3', 'rb'), delimiter = '\t')
   csvout = csv.writer(open('Medicago_truncatula_annotations.csv', 'wb'), delimiter = ',', quotechar = '"', quoting = csv.QUOTE_MINIMAL)
 
-  my_descriptions = {}
-  read_phytozome_transcript('Transcript-chr1-1..52991155.gff3', my_descriptions)
-  read_phytozome_transcript('Transcript-chr2-1..45729672.gff3', my_descriptions)
-  read_phytozome_transcript('Transcript-chr3-1..55515152.gff3', my_descriptions)
-  read_phytozome_transcript('Transcript-chr4-1..56582383.gff3', my_descriptions)
-  read_phytozome_transcript('Transcript-chr5-1..43630510.gff3', my_descriptions)
-  read_phytozome_transcript('Transcript-chr6-1..35275713.gff3', my_descriptions)
-  read_phytozome_transcript('Transcript-chr7-1..49172423.gff3', my_descriptions)
-  read_phytozome_transcript('Transcript-chr8-1..45569985.gff3', my_descriptions)
+  transcript_files = [
+    'Transcript-chr1-1..52991155.gff3', 'Transcript-chr2-1..45729672.gff3',
+    'Transcript-chr3-1..55515152.gff3', 'Transcript-chr4-1..56582383.gff3',
+    'Transcript-chr5-1..43630510.gff3', 'Transcript-chr6-1..35275713.gff3',
+    'Transcript-chr7-1..49172423.gff3', 'Transcript-chr8-1..45569985.gff3'
+  ]
+  key2description = {}
+  for tf in transcript_files :
+    read_phytozome_transcript(tf, key2description)
 
-  csvout.writerow([ 'chromosome', 'transcript_start', 'transcript_end', 'strand', 'id', 'name', 'description', 'locus' ])
+  csvout.writerow([ 'chromosome', 'transcript_start', 'transcript_end', 'strand', 'id', 'name', 'description' ])
   for fields in csvin :
     if (fields[0].startswith('#')) :
       continue
     if (not fields[0].startswith('chr')) :
       continue
-    if (fields[2] == 'mRNA') :
+    if (fields[2] == 'gene') :
       chromosome = fields[0][3:]
       transcript_start = fields[3]
       transcript_end = fields[4]
       strand = fields[6]
       id = extract(fields[8], 'ID')
       name = extract(fields[8], 'Name')
-      data = [ chromosome, transcript_start, transcript_end, strand, id, name ]
+      data = [ chromosome, transcript_start, transcript_end, strand, id, name, '' ]
       key = chromosome + '-' + transcript_start + '-' + transcript_end
       try :
-        desc = my_descriptions[key]
+        data[6] = key2description[key]
       except :
-        desc = [ '', '' ]
-      csvout.writerow(data + desc)
+        pass
+      csvout.writerow(data)
   return
 
 #-----------------------------------------------------------
