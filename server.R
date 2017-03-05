@@ -116,7 +116,7 @@ shinyServer(function(input, output, session) {
       })
       val <- values$datasetlist[1]
     }else{
-      val <- "sigGWASsnpsCombinedIterations.longhorn.allLoc.csv"
+      val <- "Medicago_truncatula_GWAS.csv"
     }
         
     # Drop-down selection of data set
