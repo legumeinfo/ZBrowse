@@ -16,8 +16,11 @@ shinyUI(pageWithSidebar(
       singleton(tags$head(tags$script(src='/datatables/js/jquery.dataTables.js',type='text/javascript'))),
       singleton(tags$head(tags$script(src='/tabletools/js/TableTools.js',type='text/javascript'))),
       singleton(tags$head(tags$script(src='/tabletools/js/ZeroClipboard.js',type='text/javascript'))),
-      singleton(tags$head(tags$link(href='/tabletools/css/TableTools.css',rel='stylesheet',type='text/css')))
+      singleton(tags$head(tags$link(href='/tabletools/css/TableTools.css',rel='stylesheet',type='text/css'))),
       #singleton(tags$head(tags$script(src='http://code.highcharts.com/highcharts.js',type='text/javascript')))
+      # For jQuery dialogs
+      singleton(tags$head(tags$script(src='/jquery-ui/jquery-ui.js',type='text/javascript'))),
+      singleton(tags$head(tags$link(href='/jquery-ui/jquery-ui.css',rel='stylesheet',type='text/css')))
     ),    
     #progressInit(),    
     uiOutput("ui_data_tabs"),

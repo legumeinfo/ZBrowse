@@ -1310,7 +1310,7 @@ shinyServer(function(input, output, session) {
     soyurlBase <- 'http://www.soybase.org/sbt/search/search_results.php?category=FeatureName&search_term='
     araburlBase <- 'http://arabidopsis.org/servlets/TairObject?type=locus&name='
     sorgurlBase <- 'http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:'
-    medicago_truncatula_urlBase <- 'https://legumeinfo.org/feature/Medicago/truncatula/gene/'
+    # medicago_truncatula_urlBase <- 'https://legumeinfo.org/feature/Medicago/truncatula/gene/'
 
     annotYvalReverse <- 0.01    
     #if(input$axisLimBool == TRUE){annotYvalReverse <- input$axisMin+0.01}
@@ -1391,7 +1391,7 @@ shinyServer(function(input, output, session) {
                                                                                      ),
                                                                                      stringsAsFactors=FALSE)})
     } else if (input$organism == "Medicago truncatula") { # strand is '+' or '-'
-      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(medicago_truncatula_urlBase, x$id),
+      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=x$name,
         name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
           x$name,
           prettyNum(x$transcript_start, big.mark = ","),
@@ -1402,7 +1402,7 @@ shinyServer(function(input, output, session) {
         ),
         stringsAsFactors=FALSE)})
 
-      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(medicago_truncatula_urlBase, x$id),
+      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=x$name,
         name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
           x$name,
           prettyNum(x$transcript_start, big.mark = ","),
@@ -1600,7 +1600,46 @@ shinyServer(function(input, output, session) {
         #stickyTracking=FALSE,
         point = list(
           events = list(
-            click = "#! function() { window.open(this.url); } !#")), #open webpage
+            click = paste0(
+              "#! function() {",
+                "if (this.url.startsWith('medtr')) {",
+                  # for Medicago truncatula, this.url is not really a URL but the gene name,
+                  # with which to create a popup menu (dialog) of URL choices
+                  "var urls = [
+                    'http://legumeinfo.org/lis_context_viewer/index.html#/search/lis/' + this.url,
+                    'http://legumeinfo.org/chado_gene_phylotree_v2?gene_name=' + this.url,
+                    'http://legumeinfo.org/chado_phylotree/phytozome_10_2.59066807?hilite_node=' + this.url,
+                    'http://legumeinfo.org/gene_links/' + this.url + '/json'
+                  ];",
+                  "var urlMenuItems = [
+                    'Genome Context/Synteny',
+                    'Gene Phylogeny',
+                    'Gene Family Phylogeny',
+                    'JSON'
+                  ];",
+
+                  # TODO: create the inner HTML from a function like (the following does not work for some reason)
+                  # "function makeUrl(url, item) { return '<p><a href=' + url + ' target=_blank>' + item + '</a></p>'; }",
+                  "var $div = $('<div></div>')
+                  .html(
+                    '<p><a href=' + urls[0] + ' target=_blank>' + urlMenuItems[0] + '</a></p>' +
+                    '<p><a href=' + urls[1] + ' target=_blank>' + urlMenuItems[1] + '</a></p>' +
+                    '<p><a href=' + urls[2] + ' target=_blank>' + urlMenuItems[2] + '</a></p>' +
+                    '<p><a href=' + urls[3] + ' target=_blank>' + urlMenuItems[3] + '</a></p>'
+                  )
+                  .dialog({
+                    title: this.url + ' URLs',
+                    width: 300,
+                    height: 200,
+                    modal: true
+                  });",
+
+                "} else {",
+                  # for all other species
+                  "window.open(this.url);", #open webpage
+                "}",
+              "} !#"
+        ))),
         #click = "#! function(event) {alert(this.url);} !#")), #display popup
         #click = "#! function(event) {console.log(this);} !#")), #write object to log
         #click = "#! function(){$('input#selected').val(134); $('input#selected').trigger('change');} !#")),
