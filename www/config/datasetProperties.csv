@@ -4,4 +4,4 @@
 "Example GWAS Data","chr {integer}","bp {integer}","loc {character};Trait {character}","avgPval {numeric}",TRUE,FALSE,0,1,"Corn",FALSE,FALSE,"numIterations","bp","bp",TRUE,0,1
 "RiceDiversity.44k.MSU6.GWAS.csv","CHR {integer}","position.IRGSP.v4 {integer}","variable {character}","logP {numeric}",FALSE,FALSE,0,1,"Arabidopsis",FALSE,FALSE,"CHR","SNPID","SNPID",TRUE,0,1
 "Example GWAS with JL","chr {integer}","bp {integer}","loc {character};Trait {character}","modIncProb {numeric}",FALSE,TRUE,0,1,"Corn",FALSE,TRUE,"F","lowerCIbp","upperCIbp",FALSE,0,1
-"Medicago_truncatula_GWAS.csv","Chromosome {integer}","bp {integer}","Trait {character}","P_value {numeric}",FALSE,FALSE,0,1,"Medicago truncatula",FALSE,FALSE,"Chromosome","bp","bp",FALSE,0,1
+"Medicago truncatula GWAS","Chromosome {integer}","bp {integer}","Trait {character}","negLogP {numeric}",FALSE,FALSE,0,1,"Medicago truncatula",FALSE,FALSE,"Chromosome","bp","bp",FALSE,0,1

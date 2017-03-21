@@ -4,8 +4,14 @@ shinyServer(function(input, output, session) {
   values <- reactiveValues()
   dataPath <- "./www/config/data/"
   dataFiles <- list.files(dataPath,recursive=T)
+  # Append names of any data we will create on the fly
+  dataFiles <- c(dataFiles, "Medicago truncatula GWAS")
   for(i in dataFiles){
-     values[[i]] <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)     
+    if (i == "Medicago truncatula GWAS") {
+      values[[i]] <- build.gwas(i)
+    } else {
+      values[[i]] <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)
+    }
   }  
   values$datasetlist <- dataFiles
 #  values[["ionomics"]] <- aggTable
@@ -116,7 +122,7 @@ shinyServer(function(input, output, session) {
       })
       val <- values$datasetlist[1]
     }else{
-      val <- "Medicago_truncatula_GWAS.csv"
+      val <- "Medicago truncatula GWAS"
     }
         
     # Drop-down selection of data set

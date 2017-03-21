@@ -2,6 +2,11 @@
 pkgs <- c("BiocGenerics","S4Vectors","IRanges","XVector","GenomeInfoDb","GenomicRanges")
 source("http://bioconductor.org/biocLite.R")
 
+# For constructing the (Medicago truncatula) annotations data frame on the fly
+source("./buildAnnotations.R")
+# For constructing the (Medicago truncatula) GWAS data frame on the fly
+source("./buildGWAS.R")
+
 for(p in pkgs){
   if(system.file(package=p) == ""){
     biocLite(p)
@@ -102,7 +107,13 @@ for(i in 1:length(files)){
     data<-readLines(conn)
     
     key<-data[1]
-    locValue<-read.table(data[3],sep=",",head=TRUE,stringsAsFactors = FALSE,quote = c("\""))
+    annotFilename <- data[3]
+    if (stri_startswith_fixed(annotFilename, "http")) {
+      chromosome.lengths <- as.integer(stri_split_fixed(data[2], ",")[[1]])
+      locValue <- build.annotations(annotFilename, chromosome.lengths)
+    } else {
+      locValue<-read.table(annotFilename,sep=",",head=TRUE,stringsAsFactors = FALSE,quote = c("\""))
+    }
     annotGeneLoc[key]<-list(locValue)
     
     close(conn)
