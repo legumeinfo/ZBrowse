@@ -32,6 +32,7 @@ shinyServer(function(input, output, session) {
                                              radioButtons('sep', '', c(Comma=',', Semicolon=';', Tab='\t'), ',')                                             
                             ),
                             uiOutput("organism"),
+                            checkboxInput("appendSNPs", "Append to current dataset", FALSE),
                             fileInput('uploadfile', '', multiple=TRUE)
            ),      
            conditionalPanel(condition = "input.dataType == 'examples'",
@@ -120,7 +121,11 @@ shinyServer(function(input, output, session) {
           # unlink(inFile[i,'datapath'], recursive = FALSE, force = TRUE)
         }
       })
-      val <- values$datasetlist[1]
+      if (input$appendSNPs) {
+        val <- input$datasets
+      } else {
+        val <- values$datasetlist[1]
+      }
     }else{
       val <- "Medicago truncatula GWAS"
     }
@@ -590,13 +595,13 @@ shinyServer(function(input, output, session) {
       
       if(length(robjname) > 1) {
         
-        #values[[objname]] <- data.frame(get(robjname[-which(robjname == "description")]))
-        values[[objname]] <- data.frame(get(robjname[1]))
+        #loaded.values <- data.frame(get(robjname[-which(robjname == "description")]))
+        loaded.values <- data.frame(get(robjname[1]))
         #values[[paste0(objname,"_descr")]] <- get("description")
         
       } else {
         
-        values[[objname]] <- data.frame(get(robjname))  # only work with data.frames
+        loaded.values <- data.frame(get(robjname))  # only work with data.frames
       }
     }
     
@@ -607,11 +612,19 @@ shinyServer(function(input, output, session) {
     }
     
     if(ext == 'sav') {
-      values[[objname]] <- as.data.frame(as.data.set(spss.system.file(uFile)))
+      loaded.values <- as.data.frame(as.data.set(spss.system.file(uFile)))
     } else if(ext == 'dta') {
-      values[[objname]] <- read.dta(uFile)
+      loaded.values <- read.dta(uFile)
     } else{
-      values[[objname]] <- read.csv(uFile, header=input$header, sep=input$sep,stringsAsFactors=FALSE)
+      loaded.values <- read.csv(uFile, header=input$header, sep=input$sep,stringsAsFactors=FALSE)
+    }
+
+    if (input$appendSNPs) {
+      values[[input$datasets]]$totalBP <- NULL
+      names(loaded.values) <- names(values[[input$datasets]])
+      values[[input$datasets]] <- rbind(values[[input$datasets]], loaded.values)
+    } else {
+      values[[objname]] <- loaded.values
     }
   }
   
