@@ -366,6 +366,7 @@ shinyServer(function(input, output, session) {
     }else{
       selected = names(cols[1])
     }    
+    selected <- stri_match(selected, regex = ".*(?=\\ \\{)")[, 1]
     selectizeInput("chrColumn", "Chromosome Column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
   })
 
@@ -377,6 +378,7 @@ shinyServer(function(input, output, session) {
     }else{
       selected = names(cols[2])
     }
+    selected <- stri_match(selected, regex = ".*(?=\\ \\{)")[, 1]
     selectizeInput("bpColumn", "Base Pair Column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
   })
   
@@ -388,6 +390,7 @@ shinyServer(function(input, output, session) {
     }else{
       selected = names(cols[3:4])
     }
+    selected <- sapply(selected, FUN = function(s) stri_match(selected, regex = ".*(?=\\ \\{)")[, 1], USE.NAMES = FALSE)
     conditionalPanel(condition = "input.plotAll==false",
                      selectizeInput("traitColumns", "Group by these trait column(s):", choices = as.list(cols), selected = selected, multiple = TRUE, options = list(dropdownParent="body"))
     )        
@@ -412,6 +415,7 @@ shinyServer(function(input, output, session) {
       #selected = names(cols[10])
       selected = as.character(cols[10])
     }    
+    selected <- stri_match(selected, regex = ".*(?=\\ \\{)")[, 1]
     selectizeInput("yAxisColumn", "Y-axis column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
   })
   outputOptions(output, "yAxisColumn", suspendWhenHidden=FALSE)
