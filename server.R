@@ -319,6 +319,8 @@ shinyServer(function(input, output, session) {
     if(is.null(input$datasets)){return()}
     if(input$datasets %in% datasetProp()$dataset){
       val = datasetProp()$axisLim[datasetProp()$dataset == input$datasets]
+    } else if (input$organism == "Medicago truncatula") {
+      val <- FALSE
     }else{
       val = TRUE}
     checkboxInput('axisLimBool', 'Set Y-axis Limits?', val)
@@ -338,6 +340,9 @@ shinyServer(function(input, output, session) {
     cols <- varnames()
     if(input$datasets %in% datasetProp()$dataset){
       selected = datasetProp()$organism[datasetProp()$dataset == input$datasets]
+    } else if (input$organism == "Medicago truncatula") {
+      # the user should only load or append external GWAS data for the currently selected organism
+      selected <- input$organism
     }else{
       selected = "Corn"
     }
@@ -387,6 +392,8 @@ shinyServer(function(input, output, session) {
     cols <- varnames()
     if(input$datasets %in% datasetProp()$dataset){
       selected = unlist(strsplit(datasetProp()$traitCol[datasetProp()$dataset == input$datasets],";"))
+    } else if (input$organism == "Medicago truncatula") {
+      selected <- "Trait {character}"
     }else{
       selected = names(cols[3:4])
     }
@@ -411,6 +418,8 @@ shinyServer(function(input, output, session) {
     cols <- varnames()       
     if(input$datasets %in% datasetProp()$dataset){      
       selected = datasetProp()$yAxisColumn[datasetProp()$dataset == input$datasets]
+    } else if (input$organism == "Medicago truncatula") {
+      selected <- "negLogP {numeric}"
     }else{
       #selected = names(cols[10])
       selected = as.character(cols[10])
@@ -479,6 +488,8 @@ shinyServer(function(input, output, session) {
     if(is.null(input$datasets)){return()}
     if(input$datasets %in% datasetProp()$dataset){
       val = datasetProp()$SIaxisLimBool[datasetProp()$dataset == input$datasets]
+    } else if (input$organism == "Medicago truncatula") {
+      val <- FALSE
     }else{
       val = TRUE
     }
