@@ -312,7 +312,7 @@ shinyServer(function(input, output, session) {
   
   output$columns <- renderUI({
     cols <- varnames()    
-    selectInput("columns", "Select columns to show:", choices = as.list(cols), selected = names(cols), multiple = TRUE)
+    selectInput("columns", "Select columns to show:", choices = as.list(cols), selected = cols, multiple = TRUE)
   })
   
   output$axisLimBool <- renderUI({
