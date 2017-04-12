@@ -5,9 +5,11 @@ shinyServer(function(input, output, session) {
   dataPath <- "./www/config/data/"
   dataFiles <- list.files(dataPath,recursive=T)
   # Append names of any data we will create on the fly
-  dataFiles <- c(dataFiles, "Medicago truncatula GWAS")
+  legumeInfo.gwas <- c("Arabidopsis thaliana GWAS", "Medicago truncatula GWAS")
+  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula")
+  dataFiles <- c(dataFiles, legumeInfo.gwas)
   for(i in dataFiles){
-    if (i == "Medicago truncatula GWAS") {
+    if (i %in% legumeInfo.gwas) {
       values[[i]] <- build.gwas(i)
     } else {
       values[[i]] <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)
@@ -16,7 +18,32 @@ shinyServer(function(input, output, session) {
   values$datasetlist <- dataFiles
 #  values[["ionomics"]] <- aggTable
 #  values$datasetlist <- dataFiles
+  values$datasetToOrganism <- NULL # map each dataset to an organism
   
+  # This should be the first code block to detect a change in input$datasets
+  observe({
+    if (is.null(input$datasets)) return()
+
+    # Immediately uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
+    updateCheckboxInput(session, "appendSNPs", value = FALSE)
+    values$uploadFiles <- NULL # as there is no updateFileInput() method
+
+    # Make sure the organism corresponds to the selected dataset
+    # (invoke values$organism first to force a single reaction)
+    if (is.null(values$organism)) {
+      values$organism = "Corn"
+    } else {
+      isolate({
+        values$organism <- values$datasetToOrganism[[input$datasets]]
+      })
+    }
+  })
+
+  # The user selected one or more GWAS data files to load or append
+  observe({
+    values$uploadFiles <- input$uploadfile
+  })
+
   #handles what displays in the sidebar based on what tab is selected
   output$ui_All <- renderUI({
     list(
@@ -31,9 +58,8 @@ shinyServer(function(input, output, session) {
                                              checkboxInput('header', 'Header', TRUE),
                                              radioButtons('sep', '', c(Comma=',', Semicolon=';', Tab='\t'), ',')                                             
                             ),
-                            uiOutput("organism"),
                             checkboxInput("appendSNPs", "Append to current dataset", FALSE),
-                            fileInput('uploadfile', '', multiple=TRUE)
+                            uiOutput("localFiles")
            ),      
            conditionalPanel(condition = "input.dataType == 'examples'",
                             actionButton('loadExampleData', 'Load examples')
@@ -112,7 +138,7 @@ shinyServer(function(input, output, session) {
   })  
   outputOptions(output, "ui_finder", suspendWhenHidden=FALSE)
   output$datasets <- renderUI({   
-    inFile <- input$uploadfile
+    inFile <- values$uploadFiles
     if(!is.null(inFile)) {
       # iterating through the files to upload
       isolate({
@@ -121,8 +147,12 @@ shinyServer(function(input, output, session) {
           # unlink(inFile[i,'datapath'], recursive = FALSE, force = TRUE)
         }
       })
-      if (input$appendSNPs) {
-        val <- input$datasets
+    }
+    dat <- isolate(input$datasets)
+    if (!is.null(dat)) {
+      appendSNPs <- isolate(input$appendSNPs)
+      if (appendSNPs || is.null(inFile)) {
+        val <- dat
       } else {
         val <- values$datasetlist[1]
       }
@@ -135,13 +165,18 @@ shinyServer(function(input, output, session) {
     selectInput(inputId = "datasets", label = "Datasets:", choices = values$datasetlist, selected = values$datasetlist[values$datasetlist==val], multiple = FALSE, selectize=FALSE)
   })
   
+  # Let the user select traits whose GWAS data live in a local file.
+  output$localFiles <- renderUI({
+    fileInput("uploadfile", "Local GWAS Files:", multiple = TRUE)
+  })
+
   reactiveAnnotTable <- reactive({
     if(is.null(input$datasets)) return()
     centerBP <- as.numeric(input$selected[[1]])
     winHigh <- centerBP+input$window[1]
     winLow <- centerBP-input$window[1]
     if(winLow < 0){winLow <- 0}    
-    thisChrAnnot <- subset(annotGeneLoc[input$organism][[1]],chromosome==input$chr)    
+    thisChrAnnot <- subset(annotGeneLoc[values$organism][[1]],chromosome==input$chr)
     thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]    
     thisAnnot  
   })
@@ -153,7 +188,7 @@ shinyServer(function(input, output, session) {
     dat <- getdata()
 
     # necessary when deleting a dataset
-    if(is.null(dat)) return()
+    if(is.null(dat) || nrow(dat) == 0) return()
     
     # Show only the first 10 rows
     nr <- min(10,nrow(dat))
@@ -170,7 +205,7 @@ shinyServer(function(input, output, session) {
   output$nrowDataset <- reactive({
     if(is.null(input$datasets)) return()
     dat <- getdata()
-    if(is.null(dat)) return()
+    if(is.null(dat) || nrow(dat) == 0) return()
     nr <- nrow(dat)
     
     if(nr>2500){
@@ -306,7 +341,7 @@ shinyServer(function(input, output, session) {
   )#end dataviewer
   
   output$downloadAnnot <- downloadHandler(
-    filename = function() {paste0("AnnotationsAround.chr",input$chr,".",input$selected[[1]],"bp.",input$organism,".csv")},
+    filename = function() {paste0("AnnotationsAround.chr",input$chr,".",input$selected[[1]],"bp.",values$organism,".csv")},
     content = function(file) {write.csv(reactiveAnnotTable(),file,row.names=F)}
   )
   
@@ -319,7 +354,7 @@ shinyServer(function(input, output, session) {
     if(is.null(input$datasets)){return()}
     if(input$datasets %in% datasetProp()$dataset){
       val = datasetProp()$axisLim[datasetProp()$dataset == input$datasets]
-    } else if (input$organism == "Medicago truncatula") {
+    } else if (values$organism %in% legumeInfo.organisms) {
       val <- FALSE
     }else{
       val = TRUE}
@@ -330,39 +365,13 @@ shinyServer(function(input, output, session) {
     if(is.null(input$datasets)){return()}
     if(input$datasets %in% datasetProp()$dataset){
       val = datasetProp()$logP[datasetProp()$dataset == input$datasets]
+    } else if (values$organism %in% legumeInfo.organisms) {
+      val <- TRUE
     }else{
       val = FALSE}
     checkboxInput('logP', 'Take -log10 of column?', val)
   })
 
-  output$organism <- renderUI({
-    if(is.null(input$datasets)){return()}
-    cols <- varnames()
-    if(input$datasets %in% datasetProp()$dataset){
-      selected = datasetProp()$organism[datasetProp()$dataset == input$datasets]
-    } else if (input$organism == "Medicago truncatula") {
-      # the user should only load or append external GWAS data for the currently selected organism
-      selected <- input$organism
-    }else{
-      selected = "Corn"
-    }
-    # = c("Corn","Soybean","Arabidopsis","Sorghum")
-    choices<-list()
-    files<-list.files(path="./organisms/")
-    for(i in 1:length(files)){
-      if(tools::file_ext(files[i]) == "txt"){
-        filename=""
-        filename=paste("./organisms/",files[i],sep="")
-        conn=file(filename,open="r")
-        data<-readLines(conn)
-        choices[[i]] <- data[1]
-        
-        close(conn)
-      }
-    }
-    selectizeInput("organism", "Dataset Organism:", unlist(choices), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
-  })
-  
   output$chrColumn <- renderUI({
     if(is.null(input$datasets)){return()}
     cols <- varnames()    
@@ -392,8 +401,8 @@ shinyServer(function(input, output, session) {
     cols <- varnames()
     if(input$datasets %in% datasetProp()$dataset){
       selected = unlist(strsplit(datasetProp()$traitCol[datasetProp()$dataset == input$datasets],";"))
-    } else if (input$organism == "Medicago truncatula") {
-      selected <- "Trait {character}"
+    } else if (values$organism %in% legumeInfo.organisms) {
+      selected <- names(cols[3])
     }else{
       selected = names(cols[3:4])
     }
@@ -418,8 +427,8 @@ shinyServer(function(input, output, session) {
     cols <- varnames()       
     if(input$datasets %in% datasetProp()$dataset){      
       selected = datasetProp()$yAxisColumn[datasetProp()$dataset == input$datasets]
-    } else if (input$organism == "Medicago truncatula") {
-      selected <- "negLogP {numeric}"
+    } else if (values$organism %in% legumeInfo.organisms) {
+      selected <- names(cols[4])
     }else{
       #selected = names(cols[10])
       selected = as.character(cols[10])
@@ -488,7 +497,7 @@ shinyServer(function(input, output, session) {
     if(is.null(input$datasets)){return()}
     if(input$datasets %in% datasetProp()$dataset){
       val = datasetProp()$SIaxisLimBool[datasetProp()$dataset == input$datasets]
-    } else if (input$organism == "Medicago truncatula") {
+    } else if (values$organism %in% legumeInfo.organisms) {
       val <- FALSE
     }else{
       val = TRUE
@@ -560,8 +569,8 @@ shinyServer(function(input, output, session) {
   })
 
   output$selectChr <- renderUI({
-    if(is.null(input$organism)){return()}
-    selectInput("chr", "Chromosome:",chrName[input$organism][[1]],selectize = FALSE)
+    if(is.null(values$organism)){return()}
+    selectInput("chr", "Chromosome:",chrName[values$organism][[1]],selectize = FALSE)
     #selectInput("chr", "Chromosome:",1:length(chrSize[input$organism][[1]]),selectize = FALSE)
   })
   outputOptions(output, "selectChr", suspendWhenHidden=FALSE)
@@ -620,9 +629,14 @@ shinyServer(function(input, output, session) {
       }
     }
     
+    appendSNPs <- isolate(input$appendSNPs)
+    if (!appendSNPs) {
+      # add new datasets to the datasetToOrganism map
+      values$datasetToOrganism[[objname]] <- values$organism
+    }
     if(length(values[['datasetlist']]) == 0 || values[['datasetlist']][1] == '') {
       values[['datasetlist']] <- c(objname)
-    } else {
+    } else if (!appendSNPs) {
       values[['datasetlist']] <- unique(c(objname,values[['datasetlist']]))
     }
     
@@ -634,7 +648,7 @@ shinyServer(function(input, output, session) {
       loaded.values <- read.csv(uFile, header=input$header, sep=input$sep,stringsAsFactors=FALSE)
     }
 
-    if (input$appendSNPs) {
+    if (appendSNPs) {
       values[[input$datasets]]$totalBP <- NULL
       names(loaded.values) <- names(values[[input$datasets]])
       values[[input$datasets]] <- rbind(values[[input$datasets]], loaded.values)
@@ -662,17 +676,17 @@ shinyServer(function(input, output, session) {
 #           Sys.sleep(0.1)
 #         }
 #       })     
-      cumBP<-c(0,cumsum(as.numeric(chrSize[input$organism][[1]])))
+      cumBP<-c(0,cumsum(as.numeric(chrSize[values$organism][[1]])))
       #to order by desired chromosome add factor levels in the desired order to the chrColumn, any chr names that differ in gwas file compared
       #to organism file will turn into NA
-      values[[input$datasets]][,input$chrColumn] <- factor(values[[input$datasets]][,input$chrColumn],levels=chrName[input$organism][[1]])
+      values[[input$datasets]][,input$chrColumn] <- factor(values[[input$datasets]][,input$chrColumn],levels=chrName[values$organism][[1]])
       values[[input$datasets]] <- values[[input$datasets]][order(values[[input$datasets]][,input$chrColumn],values[[input$datasets]][,input$bpColumn]),]
       numeachchr<-aggregate(values[[input$datasets]][,input$bpColumn],list(values[[input$datasets]][,input$chrColumn]),length)
 #      adjust<-rep(cumBP[1],numeachchr$x[numeachchr$Group.1==1])            
       adjust <- numeric()
       for (i in 1:(length(cumBP)-1)){#max(unique(values[[input$datasets]][,input$chrColumn]))){
-        if(length(numeachchr$x[numeachchr$Group.1==chrName[input$organism][[1]][i]])==0){next;}
-        adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[input$organism][[1]][i]]))
+        if(length(numeachchr$x[numeachchr$Group.1==chrName[values$organism][[1]][i]])==0){next;}
+        adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[values$organism][[1]][i]]))
       }
       #newval <- values[[input$datasets]][600,input$bpColumn]+adjust[600]      
       values[[input$datasets]]$totalBP <- values[[input$datasets]][,input$bpColumn]+adjust
@@ -684,14 +698,14 @@ shinyServer(function(input, output, session) {
         
       }else{
          
-        cumBP<-c(0,cumsum(as.numeric(chrSize[input$organism][[1]])))
-        values[[input$datasets]][,input$chrColumn] <- factor(values[[input$datasets]][,input$chrColumn],levels=chrName[input$organism][[1]])
+        cumBP<-c(0,cumsum(as.numeric(chrSize[values$organism][[1]])))
+        values[[input$datasets]][,input$chrColumn] <- factor(values[[input$datasets]][,input$chrColumn],levels=chrName[values$organism][[1]])
         values[[input$datasets]] <- values[[input$datasets]][order(values[[input$datasets]][,input$chrColumn],values[[input$datasets]][,input$SIbpStart]),]
         numeachchr<-aggregate(values[[input$datasets]][,input$SIbpStart],list(values[[input$datasets]][,input$chrColumn]),length)
         adjust <- numeric()
         for (i in 1:(length(cumBP)-1)){#max(unique(values[[input$datasets]][,input$chrColumn]))){
-          if(length(numeachchr$x[numeachchr$Group.1==chrName[input$organism][[1]][i]])==0){next;}
-          adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[input$organism][[1]][i]]))
+          if(length(numeachchr$x[numeachchr$Group.1==chrName[values$organism][[1]][i]])==0){next;}
+          adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[values$organism][[1]][i]]))
         }
         values[[input$datasets]]$SIbpStartTotal <- values[[input$datasets]][,input$SIbpStart]+adjust    
       }
@@ -700,14 +714,14 @@ shinyServer(function(input, output, session) {
         
       }else{
         
-        cumBP<-c(0,cumsum(as.numeric(chrSize[input$organism][[1]])))
-        values[[input$datasets]][,input$chrColumn] <- factor(values[[input$datasets]][,input$chrColumn],levels=chrName[input$organism][[1]])
+        cumBP<-c(0,cumsum(as.numeric(chrSize[values$organism][[1]])))
+        values[[input$datasets]][,input$chrColumn] <- factor(values[[input$datasets]][,input$chrColumn],levels=chrName[values$organism][[1]])
         values[[input$datasets]] <- values[[input$datasets]][order(values[[input$datasets]][,input$chrColumn],values[[input$datasets]][,input$SIbpEnd]),]
         numeachchr<-aggregate(values[[input$datasets]][,input$SIbpEnd],list(values[[input$datasets]][,input$chrColumn]),length)
         adjust <- numeric()
         for (i in 1:(length(cumBP)-1)){#max(unique(values[[input$datasets]][,input$chrColumn]))){
-          if(length(numeachchr$x[numeachchr$Group.1==chrName[input$organism][[1]][i]])==0){next;}
-          adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[input$organism][[1]][i]]))
+          if(length(numeachchr$x[numeachchr$Group.1==chrName[values$organism][[1]][i]])==0){next;}
+          adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[values$organism][[1]][i]]))
         }
         values[[input$datasets]]$SIbpEndTotal <- values[[input$datasets]][,input$SIbpEnd]+adjust    
       }
@@ -831,7 +845,7 @@ shinyServer(function(input, output, session) {
     
     a <- rCharts::Highcharts$new()
     a$LIB$url <- 'highcharts/' #use the local copy of highcharts, not the one installed by rCharts
-    a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[input$organism][[1]][as.numeric(input$chr)],endOnTick=FALSE,
+    a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[values$organism][[1]][as.numeric(input$chr)],endOnTick=FALSE,
             plotBands = list(list(from=pbWin$winLow,to=pbWin$winHigh,color='rgba(68, 170, 213, 0.4)')))
 #    a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=30000000,endOnTick=TRUE)
     
@@ -1036,18 +1050,18 @@ shinyServer(function(input, output, session) {
 
     #build list for where to put plotbands for this organism
     bigList <- list()
-    cumBP<-c(0,cumsum(as.numeric(chrSize[input$organism][[1]])))
+    cumBP<-c(0,cumsum(as.numeric(chrSize[values$organism][[1]])))
     for(i in 1:(length(cumBP)-1)){
       if(i %% 2 == 0 ){ #even
-        bigList[[length(bigList)+1]] <- list(from=cumBP[i]+1,to=cumBP[i+1],label=list(text=chrName[input$organism][[1]][i],style=list(color="#6D869F"),verticalAlign="bottom"))
+        bigList[[length(bigList)+1]] <- list(from=cumBP[i]+1,to=cumBP[i+1],label=list(text=chrName[values$organism][[1]][i],style=list(color="#6D869F"),verticalAlign="bottom"))
       }else{ #odd
-        bigList[[length(bigList)+1]] <- list(from=cumBP[i]+1,to=cumBP[i+1],color='rgba(68, 170, 213, 0.1)',label=list(text=chrName[input$organism][[1]][i],style=list(color="#6D869F"),verticalAlign="bottom"))
+        bigList[[length(bigList)+1]] <- list(from=cumBP[i]+1,to=cumBP[i+1],color='rgba(68, 170, 213, 0.1)',label=list(text=chrName[values$organism][[1]][i],style=list(color="#6D869F"),verticalAlign="bottom"))
       }
     }    
     
      c <- rCharts::Highcharts$new()
     c$LIB$url <- 'highcharts/'
-    c$xAxis(title = list(text = "Chromosome",margin=15),startOnTick=TRUE,min=0,max=sum(as.numeric(chrSize[input$organism][[1]])),endOnTick=FALSE,labels=list(enabled=FALSE),tickWidth=0,
+    c$xAxis(title = list(text = "Chromosome",margin=15),startOnTick=TRUE,min=0,max=sum(as.numeric(chrSize[values$organism][[1]])),endOnTick=FALSE,labels=list(enabled=FALSE),tickWidth=0,
             plotBands = bigList)   
     
      if(input$axisLimBool == TRUE){       
@@ -1332,7 +1346,7 @@ shinyServer(function(input, output, session) {
     
     #build annotation series
     #thisChrAnnot <- subset(annotGeneLoc,chromosome==input$chr)
-    thisChrAnnot <- subset(annotGeneLoc[input$organism][[1]],chromosome==input$chr)
+    thisChrAnnot <- subset(annotGeneLoc[values$organism][[1]],chromosome==input$chr)
     thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]
     if(nrow(thisAnnot)==0){ #nothing is in the window, but lets still make a data.frame (actually make it big just to hopefully pick up one row from each strand...)
       thisAnnot <- thisChrAnnot[1:100,]
@@ -1349,7 +1363,7 @@ shinyServer(function(input, output, session) {
     annotYvalReverse <- 0.01    
     #if(input$axisLimBool == TRUE){annotYvalReverse <- input$axisMin+0.01}
     annotYvalForward <- annotYvalReverse + 0.04
-    if(input$organism == "Corn"){
+    if(values$organism == "Corn"){
       annotTable <- adply(thisAnnot[thisAnnot$transcript_strand==1,],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(urlBase,x$transcript_id),
                                                               name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
                                                                            x$translation_id,
@@ -1374,7 +1388,7 @@ shinyServer(function(input, output, session) {
                                                               marker=c("Arrow",NA,NA),
                                                               stringsAsFactors=FALSE)})
             
-    }else if(input$organism == "Soybean"){#strand is '+' or '-'
+    }else if(values$organism == "Soybean"){#strand is '+' or '-'
       annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(soyurlBase,x$transcript_id),
                                                               name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
                                                                            x$transcript_id,
@@ -1400,7 +1414,7 @@ shinyServer(function(input, output, session) {
                                                                                                   x$TopUniref100DescriptionExtraSmall
                                                                                      ),
                                                                                      stringsAsFactors=FALSE)})
-    }else if(input$organism == "Arabidopsis"){#strand is '+' or '-'
+    }else if(values$organism %in% c("Arabidopsis", "Arabidopsis thaliana")){#strand is '+' or '-'
       annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(araburlBase,x$Locus),
                                                               name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Short Desc.: %6$s</td></tr></table>",
                                                                            x$name,
@@ -1424,7 +1438,7 @@ shinyServer(function(input, output, session) {
                                                                                                   # x$Curator_summary
                                                                                      ),
                                                                                      stringsAsFactors=FALSE)})
-    } else if (input$organism == "Medicago truncatula") { # strand is '+' or '-'
+    } else if (values$organism == "Medicago truncatula") { # strand is '+' or '-'
       annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
         name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
           x$name,
@@ -1760,7 +1774,7 @@ shinyServer(function(input, output, session) {
       #                 traitCol=paste(names(cols[cols %in% input$traitColumns]),collapse=";"),yAxisColumn=names(cols[cols==input$yAxisColumn]),axisLim=input$axisLimBool,axisMin=input$axisMin,axisMax=input$axisMax,stringsAsFactors=FALSE))
       currDatasetProp <-  rbind(currDatasetProp,data.frame(dataset=input$datasets,chrColumn=names(cols[cols==input$chrColumn]),bpColumn=names(cols[cols==input$bpColumn]),
                                                   traitCol=paste(names(cols[cols %in% input$traitColumns]),collapse=";"),yAxisColumn=names(cols[cols==input$yAxisColumn]),
-                                                  logP=input$logP,axisLim=input$axisLimBool,axisMin=input$axisMin,axisMax=input$axisMax,organism=input$organism,plotAll=input$plotAll,
+                                                  logP=input$logP,axisLim=input$axisLimBool,axisMin=input$axisMin,axisMax=input$axisMax,organism=values$organism,plotAll=input$plotAll,
                                                   supportInterval=input$supportInterval,SIyAxisColumn=input$SIyAxisColumn,SIbpStart=input$SIbpStart,SIbpEnd=input$SIbpEnd,
                                                   SIaxisLimBool=input$SIaxisLimBool,SIaxisMin=input$SIaxisMin,SIaxisMax=input$SIaxisMax,stringsAsFactors=FALSE))      
       #print("rbind")
@@ -1783,7 +1797,15 @@ shinyServer(function(input, output, session) {
    })
    
    datasetProp <- function(){
-     return(read.table("./www/config/datasetProperties.csv",sep=",",head=TRUE,stringsAsFactors=FALSE))
+     dp <- read.table("./www/config/datasetProperties.csv",sep=",",head=TRUE,stringsAsFactors=FALSE)
+     if (is.null(values$datasetToOrganism)) {
+       # populate the datasetToOrganism map from stored values
+       values$datasetToOrganism <- list()
+       for (i in 1:nrow(dp)) {
+         values$datasetToOrganism[[dp$dataset[i]]] <- dp$organism[i]
+       }
+     }
+     return(dp)
    }
    #this provides the functionality to update the plotband window after a user clicks without rerendering the whole plot
    #From:

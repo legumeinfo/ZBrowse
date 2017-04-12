@@ -11,6 +11,14 @@ library(stringi)
 # TODO: generalize for other formats, if necessary.
 
 gwas.filenames <- list()
+gwas.filenames[["Arabidopsis thaliana GWAS"]] <- c(
+  "http://de.cyverse.org/dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas",
+  "http://de.cyverse.org/dl/d/64C5BD48-CF10-4833-96B4-3C74CEC47257/FT16.gwas",
+  "http://de.cyverse.org/dl/d/BBB7DCAB-87FE-4C9E-8F81-DDF8FFEFF806/FT22.gwas",
+  "http://de.cyverse.org/dl/d/57E47B19-FF8C-47F6-AB32-9A111AB1F2A7/Trichome avg C.gwas",
+  "http://de.cyverse.org/dl/d/9B68EAA3-D105-49B7-B2C1-E1690E8BAF23/Trichome avg JA.gwas"
+  # ...
+)
 gwas.filenames[["Medicago truncatula GWAS"]] <- c(
   "http://de.cyverse.org/dl/d/8F20C8BF-BEEC-4801-BCFF-41534832958B/floweringdate_results.gwas",
   "http://de.cyverse.org/dl/d/DAAF68FD-3A80-4E5D-83D5-2245C7E0D747/height_results.gwas",
@@ -23,9 +31,12 @@ gwas.filenames[["Medicago truncatula GWAS"]] <- c(
 )
 
 gwas.traits <- list()
-gwas.traits[["Medicago truncatula GWAS"]] <- c("floweringdate", "height", "noda", "nodb", "occupancyA", "occupancyB", "totalnod", "trichomes")
+gwas.traits[["Arabidopsis thaliana GWAS"]] <- stri_match(basename(gwas.filenames[["Arabidopsis thaliana GWAS"]]), regex = ".*(?=.gwas)")[, 1]
+gwas.traits[["Medicago truncatula GWAS"]] <- stri_match(basename(gwas.filenames[["Medicago truncatula GWAS"]]), regex = ".*(?=_results.gwas)")[, 1]
 
+# TODO: standardize column names
 gwas.cols <- list()
+gwas.cols[["Arabidopsis thaliana GWAS"]] <- c("Chromosome", "Position", "Trait", "P.Value", "negLogP", "MAF")
 gwas.cols[["Medicago truncatula GWAS"]] <- c("Chromosome", "pos", "P.value")
 
 build.gwas <- function(organism.gwas) {
@@ -36,19 +47,28 @@ build.gwas <- function(organism.gwas) {
   traits <- gwas.traits[[organism.gwas]]
   cols <- gwas.cols[[organism.gwas]]
 
-  df.gwas <- read.table(file = url(filenames[1], method = "libcurl"), header = TRUE, sep = "\t", quote = "\"", stringsAsFactors = FALSE)[, cols]
-  df.gwas$Trait <- traits[1]
-  for (i in 2:length(filenames)) {
-    df.i <- read.table(file = url(filenames[i], method = "libcurl"), header = TRUE, sep = "\t", quote = "\"", stringsAsFactors = FALSE)[, cols]
-    df.i$Trait <- traits[i]
-    df.gwas <- rbind(df.gwas, df.i)
-  }
+  if (organism.gwas == "Medicago truncatula GWAS") {
+    df.gwas <- read.table(file = url(filenames[1], method = "libcurl"), header = TRUE, sep = "\t", quote = "\"", stringsAsFactors = FALSE)[, cols]
+    df.gwas$Trait <- traits[1]
+    for (i in 2:length(filenames)) {
+      df.i <- read.table(file = url(filenames[i], method = "libcurl"), header = TRUE, sep = "\t", quote = "\"", stringsAsFactors = FALSE)[, cols]
+      df.i$Trait <- traits[i]
+      df.gwas <- rbind(df.gwas, df.i)
+    }
 
-  # Clean up: convert format like "chr1	940235	5.73345464453568e-06" to "1 940235  5.241584"
-  df.gwas$Chromosome <- sapply(df.gwas$Chromosome, FUN = function(chr) stri_sub(chr, 4))
-  df.gwas$negLogP <- -log10(df.gwas$P.value)
-  names(df.gwas)[2] <- "bp"
-  df.gwas <- df.gwas[, -3] # remove P.value
+    # Clean up: change Chromosome format from "chr1" to "1", and move Trait to the third column
+    df.gwas$Chromosome <- sapply(df.gwas$Chromosome, FUN = function(chr) stri_sub(chr, 4))
+    df.gwas <- df.gwas[, c("Chromosome", "pos", "Trait", "P.value")]
+
+    # Start with an empty data frame
+    # df.gwas <- data.frame(Chromosome = "1", pos = 1L, Trait = "-", P.Value = 0.1, stringsAsFactors = FALSE)
+    # df.gwas <- df.gwas[-1, ]
+
+  } else if (organism.gwas == "Arabidopsis thaliana GWAS") {
+    # Start with an empty data frame
+    df.gwas <- data.frame(Chromosome = "1", Position = 1L, Trait = "-", P.Value = 0.1, negLogP = 1.0, MAF = 0.01, stringsAsFactors = FALSE)
+    df.gwas <- df.gwas[-1, ]
+  }
 
   cat(sprintf("Done. (%2.1f seconds)\n", proc.time()[3] - t0))
   df.gwas
