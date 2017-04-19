@@ -42,11 +42,37 @@ shinyServer(function(input, output, session) {
     values$needsToUploadFiles <- FALSE
     updateCheckboxInput(session, "appendSNPs", value = FALSE)
   })
+  # This should be the first code block to detect a change in input$datasets2
+  observe({
+    if (is.null(input$datasets2)) return()
+    
+    # Make sure the organism corresponds to the selected dataset
+    # (invoke values$organism2 first to force a single reaction)
+    if (is.null(values$organism2)) {
+      values$organism2 = "Corn"
+    } else {
+      isolate({
+        values$organism2 <- values$datasetToOrganism[[input$datasets2]]
+      })
+    }
+    
+    # Uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
+    updateSelectizeInput(session, "gwasTraits2", choices = gwas.traits[[values$organism2]], selected = NULL)
+    # As there is no updateFileInput() method,
+    # send a custom message (to clear the progress bar) and clear values$needsToUploadFiles2
+    session$sendCustomMessage(type = "resetFileInputHandler", "uploadfile2")
+    values$needsToUploadFiles2 <- FALSE
+    updateCheckboxInput(session, "appendSNPs2", value = FALSE)
+  })
 
   # The user selected one or more local GWAS files (not yet loaded)
   observe({
     input$uploadfile
     values$needsToUploadFiles <- TRUE
+  })
+  observe({
+    input$uploadfile2
+    values$needsToUploadFiles2 <- TRUE
   })
 
   #handles what displays in the sidebar based on what tab is selected
@@ -54,9 +80,11 @@ shinyServer(function(input, output, session) {
     list(
       conditionalPanel(condition = "input.datatabs == 'Manage'",
          wellPanel(
+           style = paste0("background-color: ", bgColors[1], ";"),
            uiOutput("datasets")
          ),                       
          wellPanel(
+           style = paste0("background-color: ", bgColors[1], ";"),
            radioButtons(inputId = "dataType", label = "Load data (Max. 5MB):", c(".csv" = "csv", ".rda" = "rda", "examples" = "examples"), selected = "csv"),
            conditionalPanel(condition = "input.dataType != 'examples'",
                             conditionalPanel(condition = "input.dataType == 'csv'",
@@ -88,27 +116,66 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
            )
          ),
          wellPanel(
+           style = paste0("background-color: ", bgColors[1], ";"),
             h6("Once your file is finished uploading, press the Save Dataset button below and reload Zbrowse."),
            actionButton('saveDatasetButton', 'Save Current Dataset'),
            conditionalPanel(condition = "input.saveDatasetButton > 0",
                             h5("Dataset successfully saved!")
            )
          ),
-         helpModal('Manage','manage',includeMarkdown("tools/manage.md")),HTML('<p style="font-size:10px;">Powered by <a href="http://www.rstudio.com/shiny/">Shiny</a>, <a href="http://rcharts.io/">rCharts</a> and <a href="http://www.highcharts.com">Highcharts</a></p>')             
+        wellPanel(
+          style = paste0("background-color: ", bgColors[2], ";"),
+          uiOutput("datasets2")
+        ),
+        wellPanel(
+          style = paste0("background-color: ", bgColors[2], ";"),
+          radioButtons(inputId = "dataType2", label = "Load data (Max. 5MB):", c(".csv" = "csv", ".rda" = "rda", "examples" = "examples"), selected = "csv"),
+          conditionalPanel(condition = "input.dataType2 != 'examples'",
+            conditionalPanel(condition = "input.dataType2 == 'csv'",
+              checkboxInput('header2', 'Header', TRUE),
+              radioButtons('sep2', '', c(Comma=',', Semicolon=';', Tab='\t'), ',')
+            ),
+            selectizeInput("gwasTraits2", "Remote Trait Files:", choices = NULL, multiple = TRUE),
+            fileInput("uploadfile2", "Local Trait Files:", multiple = TRUE),
+            checkboxInput("appendSNPs2", "Append to current dataset", FALSE),
+            actionButton("loadTraits2", "Load Data")
+          ),
+          conditionalPanel(condition = "input.dataType2 == 'examples'",
+            actionButton('loadExampleData2', 'Load examples')
+          )
+        ),
+        wellPanel(
+          style = paste0("background-color: ", bgColors[2], ";"),
+          h6("Once your file is finished uploading, press the Save Dataset button below and reload Zbrowse."),
+          actionButton('saveDatasetButton2', 'Save Current Dataset'),
+          conditionalPanel(condition = "input.saveDatasetButton2 > 0",
+            h5("Dataset successfully saved!")
+          )
+        ),
+        helpModal('Manage','manage',includeMarkdown("tools/manage.md")),HTML('<p style="font-size:10px;">Powered by <a href="http://www.rstudio.com/shiny/">Shiny</a>, <a href="http://rcharts.io/">rCharts</a> and <a href="http://www.highcharts.com">Highcharts</a></p>')             
       ),#end conditional Manage
       conditionalPanel(condition = "input.datatabs == 'Table'",
          wellPanel(
+           style = paste0("background-color: ", bgColors[1], ";"),
            uiOutput("columns"),
            tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),tags$br(), #add some space between selection columns and subset search
            # uiOutput("view_order"), checkboxInput("view_order_desc", "DESC", value = FALSE),
            returnTextInput("dv_select", "Subset (e.g., RMIP > 20 & Location == 'FL06')", '')
          ),
-         helpModal('Data Table View','view',includeMarkdown("tools/manage.md"))      
+        wellPanel(
+          style = paste0("background-color: ", bgColors[2], ";"),
+          uiOutput("columns2"),
+          tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),tags$br(), #add some space between selection columns and subset search
+          # uiOutput("view_order"), checkboxInput("view_order_desc", "DESC", value = FALSE),
+          returnTextInput("dv_select2", "Subset (e.g., RMIP > 20 & Location == 'FL06')", '')
+        ),
+        helpModal('Data Table View','view',includeMarkdown("tools/manage.md"))      
       ),#end conditional Table
       #the second part of the statement is what is allowing the detection of changing panels due to a click event, i couldn't figure out how to update input$datatabs with javascript
       conditionalPanel(condition = "input.datatabs == 'panel1' || input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",
          helpText(h5(p("Interactive Graphs for GWAS Data"))),
          wellPanel(
+            style = paste0("background-color: ", bgColors[1], ";"),
             uiOutput("traitColBoxes"),
             uiOutput("legend"),
             uiOutput("overlaps"),
@@ -122,11 +189,13 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       ),#end conditional for traitCols (genome view and chromosomeview)
       conditionalPanel(condition = "input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",
          wellPanel(
+            style = paste0("background-color: ", bgColors[1], ";"),
             uiOutput("selectChr")
          )
       ),#end conitional for chromsomeview (panel2)
       conditionalPanel(condition = "input.datatabs == 'Annot' || input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",
          wellPanel(
+            style = paste0("background-color: ", bgColors[1], ";"),
             h5("Annotation window options:"),
             h6("Click a point or type a basepair value:"),
             uiOutput("selectedOut"),
@@ -134,17 +203,55 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
          )
       ),#end conditional panel for Annotation plot and Table
       conditionalPanel(condition = "input.datatabs == 'Annot'",
+         style = paste0("background-color: ", bgColors[1], ";"),
          helpText(h5(p(paste("Download a CSV of the annotations in the selected window.")))),
          wellPanel(                        
+           style = paste0("background-color: ", bgColors[1], ";"),
            downloadButton('downloadAnnot','Download')
          )
       ),#end conditional panel for Annotation Table
+conditionalPanel(condition = "input.datatabs == 'panel1' || input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",
+  wellPanel(
+    style = paste0("background-color: ", bgColors[2], ";"),
+    uiOutput("traitColBoxes2"),
+    uiOutput("legend2"),
+    uiOutput("overlaps2"),
+    conditionalPanel(condition = "input.overlaps2==true",
+      uiOutput("overlapSize2"),
+      uiOutput("numOverlapTraits2")
+    )#end conditional for plotting only overlaps
+  )
+),#end conditional for traitCols (genome view and chromosomeview)
+conditionalPanel(condition = "input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",
+  wellPanel(
+    style = paste0("background-color: ", bgColors[2], ";"),
+    uiOutput("selectChr2")
+  )
+),#end conitional for chromsomeview (panel2)
+conditionalPanel(condition = "input.datatabs == 'Annot' || input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",
+  wellPanel(
+    style = paste0("background-color: ", bgColors[2], ";"),
+    h5("Annotation window options:"),
+    h6("Click a point or type a basepair value:"),
+    uiOutput("selectedOut2"),
+    uiOutput("windowOut2")                        
+  )
+),#end conditional panel for Annotation plot and Table
+conditionalPanel(condition = "input.datatabs == 'Annot'",
+  style = paste0("background-color: ", bgColors[2], ";"),
+  helpText(h5(p(paste("Download a CSV of the annotations in the selected window.")))),
+  wellPanel(                        
+    style = paste0("background-color: ", bgColors[2], ";"),
+    downloadButton('downloadAnnot2','Download')
+  )
+),#end conditional panel for Annotation Table 2
       conditionalPanel(condition = "input.datatabs == 'panel1' || input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",      
         helpModal('Browser Help','browser',includeMarkdown("tools/manage.md"))        
       )#add help button for browser tabs
     )#end list
   }) #end ui_All
   outputOptions(output, "ui_All", suspendWhenHidden=FALSE)
+
   # find the appropriate UI
   output$ui_finder <- renderUI({
 #    if(is.null(input$datatabs)){      
@@ -159,6 +266,7 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
 #     }
   })  
   outputOptions(output, "ui_finder", suspendWhenHidden=FALSE)
+
   output$datasets <- renderUI({   
     if (is.null(input$loadTraits)) return()
 
@@ -202,9 +310,52 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
         
     # Drop-down selection of data set
     # selectInput(inputId = "datasets", label = "Datasets:", choices = datasets, selected = datasets[1], multiple = FALSE)
-    selectInput(inputId = "datasets", label = "Datasets:", choices = values$datasetlist, selected = values$datasetlist[values$datasetlist==val], multiple = FALSE, selectize=FALSE)
+    selectInput(inputId = "datasets", label = "Dataset 1:", choices = values$datasetlist, selected = values$datasetlist[values$datasetlist==val], multiple = FALSE, selectize=FALSE)
   })
+  output$datasets2 <- renderUI({   
+    if (is.null(input$loadTraits2)) return()
 
+    # Load any requested GWAS files
+    isolate({
+      values$uploadFiles2 <- input$uploadfile2
+      values$gwasTraits2 <- input$gwasTraits2
+
+      # Local GWAS files
+      inFile <- NULL
+      if (values$needsToUploadFiles2) inFile <- values$uploadFiles2
+      if(!is.null(inFile)) {
+        # iterating through the files to upload
+        for(i in 1:(dim(inFile)[1])) {
+          loadUserData2(inFile[i,'name'], inFile[i,'datapath'])
+        }
+        values$needsToUploadFiles2 <- FALSE # since we just loaded them
+      }
+      # Remote GWAS files
+      inTraits <- values$gwasTraits2
+      if (!is.null(inTraits)) {
+        for (trait in inTraits) {
+          trait.url <- gwas.filenames[[values$organism2]][which(gwas.traits[[values$organism2]] == trait)]
+          loadRemoteData2(trait, trait.url)
+        }
+      }
+    })
+
+    dat <- isolate(input$datasets2)
+    if (!is.null(dat)) {
+      appendSNPs <- isolate(input$appendSNPs2)
+      if (appendSNPs || (is.null(inFile) && is.null(inTraits))) {
+        val <- dat
+      } else {
+        val <- values$datasetlist[1]
+      }
+    }else{
+      val <- "Arabidopsis thaliana GWAS"
+    }
+
+    # Drop-down selection of data set
+    selectInput(inputId = "datasets2", label = "Dataset 2:", choices = values$datasetlist, selected = values$datasetlist[values$datasetlist==val], multiple = FALSE, selectize=FALSE)
+  })
+  
   reactiveAnnotTable <- reactive({
     if(is.null(input$datasets)) return()
     centerBP <- as.numeric(input$selected[[1]])
@@ -212,6 +363,16 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     winLow <- centerBP-input$window[1]
     if(winLow < 0){winLow <- 0}    
     thisChrAnnot <- subset(annotGeneLoc[values$organism][[1]],chromosome==input$chr)
+    thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]    
+    thisAnnot  
+  })
+  reactiveAnnotTable2 <- reactive({
+    if(is.null(input$datasets2)) return()
+    centerBP <- as.numeric(input$selected2[[1]])
+    winHigh <- centerBP+input$window2[1]
+    winLow <- centerBP-input$window2[1]
+    if(winLow < 0){winLow <- 0}    
+    thisChrAnnot <- subset(annotGeneLoc[values$organism2][[1]],chromosome==input$chr2)
     thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]    
     thisAnnot  
   })
@@ -237,6 +398,26 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     html
     
   })
+  output$htmlDataExample2 <- reactive({
+    if(is.null(input$datasets2)) return()
+    
+    dat <- getdata2()
+    
+    # necessary when deleting a dataset
+    if(is.null(dat) || nrow(dat) == 0) return()
+    
+    # Show only the first 10 rows
+    nr <- min(10,nrow(dat))
+    dat <- data.frame(dat[1:nr,, drop = FALSE])
+    
+    #dat <- date2character_dat(dat) #may be needed to print table if there is a data column
+    
+    html <- print(xtable::xtable(dat), type='html', print.results = FALSE)
+    html <- sub("<TABLE border=1>","<table class='table table-condensed table-hover'>", html)
+    Encoding(html) <- 'UTF-8'
+    html
+  })
+
   output$nrowDataset <- reactive({
     if(is.null(input$datasets)) return()
     dat <- getdata()
@@ -249,12 +430,28 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       paste0('<p>First 10 rows shown of ',nr,' rows. See Data Table tab for details.</p>')
     }
   })
-  output$ui_data_tabs <- renderUI({   # htmlOutput("htmlDataExample")})
+  output$nrowDataset2 <- reactive({
+    if(is.null(input$datasets2)) return()
+    dat <- getdata2()
+    if(is.null(dat) || nrow(dat) == 0) return()
+    nr <- nrow(dat)
+    
+    if(nr>2500){
+      paste0('<p>First 10 rows shown of ',nr,' rows. See Data Table tab for details.<br>More than 2500 rows found, only the top 2500 will be plotted.</p>')
+    }else{
+      paste0('<p>First 10 rows shown of ',nr,' rows. See Data Table tab for details.</p>')
+    }
+  })
+
+  output$ui_data_tabs <- renderUI({
     tabsetPanel(id = "datatabs",      
-      tabPanel(title="Manage",value="Manage",htmlOutput("htmlDataExample"),
-               htmlOutput("nrowDataset"),
+      tabPanel(title="Manage",value="Manage",
                tags$div(
                 class = "container",
+                style = paste0("background-color: ", bgColors[1], ";"),
+                
+                htmlOutput("htmlDataExample"),
+                htmlOutput("nrowDataset"),
                 
                 #tags$p(tags$br()),
                 row(
@@ -280,7 +477,7 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
                   col(2, uiOutput("SIyAxisColumn")),
                   col(2, uiOutput("SIaxisLimBool"),uiOutput("SIaxisLim"))
                 )
-              )
+              ),
 #                   col(
 #                     4,
 #                     uiOutput("traitColumns"),
@@ -289,17 +486,69 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
 #                 )                                                
 # #               #HTML(dataDescriptionOutput())
 #                )
+tags$div(
+  class = "container",
+  style = paste0("background-color: ", bgColors[2], ";"),
+
+  htmlOutput("htmlDataExample2"),
+  htmlOutput("nrowDataset2"),
+  
+  #tags$p(tags$br()),
+  row(
+    col(3, tags$br()),
+    col(7, h4('Select appropriate columns to be used for plotting.'))
+    #HTML('<h4>Select appropriate columns to be used for plotting.</h4>'),
+  ),
+  tags$hr(),
+  row(
+    #col(2, tags$br()),
+    col(2,uiOutput("chrColumn2"),uiOutput("bpColumn2")),
+    col(2,uiOutput("plotAll2"),uiOutput("traitColumns2")),
+    col(2,uiOutput("yAxisColumn2"),uiOutput("logP2")),
+    col(2,uiOutput("axisLimBool2"),uiOutput("axisLim2")),
+    col(2,actionButton("SubmitColsButton2","Submit"))
+  ),
+  tags$hr(),
+  row(
+    col(7, uiOutput("supportInterval2"))#
+  ),
+  row(
+    col(2, uiOutput("SIbpStart2")),
+    col(2, uiOutput("SIyAxisColumn2")),
+    col(2, uiOutput("SIaxisLimBool2"),uiOutput("SIaxisLim2"))
+  )
+)
       ),
-      tabPanel(title="Data Table",value="Table",dataTableOutput("dataviewer")),
-      tabPanel(title="Whole Genome View",value="panel1",showOutput("gChart", "highcharts")),#showOutput("gChart","highcharts"))
-      tabPanel(title="Chromosome View",value="panel2",showOutput("pChart", "highcharts"),showOutput("zChart", "highcharts"),
-               tags$script('Shiny.addCustomMessageHandler("customMsg", function(bandOpts){
-                                            chartXAxis = $("#pChart").highcharts().xAxis[0]
-                                            chartXAxis.removePlotBand()
-                                            chartXAxis.addPlotBand(bandOpts)
-                                          })'
-               )),
-      tabPanel(title="Annotations Table",value="Annot",dataTableOutput("annotViewer"))
+      tabPanel(title="Data Table",value="Table",
+        wellPanel(dataTableOutput("dataviewer"), style = paste0("background-color: ", bgColors[1], ";")),
+        wellPanel(dataTableOutput("dataviewer2"), style = paste0("background-color: ", bgColors[2], ";"))
+      ),
+      tabPanel(title="Whole Genome View",value="panel1",
+        wellPanel(showOutput("gChart", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
+        wellPanel(showOutput("gChart2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
+      ),
+      tabPanel(title="Chromosome View",value="panel2",
+        wellPanel(showOutput("pChart", "highcharts"), showOutput("zChart", "highcharts"),
+          tags$script('Shiny.addCustomMessageHandler("customMsg", function(bandOpts){
+            chartXAxis = $("#pChart").highcharts().xAxis[0]
+            chartXAxis.removePlotBand()
+            chartXAxis.addPlotBand(bandOpts)
+          })'),
+          style = paste0("background-color: ", bgColors[1], ";")
+        ),
+        wellPanel(showOutput("pChart2", "highcharts"), showOutput("zChart2", "highcharts"),
+          tags$script('Shiny.addCustomMessageHandler("customMsg2", function(bandOpts){
+            chartXAxis = $("#pChart2").highcharts().xAxis[0]
+            chartXAxis.removePlotBand()
+            chartXAxis.addPlotBand(bandOpts)
+          })'),
+          style = paste0("background-color: ", bgColors[2], ";")
+        )
+      ),
+      tabPanel(title="Annotations Table",value="Annot",
+        wellPanel(dataTableOutput("annotViewer"), style = paste0("background-color: ", bgColors[1], ";")),
+        wellPanel(dataTableOutput("annotViewer2"), style = paste0("background-color: ", bgColors[2], ";"))
+      )
     )#end tabsetPanel
   })#end data tabs
   outputOptions(output, "ui_data_tabs", suspendWhenHidden=FALSE)
@@ -329,6 +578,25 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
                     )                    
           )
   )#end annotation table
+output$annotViewer2 <- renderDataTable({
+  reactiveAnnotTable2()
+}, options = list(orderClasses = TRUE, bCaseInsensitive = TRUE,
+  lengthMenu = c(15, 50, 100, 200, 500), pageLength = 15,
+  "dom" = 'T<"clear">lfrtip',
+  "oTableTools" = list(
+    "sSwfPath" = "/tabletools/swf/copy_csv_xls_pdf.swf",
+    "aButtons" = list(
+      "copy",
+      "print",
+      list("sExtends" = "collection",
+        "sButtonText" = "Save",
+        "aButtons" = c("csv","xls","pdf")
+      )
+    )
+  )                    
+)
+)#end annotation table 2
+
   output$dataviewer <-renderDataTable({    
     if(is.null(input$datasets) || is.null(input$columns)) return()
     
@@ -374,15 +642,68 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
                     )                    
                 )
   )#end dataviewer
+output$dataviewer2 <-renderDataTable({    
+  if(is.null(input$datasets2) || is.null(input$columns2)) return()
+  
+  dat <- getdata2()
+  #dat <- date2character()
+  
+  if(!all(input$columns2 %in% colnames(dat))) return()
+  
+  if(input$dv_select2 != '') {
+    selcom <- input$dv_select2
+    selcom <- gsub(" ", "", selcom)
+    
+    seldat <- try(do.call(subset, list(dat,parse(text = selcom))), silent = TRUE)
+    
+    if(!is(seldat, 'try-error')) {
+      if(is.data.frame(seldat)) {
+        dat <- seldat
+        seldat <- NULL
+      }
+    }
+  }
+  
+  dat <- data.frame(dat[, input$columns2, drop = FALSE])
+  dat
+  
+  # html <- print(xtable::xtable(dat), type='html', print.results = FALSE)
+  # html <- sub("<TABLE border=1>","<table class='table table-condensed table-hover'>", html)
+  # html
+  
+}, options = list(orderClasses = TRUE, bCaseInsensitive = TRUE,
+  lengthMenu = c(15, 50, 100, 200, 500), pageLength = 15,
+  "dom" = 'T<"clear">lfrtip',
+  "oTableTools" = list(
+    "sSwfPath" = "/tabletools/swf/copy_csv_xls_pdf.swf",
+    "aButtons" = list(
+      "copy",
+      "print",
+      list("sExtends" = "collection",
+        "sButtonText" = "Save",
+        "aButtons" = c("csv","xls","pdf")
+      )
+    )
+  )                    
+)
+)#end dataviewer2
   
   output$downloadAnnot <- downloadHandler(
     filename = function() {paste0("AnnotationsAround.chr",input$chr,".",input$selected[[1]],"bp.",values$organism,".csv")},
     content = function(file) {write.csv(reactiveAnnotTable(),file,row.names=F)}
   )
+  output$downloadAnnot2 <- downloadHandler(
+    filename = function() {paste0("AnnotationsAround.chr",input$chr2,".",input$selected2[[1]],"bp.",values$organism2,".csv")},
+    content = function(file) {write.csv(reactiveAnnotTable2(),file,row.names=F)}
+  )
   
   output$columns <- renderUI({
     cols <- varnames()    
     selectInput("columns", "Select columns to show:", choices = as.list(cols), selected = cols, multiple = TRUE)
+  })
+  output$columns2 <- renderUI({
+    cols <- varnames2()    
+    selectInput("columns2", "Select columns to show:", choices = as.list(cols), selected = cols, multiple = TRUE)
   })
   
   output$axisLimBool <- renderUI({
@@ -395,6 +716,16 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       val = TRUE}
     checkboxInput('axisLimBool', 'Set Y-axis Limits?', val)
   })
+  output$axisLimBool2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    if(input$datasets2 %in% datasetProp()$dataset){
+      val = datasetProp()$axisLim[datasetProp()$dataset == input$datasets2]
+    } else if (values$organism2 %in% legumeInfo.organisms) {
+      val <- FALSE
+    }else{
+      val = TRUE}
+    checkboxInput('axisLimBool2', 'Set Y-axis Limits?', val)
+  })
   
   output$logP <- renderUI({
     if(is.null(input$datasets)){return()}
@@ -405,6 +736,16 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     }else{
       val = FALSE}
     checkboxInput('logP', 'Take -log10 of column?', val)
+  })
+  output$logP2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    if(input$datasets2 %in% datasetProp()$dataset){
+      val = datasetProp()$logP[datasetProp()$dataset == input$datasets2]
+    } else if (values$organism2 %in% legumeInfo.organisms) {
+      val <- TRUE
+    }else{
+      val = FALSE}
+    checkboxInput('logP2', 'Take -log10 of column?', val)
   })
 
   output$chrColumn <- renderUI({
@@ -418,6 +759,17 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     selected <- stri_match(selected, regex = ".*(?=\\ \\{)")[, 1]
     selectizeInput("chrColumn", "Chromosome Column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
   })
+  output$chrColumn2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    cols <- varnames2()    
+    if(input$datasets2 %in% datasetProp()$dataset){
+      selected = datasetProp()$chrColumn[datasetProp()$dataset == input$datasets2]
+    }else{
+      selected = names(cols[1])
+    }    
+    selected <- stri_match(selected, regex = ".*(?=\\ \\{)")[, 1]
+    selectizeInput("chrColumn2", "Chromosome Column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
+  })
 
   output$bpColumn <- renderUI({
     if(is.null(input$datasets)){return()}
@@ -429,6 +781,17 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     }
     selected <- stri_match(selected, regex = ".*(?=\\ \\{)")[, 1]
     selectizeInput("bpColumn", "Base Pair Column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
+  })
+  output$bpColumn2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    cols <- varnames2()
+    if(input$datasets2 %in% datasetProp()$dataset){
+      selected = datasetProp()$bpColumn[datasetProp()$dataset == input$datasets2]
+    }else{
+      selected = names(cols[2])
+    }
+    selected <- stri_match(selected, regex = ".*(?=\\ \\{)")[, 1]
+    selectizeInput("bpColumn2", "Base Pair Column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
   })
   
   output$traitColumns <- renderUI({
@@ -446,6 +809,21 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
                      selectizeInput("traitColumns", "Group by these trait column(s):", choices = as.list(cols), selected = selected, multiple = TRUE, options = list(dropdownParent="body"))
     )        
   })  
+  output$traitColumns2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    cols <- varnames2()
+    if(input$datasets2 %in% datasetProp()$dataset){
+      selected = unlist(strsplit(datasetProp()$traitCol[datasetProp()$dataset == input$datasets2],";"))
+    } else if (values$organism2 %in% legumeInfo.organisms) {
+      selected <- names(cols[3])
+    }else{
+      selected = names(cols[3:4])
+    }
+    selected <- sapply(selected, FUN = function(s) stri_match(selected, regex = ".*(?=\\ \\{)")[, 1], USE.NAMES = FALSE)
+    conditionalPanel(condition = "input.plotAll2==false",
+      selectizeInput("traitColumns2", "Group by these trait column(s):", choices = as.list(cols), selected = selected, multiple = TRUE, options = list(dropdownParent="body"))
+    )        
+  })
   
   output$plotAll <- renderUI({
     if(is.null(input$datasets)){return()}
@@ -455,6 +833,15 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       val = FALSE
     }    
     checkboxInput('plotAll', 'All data is the same trait', val)    
+  })
+  output$plotAll2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    if(input$datasets2 %in% datasetProp()$dataset){      
+      val = datasetProp()$plotAll[datasetProp()$dataset == input$datasets2]
+    }else{
+      val = FALSE
+    }    
+    checkboxInput('plotAll2', 'All data is the same trait', val)    
   })
   
   output$yAxisColumn <- renderUI({
@@ -472,6 +859,21 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     selectizeInput("yAxisColumn", "Y-axis column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
   })
   outputOptions(output, "yAxisColumn", suspendWhenHidden=FALSE)
+  output$yAxisColumn2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    cols <- varnames2()       
+    if(input$datasets2 %in% datasetProp()$dataset){      
+      selected = datasetProp()$yAxisColumn[datasetProp()$dataset == input$datasets2]
+    } else if (values$organism2 %in% legumeInfo.organisms) {
+      selected <- names(cols[4])
+    }else{
+      #selected = names(cols[10])
+      selected = as.character(cols[10])
+    }    
+    selected <- stri_match(selected, regex = ".*(?=\\ \\{)")[, 1]
+    selectizeInput("yAxisColumn2", "Y-axis column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
+  })
+  outputOptions(output, "yAxisColumn2", suspendWhenHidden=FALSE)
   
   output$axisLim <- renderUI({    
     if(is.null(input$datasets)){return()}
@@ -487,7 +889,21 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
                      numericInput("axisMax","Max:",value=max)
     )    
   })  
-
+  output$axisLim2 <- renderUI({    
+    if(is.null(input$datasets2)){return()}
+    if(input$datasets2 %in% datasetProp()$dataset){
+      min = datasetProp()$axisMin[datasetProp()$dataset == input$datasets2]
+      max = datasetProp()$axisMax[datasetProp()$dataset == input$datasets2]
+    }else{
+      min = 0
+      max = 1
+    }
+    conditionalPanel(condition = "input.axisLimBool2==true",
+      numericInput("axisMin2","Min:",value=min),
+      numericInput("axisMax2","Max:",value=max)
+    )    
+  })
+  
   output$supportInterval <- renderUI({
     if(is.null(input$datasets)){return()}
     if(input$datasets %in% datasetProp()$dataset){
@@ -496,7 +912,15 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       val = FALSE}
     checkboxInput('supportInterval', 'Plot base pair intervals (e.g., Joint linkage support intervals)?', val)
   })
-
+  output$supportInterval2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    if(input$datasets2 %in% datasetProp()$dataset){
+      val = datasetProp()$supportInterval[datasetProp()$dataset == input$datasets2]
+    }else{
+      val = FALSE}
+    checkboxInput('supportInterval2', 'Plot base pair intervals (e.g., Joint linkage support intervals)?', val)
+  })
+  
   output$SIbpStart <- renderUI({
     if(is.null(input$datasets)){return()}
     cols <- varnames()
@@ -512,7 +936,22 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
         selectizeInput("SIbpEnd", "Interval Base Pair End:", choices = as.list(cols), selected = selectedEnd, multiple = FALSE, options = list(dropdownParent="body"))
     )
   })   
-
+  output$SIbpStart2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    cols <- varnames2()
+    if(input$datasets2 %in% datasetProp()$dataset){
+      selected = datasetProp()$SIbpStart[datasetProp()$dataset == input$datasets2]
+      selectedEnd = datasetProp()$SIbpEnd[datasetProp()$dataset == input$datasets2]
+    }else{
+      selected = names(cols[2])
+      selectedEnd = names(cols[2])
+    }
+    conditionalPanel(condition = "input.supportInterval2==true",
+      selectizeInput("SIbpStart2", "Interval Base Pair Start:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body")),
+      selectizeInput("SIbpEnd2", "Interval Base Pair End:", choices = as.list(cols), selected = selectedEnd, multiple = FALSE, options = list(dropdownParent="body"))
+    )
+  })
+  
   output$SIyAxisColumn <- renderUI({
     if(is.null(input$datasets)){return()}
     cols <- varnames()       
@@ -527,7 +966,21 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     )
   })
   outputOptions(output, "SIyAxisColumn", suspendWhenHidden=FALSE)  
-
+  output$SIyAxisColumn2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    cols <- varnames2()       
+    if(input$datasets2 %in% datasetProp()$dataset){  
+      selected = datasetProp()$SIyAxisColumn[datasetProp()$dataset == input$datasets2]
+    }else{
+      #selected = names(cols[10])
+      selected = as.character(cols[10])
+    }        
+    conditionalPanel(condition = "input.supportInterval2==true",                     
+      selectizeInput("SIyAxisColumn2", "Support Interval Y-axis column:", choices = as.list(cols), selected = selected, multiple = FALSE, options = list(dropdownParent="body"))
+    )
+  })
+  outputOptions(output, "SIyAxisColumn2", suspendWhenHidden=FALSE)
+  
   output$SIaxisLimBool <- renderUI({
     if(is.null(input$datasets)){return()}
     if(input$datasets %in% datasetProp()$dataset){
@@ -541,7 +994,20 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       checkboxInput('SIaxisLimBool', 'Set Support Interval Y-axis Limits?', val)
     )
   })  
-
+  output$SIaxisLimBool2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    if(input$datasets2 %in% datasetProp()$dataset){
+      val = datasetProp()$SIaxisLimBool[datasetProp()$dataset == input$datasets2]
+    } else if (values$organism2 %in% legumeInfo.organisms) {
+      val <- FALSE
+    }else{
+      val = TRUE
+    }
+    conditionalPanel(condition = "input.supportInterval2==true", 
+      checkboxInput('SIaxisLimBool2', 'Set Support Interval Y-axis Limits?', val)
+    )
+  })
+  
   output$SIaxisLim <- renderUI({    
     if(is.null(input$datasets)){return()}
     if(input$datasets %in% datasetProp()$dataset){
@@ -556,7 +1022,21 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
                      numericInput("SIaxisMax","Max:",value=max)
     )    
   })  
-
+  output$SIaxisLim2 <- renderUI({    
+    if(is.null(input$datasets2)){return()}
+    if(input$datasets2 %in% datasetProp()$dataset){
+      min = datasetProp()$axisMin[datasetProp()$dataset == input$datasets2]
+      max = datasetProp()$axisMax[datasetProp()$dataset == input$datasets2]
+    }else{
+      min = 0
+      max = 1
+    }
+    conditionalPanel(condition = "input.supportInterval2==true && input.SIaxisLimBool2==true",
+      numericInput("SIaxisMin2","Min:",value=min),
+      numericInput("SIaxisMax2","Max:",value=max)
+    )    
+  })
+  
   #builds list of multiple selection boxes for traits that have multiple columns in dataset
   output$traitColBoxes <- renderUI({
     if(is.null(input$datasets)){return()}
@@ -568,12 +1048,31 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
                   multiple=TRUE, options = list(dropdownParent="body",plugins=list("remove_button")))
     })
   })
+  output$traitColBoxes2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    if(input$plotAll2 == TRUE){return()}
+    lapply(input$traitColumns2, function(i) {      
+      traits <- c("Select All ",sort(unique(values[[input$datasets2]][,i])))
+      selectizeInput(inputId=paste0(i, "2"), label=paste0("Select ",i),traits,
+        selected=traits[2],
+        multiple=TRUE, options = list(dropdownParent="body",plugins=list("remove_button")))
+    })
+  })
   
   observe({
     lapply(input$traitColumns, function(i){
       if("Select All" %in% input[[i]]){
         selected_choices <- sort(unique(values[[input$datasets]][,i]))
         updateSelectizeInput(session, i, selected = selected_choices)
+      }
+    })
+  })
+  observe({
+    lapply(input$traitColumns2, function(i){
+      i2 <- paste0(i, "2")
+      if("Select All " %in% input[[i2]]){
+        selected_choices <- sort(unique(values[[input$datasets2]][,i]))
+        updateSelectizeInput(session, i2, selected = selected_choices)
       }
     })
   })
@@ -584,6 +1083,11 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     checkboxInput('legend', 'Suppress Legend', FALSE)
   })
   outputOptions(output, "legend", suspendWhenHidden=FALSE)
+  output$legend2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    checkboxInput('legend2', 'Suppress Legend', FALSE)
+  })
+  outputOptions(output, "legend2", suspendWhenHidden=FALSE)
   
   #checkbox for whether to filter for only overlapping SNPs
   output$overlaps <- renderUI({
@@ -592,38 +1096,68 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     checkboxInput('overlaps', 'Show only overlapping SNPs', FALSE)
   })  
   outputOptions(output, "overlaps", suspendWhenHidden=FALSE)
-
+  output$overlaps2 <- renderUI({
+    if(is.null(input$datasets2)){return()}
+    #    if(input$plotAll2 == TRUE){return()}
+    checkboxInput('overlaps2', 'Show only overlapping SNPs', FALSE)
+  })  
+  outputOptions(output, "overlaps2", suspendWhenHidden=FALSE)
+  
   #how many traits must overlap to be included in output, 1 means traits that overlap with themselves will be included
   output$numOverlapTraits <- renderUI({
     numericInput("numOverlaps", "Minimum number of overlaps?", value=2,min=1)    
   })
-
+  output$numOverlapTraits2 <- renderUI({
+    numericInput("numOverlaps2", "Minimum number of overlaps?", value=2,min=1)    
+  })
+  
   #how big is the window when calculating whether two snps overlap
   output$overlapSize <- renderUI({
     numericInput(inputId="overlapSize",label="Overlap size around each point:",min=1,max=.5e6,value=10000)
   })
-
+  output$overlapSize2 <- renderUI({
+    numericInput(inputId="overlapSize2",label="Overlap size around each point:",min=1,max=.5e6,value=10000)
+  })
+  
   output$selectChr <- renderUI({
     if(is.null(values$organism)){return()}
     selectInput("chr", "Chromosome:",chrName[values$organism][[1]],selectize = FALSE)
     #selectInput("chr", "Chromosome:",1:length(chrSize[input$organism][[1]]),selectize = FALSE)
   })
   outputOptions(output, "selectChr", suspendWhenHidden=FALSE)
+  output$selectChr2 <- renderUI({
+    if(is.null(values$organism2)){return()}
+    selectInput("chr2", "Chromosome:",chrName[values$organism2][[1]],selectize = FALSE)
+  })
+  outputOptions(output, "selectChr2", suspendWhenHidden=FALSE)
   
   output$selectedOut <- renderUI({
     numericInput("selected", "", value=100000)
   })
   outputOptions(output, "selectedOut", suspendWhenHidden=FALSE)
+  output$selectedOut2 <- renderUI({
+    numericInput("selected2", "", value=100000)
+  })
+  outputOptions(output, "selectedOut2", suspendWhenHidden=FALSE)
+
   output$windowOut <- renderUI({
     #sliderInput(inputId="window",label="Window size around selected point:",min=-1e6,max=1e6,value=c(-7.5e5,7.5e5))
     sliderInput(inputId="window",label="Window size around selected point:",min=1000,max=.5e6,value=2.5e5)
   })
   outputOptions(output, "windowOut", suspendWhenHidden=FALSE)
+  output$windowOut2 <- renderUI({
+    sliderInput(inputId="window2",label="Window size around selected point:",min=1000,max=.5e6,value=2.5e5)
+  })
+  outputOptions(output, "windowOut2", suspendWhenHidden=FALSE)
   
   #returns datasets from uploaded file
   getdata <- reactive({
     if(is.null(input$datasets)){return()}
     values[[input$datasets]]
+  })
+  getdata2 <- reactive({
+    if(is.null(input$datasets2)){return()}
+    values[[input$datasets2]]
   })
   
   #builds list of column names and type in dataset
@@ -634,10 +1168,22 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     names(vars) <- paste(vars, " {", dat, "}", sep = "")
     vars
   })
+  varnames2 <- reactive({
+    if(is.null(input$datasets2)) return()
+    dat <- getdata_class2()
+    vars <- names(dat)
+    names(vars) <- paste(vars, " {", dat, "}", sep = "")
+    vars
+  })
   
   getdata_class <- reactive({
     if(is.null(input$datasets)) return()
     cls <- sapply(getdata(), function(x) class(x)[1])
+    gsub("ordered","factor", cls)
+  })
+  getdata_class2 <- reactive({
+    if(is.null(input$datasets2)) return()
+    cls <- sapply(getdata2(), function(x) class(x)[1])
     gsub("ordered","factor", cls)
   })
   
@@ -691,11 +1237,53 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       values[[objname]] <- loaded.values
     }
   }
+  loadUserData2 <- function(filename, uFile) {  
+    ext <- file_ext(filename)
+    objname <- sub(paste(".", ext, sep = ""), "", basename(filename))
+    ext <- tolower(ext)
+
+    if (ext == 'rda' || ext == 'rdata') {
+      # objname will hold the name of the object(s) inside the R datafile
+      robjname <- load(uFile)
+      if (length(robjname) > 1) {
+        loaded.values <- data.frame(get(robjname[1]))
+      } else {
+        loaded.values <- data.frame(get(robjname))  # only work with data.frames
+      }
+    }
+
+    appendSNPs <- isolate(input$appendSNPs2)
+    if (!appendSNPs) {
+      # add new datasets to the datasetToOrganism map
+      values$datasetToOrganism[[objname]] <- values$organism2
+    }
+    if (length(values[['datasetlist']]) == 0 || values[['datasetlist']][1] == '') {
+      values[['datasetlist']] <- c(objname)
+    } else if (!appendSNPs) {
+      values[['datasetlist']] <- unique(c(objname, values[['datasetlist']]))
+    }
+
+    if (ext == 'sav') {
+      loaded.values <- as.data.frame(as.data.set(spss.system.file(uFile)))
+    } else if(ext == 'dta') {
+      loaded.values <- read.dta(uFile)
+    } else{
+      loaded.values <- read.csv(uFile, header = input$header2, sep = input$sep2, stringsAsFactors=FALSE)
+    }
+
+    if (appendSNPs) {
+      values[[input$datasets2]]$totalBP <- NULL
+      names(loaded.values) <- names(values[[input$datasets2]])
+      values[[input$datasets2]] <- rbind(values[[input$datasets2]], loaded.values)
+    } else {
+      values[[objname]] <- loaded.values
+    }
+  }
   
   # Load data from .csv files at a remote URL
-  loadRemoteData <- function(trait, traitUrl) { # filename, uFile) {  
+  loadRemoteData <- function(trait, traitUrl) {
     ext <- file_ext(traitUrl)
-    objname <- sub(paste(".",ext,sep = ""),"",basename(traitUrl))
+    objname <- sub(paste(".", ext, sep = ""), "", basename(traitUrl))
 
     appendSNPs <- isolate(input$appendSNPs)
     if (!appendSNPs) {
@@ -705,7 +1293,7 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     if(length(values[['datasetlist']]) == 0 || values[['datasetlist']][1] == '') {
       values[['datasetlist']] <- c(objname)
     } else if (!appendSNPs) {
-      values[['datasetlist']] <- unique(c(objname,values[['datasetlist']]))
+      values[['datasetlist']] <- unique(c(objname, values[['datasetlist']]))
     }
 
     loaded.values <- load.gwas.remote(values$organism, traitUrl, trait)
@@ -718,7 +1306,32 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       values[[objname]] <- loaded.values
     }
   }
+  loadRemoteData2 <- function(trait, traitUrl) {
+    ext <- file_ext(traitUrl)
+    objname <- sub(paste(".", ext, sep = ""), "", basename(traitUrl))
 
+    appendSNPs <- isolate(input$appendSNPs2)
+    if (!appendSNPs) {
+      # add new datasets to the datasetToOrganism map
+      values$datasetToOrganism[[objname]] <- values$organism2
+    }
+    if (length(values[['datasetlist']]) == 0 || values[['datasetlist']][1] == '') {
+      values[['datasetlist']] <- c(objname)
+    } else if (!appendSNPs) {
+      values[['datasetlist']] <- unique(c(objname, values[['datasetlist']]))
+    }
+
+    loaded.values <- load.gwas.remote(values$organism2, traitUrl, trait)
+
+    if (appendSNPs) {
+      values[[input$datasets2]]$totalBP <- NULL
+      names(loaded.values) <- names(values[[input$datasets2]])
+      values[[input$datasets2]] <- rbind(values[[input$datasets2]], loaded.values)
+    } else {
+      values[[objname]] <- loaded.values
+    }
+  }
+  
   #add a totalBP column to an input dataset if not already present
   calculateTotalBP <- reactive({ 
     if("totalBP" %in% colnames(values[[input$datasets]])){
@@ -789,6 +1402,60 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
       }
     } #end SI total bp calculation
   })#end calculateTotalBP
+  calculateTotalBP2 <- reactive({ 
+    if("totalBP" %in% colnames(values[[input$datasets2]])){
+      
+    }else{
+      cumBP<-c(0,cumsum(as.numeric(chrSize[values$organism2][[1]])))
+      #to order by desired chromosome add factor levels in the desired order to the chrColumn, any chr names that differ in gwas file compared
+      #to organism file will turn into NA
+      values[[input$datasets2]][,input$chrColumn2] <- factor(values[[input$datasets2]][,input$chrColumn2],levels=chrName[values$organism2][[1]])
+      values[[input$datasets2]] <- values[[input$datasets2]][order(values[[input$datasets2]][,input$chrColumn2],values[[input$datasets2]][,input$bpColumn2]),]
+      numeachchr<-aggregate(values[[input$datasets2]][,input$bpColumn2],list(values[[input$datasets2]][,input$chrColumn2]),length)
+      adjust <- numeric()
+      for (i in 1:(length(cumBP)-1)){#max(unique(values[[input$datasets2]][,input$chrColumn2]))){
+        if(length(numeachchr$x[numeachchr$Group.1==chrName[values$organism2][[1]][i]])==0){next;}
+        adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[values$organism2][[1]][i]]))
+      }
+      #newval <- values[[input$datasets2]][600,input$bpColumn2]+adjust[600]      
+      values[[input$datasets2]]$totalBP <- values[[input$datasets2]][,input$bpColumn2]+adjust
+      
+      #values[[input$datasets2]] <- adply(values[[input$datasets2]],1,function(x){data.frame(totalBP=sum(x[[input$bpColumn2]],chrSize$bp[chrSize$chr %in% if(x[[input$chrColumn2]]==1) 0 else c(1:(x[[input$chrColumn2]]-1))]))})
+    }
+    if(input$supportInterval2 == TRUE){
+      if("SIbpStartTotal" %in% colnames(values[[input$datasets2]])){
+        
+      }else{
+        
+        cumBP<-c(0,cumsum(as.numeric(chrSize[values$organism2][[1]])))
+        values[[input$datasets2]][,input$chrColumn2] <- factor(values[[input$datasets2]][,input$chrColumn2],levels=chrName[values$organism2][[1]])
+        values[[input$datasets2]] <- values[[input$datasets2]][order(values[[input$datasets2]][,input$chrColumn2],values[[input$datasets2]][,input$SIbpStart2]),]
+        numeachchr<-aggregate(values[[input$datasets2]][,input$SIbpStart2],list(values[[input$datasets2]][,input$chrColumn2]),length)
+        adjust <- numeric()
+        for (i in 1:(length(cumBP)-1)){#max(unique(values[[input$datasets2]][,input$chrColumn2]))){
+          if(length(numeachchr$x[numeachchr$Group.1==chrName[values$organism2][[1]][i]])==0){next;}
+          adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[values$organism2][[1]][i]]))
+        }
+        values[[input$datasets2]]$SIbpStartTotal <- values[[input$datasets2]][,input$SIbpStart2]+adjust    
+      }
+      
+      if("SIbpEndTotal" %in% colnames(values[[input$datasets2]])){
+        
+      }else{
+        
+        cumBP<-c(0,cumsum(as.numeric(chrSize[values$organism2][[1]])))
+        values[[input$datasets2]][,input$chrColumn2] <- factor(values[[input$datasets2]][,input$chrColumn2],levels=chrName[values$organism2][[1]])
+        values[[input$datasets2]] <- values[[input$datasets2]][order(values[[input$datasets2]][,input$chrColumn2],values[[input$datasets2]][,input$SIbpEnd2]),]
+        numeachchr<-aggregate(values[[input$datasets2]][,input$SIbpEnd2],list(values[[input$datasets2]][,input$chrColumn2]),length)
+        adjust <- numeric()
+        for (i in 1:(length(cumBP)-1)){#max(unique(values[[input$datasets2]][,input$chrColumn2]))){
+          if(length(numeachchr$x[numeachchr$Group.1==chrName[values$organism2][[1]][i]])==0){next;}
+          adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[values$organism2][[1]][i]]))
+        }
+        values[[input$datasets2]]$SIbpEndTotal <- values[[input$datasets2]][,input$SIbpEnd2]+adjust    
+      }
+    } #end SI total bp calculation
+  })#end calculateTotalBP2
   
   output$pChart <- renderChart({
     #this function makes the chromsomeview chart  
@@ -998,7 +1665,184 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     return(a)
     
   })#end pchart
+  output$pChart2 <- renderChart({
+    #this function makes the chromsomeview chart  
+    #subset whole chart based on selection
+    chromChart <- values[[input$datasets2]]
+    chromChart <- chromChart[chromChart[,input$chrColumn2]==input$chr2,]
     
+    if(input$plotAll2==FALSE){
+      for(i in input$traitColumns2){
+        i2 <- paste0(i, "2")
+        chromChart <- chromChart[chromChart[,i] %in% input[[i2]],]
+      }    
+      if(length(input$traitColumns2) > 1){
+        chromChart$trait <- do.call(paste,c(chromChart[,input$traitColumns2],sep="_"))
+      }else{
+        chromChart$trait <- chromChart[,input$traitColumns2]
+      }
+    }else{
+      chromChart$trait <- input$datasets2
+    }
+    
+    #Separate Support Interval data from GWAS data, if support, GWAS data is assumed to be anything that has an NA in the SIbpStart column
+    if(input$supportInterval2 == TRUE){
+      SIchart <- chromChart[!(is.na(chromChart[,input$SIbpStart2])),]
+      chromChart <- chromChart[is.na(chromChart[,input$SIbpStart2]),]
+    }        
+    #check if there is any data for the selected traits
+    chromChart <- chromChart[!(is.na(chromChart[,input$bpColumn2])),]
+    chromChart <- chromChart[!(is.na(chromChart[,input$yAxisColumn2])),]
+    
+    #if checked, filter for only overlapping SNPs
+    if(!is.null(input$overlaps2) & input$overlaps2 == TRUE){
+      chromChart <- findGWASOverlaps2(chromChart)
+    }
+    
+    if(nrow(chromChart)==0){ #nothing is in the window, but lets still make a data.frame
+      chromChart <- values[[input$datasets2]][1,]
+      chromChart[,input$yAxisColumn2] <- -1    
+      if(length(input$traitColumns2) > 1){
+        chromChart$trait <- do.call(paste,c(chromChart[,input$traitColumns2],sep="_"))
+      }else{
+        chromChart$trait <- chromChart[,input$traitColumns2]
+      }             
+    }    
+    colorTable <- colorTable2()
+    
+    #take -log10 of y-axis column if requested
+    if(input$logP2 == TRUE && chromChart[1,input$yAxisColumn2] != -1){
+      chromChart[,input$yAxisColumn2] <- -log(chromChart[,input$yAxisColumn2],10)
+    }
+    
+    #check if there is too much data (>2500 data points), trim to 2500
+    if(nrow(chromChart)>2500){
+      cutVal <- sort(chromChart[,input$yAxisColumn2],decreasing = T)[2500]
+      chromChart <- chromChart[chromChart[,input$yAxisColumn2] >= cutVal,]
+    }
+    
+    #calculate window for plotband
+    pbWin <- isolate({
+      center <- as.numeric(input$selected2[[1]])
+      winHigh <- center + input$window2[1]
+      winLow <- center - input$window2[1]
+      list(winLow=winLow,winHigh=winHigh)
+    })
+    
+    pkTable <- data.frame(x=chromChart[,input$bpColumn2],y=chromChart[,input$yAxisColumn2],trait=chromChart$trait,
+      name=sprintf("Base Pair: %1$s<br/>Chromosome: %2$s<br/>",
+        prettyNum(chromChart[,input$bpColumn2], big.mark = ","),
+        chromChart[,input$chrColumn2]
+      ),
+      url="http://danforthcenter.org",
+      chr=chromChart[,input$chrColumn2],
+      bp=chromChart[,input$bpColumn2],stringsAsFactors=FALSE)
+    pkSeries <- lapply(split(pkTable, pkTable$trait), function(x) {
+      res <- lapply(split(x, rownames(x)), as.list)
+      names(res) <- NULL
+      res <- res[order(sapply(res, function(x) x$x))]
+      return(res)
+    })
+    
+    #build JL series
+    if(input$supportInterval2==TRUE){
+      if(nrow(SIchart)==0){ #nothing is in the window, but lets still make a data.frame
+        SIchart <- values[[input$datasets2]][1,]
+        SIchart[,input$SIyAxisColumn2] <- -1    
+        if(length(input$traitColumns2) > 1){
+          SIchart$trait <- do.call(paste,c(SIchart[,input$traitColumns2],sep="_"))
+        }else{
+          SIchart$trait <- SIchart[,input$traitColumns2]
+        }
+      }
+      SIchart$loc_el <- SIchart$trait
+      SIchart$trait <- paste(SIchart$trait,"Int",sep="_")
+      SIchart <- SIchart[order(SIchart[[input$SIbpStart2]]),]
+      jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x[[input$SIbpStart2]],x[[input$SIbpEnd2]],x[[input$SIbpEnd2]]),y=c(x[[input$SIyAxisColumn2]],x[[input$SIyAxisColumn2]],NA),trait=x$trait,
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
+          prettyNum(x[[input$SIbpStart2]], big.mark = ","),
+          prettyNum(x[[input$SIbpEnd2]], big.mark = ","),
+          x[[input$chrColumn2]]
+        ),loc_el=x$loc_el,bp=x[[input$bpColumn2]],chr=x[[input$chrColumn2]],stringsAsFactors=FALSE
+      )}#end jlTable and function
+      )#end adply
+      jlTable <- jlTable[,c("x","y","trait","name","loc_el","bp","chr")]
+    }#end build jlTable if support intervals        
+    
+    a <- rCharts::Highcharts$new()
+    a$LIB$url <- 'highcharts/' #use the local copy of highcharts, not the one installed by rCharts
+    a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[values$organism2][[1]][as.numeric(input$chr2)],endOnTick=FALSE,
+      plotBands = list(list(from=pbWin$winLow,to=pbWin$winHigh,color='rgba(68, 170, 213, 0.4)')))
+    
+    if(input$axisLimBool2 == TRUE){
+      a$yAxis(title=list(text=input$yAxisColumn2),min=input$axisMin2,max=input$axisMax2,startOnTick=FALSE)
+    }else{
+      a$yAxis(title=list(text=input$yAxisColumn2),startOnTick=FALSE)      
+    }    
+    
+    if(input$supportInterval2==TRUE){
+      if(input$SIaxisLimBool2 == TRUE){
+        a$yAxis(title=list(text=input$SIyAxisColumn2),min=input$SIaxisMin2,max=input$SIaxisMax2,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+      }else{
+        a$yAxis(title=list(text=input$SIyAxisColumn2),gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)   
+      }
+      
+      if(SIchart[1,input$SIyAxisColumn2] != -1){
+        d_ply(jlTable,.(trait),function(x){
+          a$series(
+            data = toJSONArray2(x,json=F,names=T),
+            type = "line",
+            name = unique(x$trait),
+            yAxis=1,
+            color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
+      }
+    }
+    
+    if(chromChart[1,input$yAxisColumn2] != -1){
+      invisible(sapply(pkSeries, function(x) {if(length(x)==0){return()};a$series(data = x, type = "scatter", turboThreshold=5000, name = paste0(x[[1]]$trait), color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)])}))
+    }
+    a$chart(zoomType="x", alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
+    a$title(text=paste(input$datasets2,"Results for Chromosome",input$chr2,sep=" "))
+    a$subtitle(text="Rollover for more info. Drag chart area to zoom. Click point for zoomed annotated plot.")
+    
+    a$plotOptions(
+      scatter = list(
+        cursor = "pointer",
+        point = list(
+          events = list(
+            click = "#! function(){$('input#selected2').val(this.options.bp); $('input#selected2').trigger('change');} !#")),
+        marker = list(
+          symbol = "circle",
+          radius = 5
+        ),
+        tooltip = list(
+          headerFormat = "<b>{series.name}</b><br/>{point.key}<br/>Y-value: {point.y}<br/>",
+          pointFormat = "",
+          followPointer = TRUE
+        )
+      ),
+      line = list(
+        lineWidth = 10,
+        dashStyle = 'Solid',
+        cursor = "pointer",
+        point = list(
+          events = list(
+            click = "#! function(){$('input#selected2').val(this.options.bp); $('input#selected2').trigger('change');} !#")),
+        marker = list(
+          enabled = FALSE,
+          states = list(hover = list(enabled=FALSE))
+        )
+      ),
+      spline = list(
+        lineWidth = 3,
+        cursor = "pointer"
+      )
+    )
+    a$exporting(enabled=TRUE,filename='chromChart',sourceWidth=2000)
+    a$set(dom = 'pChart2')
+    return(a)
+  })#end pchart2
+  
   #Genome wide chart
   output$gChart <- renderChart({
        
@@ -1227,7 +2071,207 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
 #    h1$set(dom = 'gChart')
 #    return(h1)    
    })#end gchart
-
+  output$gChart2 <- renderChart({
+    calculateTotalBP2()
+    
+    #subset whole chart based on selection
+    genomeChart <- values[[input$datasets2]]
+    if(input$plotAll2 == FALSE){
+      for(i in input$traitColumns2){
+        i2 <- paste0(i, "2")
+        genomeChart <- genomeChart[genomeChart[,i] %in% input[[i2]],]
+      }    
+      if(length(input$traitColumns2) > 1){
+        genomeChart$trait <- do.call(paste,c(genomeChart[,input$traitColumns2],sep="_"))
+      }else{
+        genomeChart$trait <- genomeChart[,input$traitColumns2]
+      }
+    }else{
+      genomeChart$trait <- input$datasets2
+    }
+    
+    #Separate Support Interval data from GWAS data, if support, GWAS data is assumed to be anything that has an NA in the SIbpStart column
+    if(input$supportInterval2 == TRUE){
+      SIchart <- genomeChart[!(is.na(genomeChart[,input$SIbpStart2])),]
+      genomeChart <- genomeChart[is.na(genomeChart[,input$SIbpStart2]),]
+    }
+    
+    #filter genomeChart for only rows that have a base pair and yaxis value
+    genomeChart <- genomeChart[!(is.na(genomeChart[,input$bpColumn2])),]
+    genomeChart <- genomeChart[!(is.na(genomeChart[,input$yAxisColumn2])),]
+    
+    #if checked, filter for only overlapping SNPs
+    if(!is.null(input$overlaps2) & input$overlaps2 == TRUE){
+      genomeChart <- findGWASOverlaps2(genomeChart)
+    }
+    
+    #check if there is any data for the selected traits
+    if(nrow(genomeChart)==0){ #nothing is in the window, but lets still make a data.frame
+      genomeChart <- values[[input$datasets2]][1,]
+      genomeChart[,input$yAxisColumn2] <- -1    
+      if(length(input$traitColumns2) > 1){
+        genomeChart$trait <- do.call(paste,c(genomeChart[,input$traitColumns2],sep="_"))    
+      }else{
+        genomeChart$trait <- genomeChart[,input$traitColumns2]
+      }             
+    }
+    
+    #take -log10 of y-axis column if requested
+    if(input$logP2 == TRUE && genomeChart[1,input$yAxisColumn2] != -1){
+      genomeChart[,input$yAxisColumn2] <- -log(genomeChart[,input$yAxisColumn2],10)
+    }
+    
+    #check if there is too much data (>2500 data points), trim to 2500
+    if(nrow(genomeChart)>2500){
+      cutVal <- sort(genomeChart[,input$yAxisColumn2],decreasing = T)[2500]
+      genomeChart <- genomeChart[genomeChart[,input$yAxisColumn2] >= cutVal,]
+    }
+    
+    colorTable <- colorTable2()
+    genomeTable <- data.frame(x=genomeChart$totalBP,y=genomeChart[,input$yAxisColumn2],trait=genomeChart$trait,
+      name=sprintf("Base Pair: %1$s<br/>Chromosome: %2$s<br/>",
+        prettyNum(genomeChart[,input$bpColumn2], big.mark = ","),
+        genomeChart[,input$chrColumn2]
+      ),
+      url="http://danforthcenter.org",
+      chr=genomeChart[,input$chrColumn2],
+      bp=genomeChart[,input$bpColumn2],stringsAsFactors=FALSE)
+    genomeSeries <- lapply(split(genomeTable, genomeTable$trait), function(x) {
+      res <- lapply(split(x, rownames(x)), as.list)
+      names(res) <- NULL
+      res <- res[order(sapply(res, function(x) x$x))]
+      return(res)
+    })
+    #     
+    #build JL series
+    if(input$supportInterval2==TRUE){
+      if(nrow(SIchart)==0){ #nothing is in the window, but lets still make a data.frame
+        SIchart <- values[[input$datasets2]][1,]
+        SIchart[,input$SIyAxisColumn2] <- -1    
+        if(length(input$traitColumns2) > 1){
+          SIchart$trait <- do.call(paste,c(SIchart[,input$traitColumns2],sep="_"))    
+        }else{
+          SIchart$trait <- SIchart[,input$traitColumns2]
+        }             
+      }
+      SIchart$loc_el <- SIchart$trait
+      SIchart$trait <- paste(SIchart$trait,"Int",sep="_")
+      SIchart <- SIchart[order(SIchart$SIbpStartTotal),]
+      jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x$SIbpStartTotal,x$SIbpEndTotal,x$SIbpEndTotal),y=c(x[[input$SIyAxisColumn2]],x[[input$SIyAxisColumn2]],NA),trait=x$trait,
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
+          prettyNum(x[[input$SIbpStart2]], big.mark = ","),
+          prettyNum(x[[input$SIbpEnd2]], big.mark = ","),
+          x[[input$chrColumn2]]
+        ),loc_el=x$loc_el,bp=x[[input$bpColumn2]],chr=x[[input$chrColumn2]],stringsAsFactors=FALSE
+      )}#end jlTable and function
+      )#end adply
+      jlTable <- jlTable[,c("x","y","trait","name","loc_el","bp","chr")]
+      #jlTable <- jlTable[order(jlTable$x),]
+    }#end build jlTable if support intervals
+    
+    #build list for where to put plotbands for this organism
+    bigList <- list()
+    cumBP<-c(0,cumsum(as.numeric(chrSize[values$organism2][[1]])))
+    for(i in 1:(length(cumBP)-1)){
+      if(i %% 2 == 0 ){ #even
+        bigList[[length(bigList)+1]] <- list(from=cumBP[i]+1,to=cumBP[i+1],label=list(text=chrName[values$organism2][[1]][i],style=list(color="#6D869F"),verticalAlign="bottom"))
+      }else{ #odd
+        bigList[[length(bigList)+1]] <- list(from=cumBP[i]+1,to=cumBP[i+1],color='rgba(68, 170, 213, 0.1)',label=list(text=chrName[values$organism2][[1]][i],style=list(color="#6D869F"),verticalAlign="bottom"))
+      }
+    }    
+    
+    c <- rCharts::Highcharts$new()
+    c$LIB$url <- 'highcharts/'
+    c$xAxis(title = list(text = "Chromosome",margin=15),startOnTick=TRUE,min=0,max=sum(as.numeric(chrSize[values$organism2][[1]])),endOnTick=FALSE,labels=list(enabled=FALSE),tickWidth=0,
+      plotBands = bigList)   
+    
+    if(input$axisLimBool2 == TRUE){       
+      c$yAxis(title=list(text=input$yAxisColumn2),min=input$axisMin2,max=input$axisMax2,startOnTick=FALSE)
+    }else{
+      c$yAxis(title=list(text=input$yAxisColumn2),startOnTick=FALSE)      
+    }
+    
+    if(input$supportInterval2==TRUE){
+      if(input$SIaxisLimBool2 == TRUE){
+        c$yAxis(title=list(text=input$SIyAxisColumn2),min=input$SIaxisMin2,max=input$SIaxisMax2,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)   
+      }else{
+        c$yAxis(title=list(text=input$SIyAxisColumn2),gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+      }
+      
+      if(SIchart[1,input$SIyAxisColumn2] != -1){
+        d_ply(jlTable,.(trait),function(x){
+          c$series(
+            data = toJSONArray2(x,json=F,names=T),
+            type = "line",
+            name = unique(x$trait),
+            dashStyle = 'Solid',
+            marker = list(enabled=F),
+            yAxis=1,           
+            color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
+      }
+    }
+    if(genomeChart[1,input$yAxisColumn2] != -1){
+      invisible(sapply(genomeSeries, function(x) {if(length(x)==0){return()};c$series(data = x, turboThreshold=5000,type = "scatter", color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = paste0(x[[1]]$trait))}))
+    }
+    
+    c$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
+    c$title(text=paste(input$datasets2," Results",sep=" "))
+    c$subtitle(text="Rollover for more info. Drag chart area to zoom. Click point to switch to chromosome and annotation view.")
+    
+    c$plotOptions(
+      scatter = list(
+        cursor = "pointer",
+        point = list(
+          events = list(
+            click = "#! function(){$('select#chr2').val(this.options.chr); $('select#chr2').trigger('change'); $('input#selected2').val(this.options.bp); 
+            $('input#selected2').trigger('change'); $('ul#datatabs li').eq(0).removeClass('active'); 
+            $('ul#datatabs li').eq(1).removeClass('active'); $('ul#datatabs li').eq(2).removeClass('active');
+            $('ul#datatabs li').eq(4).removeClass('active');
+            $('ul#datatabs li').eq(3).addClass('active'); 
+            $('#pChart2').trigger('change');$('#pChart2').trigger('shown');
+            $('.tab-content div').toggleClass(function(){if(this.getAttribute('data-value')=='panel2' || this.getAttribute('data-value')=='panel1'){return 'active';}else{return '';}});
+            $('.tab-content div').trigger('change');$('ul#datatabs li').trigger('change');} !#")), 
+        marker = list(
+          symbol = "circle",
+          radius = 5
+        ),
+        tooltip = list(
+          headerFormat = "<b>{series.name}</b><br/>{point.key}<br/>Y-value: {point.y}<br/>",
+          pointFormat = "",
+          followPointer = TRUE
+        )
+          ),
+      line = list(
+        lineWidth = 10,
+        cursor = "pointer",
+        point = list(
+          events = list(
+            click = "#! function(){$('select#chr2').val(this.options.chr); $('select#chr2').trigger('change'); $('input#selected2').val(this.options.bp); 
+            $('input#selected2').trigger('change'); $('ul#datatabs li').eq(0).removeClass('active'); 
+            $('ul#datatabs li').eq(1).removeClass('active'); $('ul#datatabs li').eq(2).removeClass('active');
+            $('ul#datatabs li').eq(4).removeClass('active');
+            $('ul#datatabs li').eq(3).addClass('active'); 
+            $('#pChart2').trigger('change');$('#pChart2').trigger('shown');
+            $('.tab-content div').toggleClass(function(){if(this.getAttribute('data-value')=='panel2' || this.getAttribute('data-value')=='panel1'){return 'active';}else{return '';}});
+            $('.tab-content div').trigger('change');$('ul#datatabs li').trigger('change');} !#")),             
+        marker = list(
+          enabled = FALSE,
+          states = list(hover = list(enabled=FALSE)),
+          symbol = "square"
+        )
+          )            
+        )#end plotOptions        
+    #c$tooltip(useHTML = T, formatter = "#! function() { return this.point.name; } !#")
+    #c$tooltip(formatter = "#! function() { return this.point.name; } !#")
+    c$exporting(enabled=TRUE,filename='genomeChart',sourceWidth=2000)
+    if(!is.null(input$legend2) & input$legend2 == TRUE){
+      c$legend(enabled=FALSE)
+    }
+    
+    c$credits(enabled=TRUE)
+    c$set(dom = 'gChart2')     
+    return(c)
+  })#end gchart2
 
   output$zChart <- renderChart({
     if(is.null(input$selected)) return()
@@ -1772,7 +2816,400 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     b$set(dom = 'zChart')
     return(b)
   })#end zchart
+  output$zChart2 <- renderChart({
+    if(is.null(input$selected2)) return()
     
+    centerBP <- as.numeric(input$selected2[[1]])
+    winHigh <- centerBP+input$window2[1]
+    winLow <- centerBP-input$window2[1]
+    if(winLow < 0){winLow <- 0}
+    
+    zoomChart <- values[[input$datasets2]]
+    zoomChart <- zoomChart[zoomChart[,input$chrColumn2]==input$chr2,]
+    
+    if(input$plotAll2 == FALSE){
+      for(i in input$traitColumns2){
+        i2 <- paste0(i, "2")
+        zoomChart <- zoomChart[zoomChart[,i] %in% input[[i2]],]
+      }
+      
+      if(length(input$traitColumns2) > 1){
+        zoomChart$trait <- do.call(paste,c(zoomChart[,input$traitColumns2],sep="_"))
+      }else{
+        zoomChart$trait <- zoomChart[,input$traitColumns2]
+      }
+    }else{
+      zoomChart$trait <- input$datasets2
+    }
+    
+    #Separate Support Interval data from GWAS data, if support, GWAS data is assumed to be anything that has an NA in the SIbpStart column
+    if(input$supportInterval2 == TRUE){
+      SIchart <- zoomChart[!(is.na(zoomChart[,input$SIbpStart2])),]
+      zoomChart <- zoomChart[is.na(zoomChart[,input$SIbpStart2]),]
+      #not sure the below logic works for subsetting SIchart, probably not necessary anyways, since there are usually very few SI rows for one chromosome anyways (e.g. small overhead)
+      #SIchart <- SIchart[((SIchart[,input$SIbpStart] <= winHigh & SIchart[,input$SIbpStart] >= winLow) | (SIchart[,input$SIbpEnd] <= winHigh & SIchart[,input$SIbpEnd] >= winLow)),]
+    }    
+    
+    zoomChart <- zoomChart[(zoomChart[,input$bpColumn2] <= winHigh) & (zoomChart[,input$bpColumn2] >= winLow),]
+    
+    #filter for only rows that have a base pair value
+    zoomChart <- zoomChart[!(is.na(zoomChart[,input$bpColumn2])),]
+    zoomChart <- zoomChart[!(is.na(zoomChart[,input$yAxisColumn2])),]    
+    
+    #if checked, filter for only overlapping SNPs
+    if(!is.null(input$overlaps2) & input$overlaps2 == TRUE){
+      zoomChart <- findGWASOverlaps2(zoomChart)
+    }
+    
+    if(nrow(zoomChart)==0){ #nothing is in the window, but lets still make a data.frame
+      zoomChart <- values[[input$datasets2]][1,]
+      zoomChart[,input$yAxisColumn2] <- -1    
+      if(length(input$traitColumns2) > 1){
+        zoomChart$trait <- do.call(paste,c(zoomChart[,input$traitColumns2],sep="_"))
+      }else{
+        zoomChart$trait <- zoomChart[,input$traitColumns2]
+      }                   
+    }
+    colorTable <- colorTable2()
+    
+    #take -log10 of y-axis column if requested
+    if(input$logP2 == TRUE && zoomChart[1,input$yAxisColumn2] != -1){
+      zoomChart[,input$yAxisColumn2] <- -log(zoomChart[,input$yAxisColumn2],10)
+    }
+    
+    #check if there is too much data (>2500 data points), trim to 2500
+    if(nrow(zoomChart)>2500){
+      cutVal <- sort(zoomChart[,input$yAxisColumn2],decreasing = T)[2500]
+      zoomChart <- zoomChart[zoomChart[,input$yAxisColumn2] >= cutVal,]
+    }                
+    
+    zoomTable <- data.frame(x=zoomChart[,input$bpColumn2],y=zoomChart[,input$yAxisColumn2],trait=zoomChart$trait,
+      name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Y-axis value: %2$s<br>Base Pairs: %3$s<br>Chromosome: %4$s</td></tr></table>",
+        zoomChart$trait,
+        zoomChart[,input$yAxisColumn2],
+        prettyNum(zoomChart[,input$bpColumn2], big.mark = ","),
+        zoomChart[,input$chrColumn2]
+      ),
+      url="http://danforthcenter.org",
+      chr=zoomChart[,input$chrColumn2],
+      bp=zoomChart[,input$bpColumn2])
+    zoomSeries <- lapply(split(zoomTable, zoomTable$trait), function(x) {
+      res <- lapply(split(x, rownames(x)), as.list)
+      names(res) <- NULL
+      res <- res[order(sapply(res, function(x) x$x))]
+      return(res)
+    })
+    
+    # build JL series
+    if(input$supportInterval2==TRUE){
+      if(nrow(SIchart) == 0){ #make a dummy table, but we won't plot the series anyways
+        SIchart <- values[[input$datasets2]][1,]
+        SIchart[,input$SIyAxisColumn2] <- -1    
+        if(length(input$traitColumns2) > 1){
+          SIchart$trait <- do.call(paste,c(SIchart[,input$traitColumns2],sep="_"))
+        }else{
+          SIchart$trait <- SIchart[,input$traitColumns2]
+        }                      
+      }     
+      SIchart$loc_el <- SIchart$trait
+      SIchart$trait <- paste(SIchart$trait,"Int",sep="_")
+      SIchart <- SIchart[order(SIchart[[input$SIbpStart2]]),]
+      jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x[[input$SIbpStart2]],x[[input$SIbpEnd2]],x[[input$SIbpEnd2]]),y=c(x[[input$SIyAxisColumn2]],x[[input$SIyAxisColumn2]],NA),trait=x$trait,
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
+          prettyNum(x[[input$SIbpStart2]], big.mark = ","),
+          prettyNum(x[[input$SIbpEnd2]], big.mark = ","),
+          x[[input$chrColumn2]]
+        ),loc_el=x$loc_el,bp=x[[input$bpColumn2]],chr=x[[input$chrColumn2]],stringsAsFactors=FALSE
+      )}#end jlTable and function
+      )#end adply
+      jlTable <- jlTable[,c("x","y","trait","name","loc_el","bp","chr")]
+      #jlTable <- jlTable[order(jlTable$x),]
+    }#end if support interval
+    
+    #build annotation series
+    thisChrAnnot <- subset(annotGeneLoc[values$organism2][[1]],chromosome==input$chr2)
+    thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]
+    if(nrow(thisAnnot)==0){ #nothing is in the window, but lets still make a data.frame (actually make it big just to hopefully pick up one row from each strand...)
+      thisAnnot <- thisChrAnnot[1:100,]
+    }
+    thisAnnot <- thisAnnot[order(thisAnnot$transcript_start),]
+    
+    urlBase <- 'http://maizegdb.org/cgi-bin/displaygenemodelrecord.cgi?id='
+    soyurlBase <- 'http://www.soybase.org/sbt/search/search_results.php?category=FeatureName&search_term='
+    araburlBase <- 'http://arabidopsis.org/servlets/TairObject?type=locus&name='
+    sorgurlBase <- 'http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:'
+    legumeInfo_urlBase <- 'https://legumeinfo.org/gene_links/'
+    
+    annotYvalReverse <- 0.01
+    annotYvalForward <- annotYvalReverse + 0.04
+    if(values$organism2 == "Corn"){
+      annotTable <- adply(thisAnnot[thisAnnot$transcript_strand==1,],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(urlBase,x$transcript_id),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
+          x$translation_id,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$chromosome,
+          x$transcript_strand,
+          x$V2
+        ),
+        marker=c(NA,"Arrow",NA),
+        stringsAsFactors=FALSE)})
+      
+      annotTableReverse <- adply(thisAnnot[thisAnnot$transcript_strand==-1,],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(urlBase,x$transcript_id),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
+          x$translation_id,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$chromosome,
+          x$transcript_strand,
+          x$V2
+        ),
+        marker=c("Arrow",NA,NA),
+        stringsAsFactors=FALSE)})
+      
+    }else if(values$organism2 == "Soybean"){#strand is '+' or '-'
+      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(soyurlBase,x$transcript_id),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
+          x$transcript_id,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$Protein.Length,
+          x$chromosome,                                                                           
+          x$strand,
+          x$TopTAIRHitDescription,
+          x$TopUniref100DescriptionExtraSmall
+        ),
+        stringsAsFactors=FALSE)})
+      
+      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(soyurlBase,x$transcript_id),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
+          x$transcript_id,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$Protein.Length,
+          x$chromosome,                                                                           
+          x$strand,
+          x$TopTAIRHitDescription,
+          x$TopUniref100DescriptionExtraSmall
+        ),
+        stringsAsFactors=FALSE)})
+    }else if(values$organism2 %in% c("Arabidopsis", "Arabidopsis thaliana")){#strand is '+' or '-'
+      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(araburlBase,x$Locus),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Short Desc.: %6$s</td></tr></table>",
+          x$name,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$chromosome,                                                                           
+          x$strand,
+          x$short_description
+          # x$Curator_summary
+        ),
+        stringsAsFactors=FALSE)})   
+      
+      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(araburlBase,x$Locus),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Short Desc.: %6$s</td></tr></table>",
+          x$name,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$chromosome,                                                                           
+          x$strand,
+          x$short_description
+          # x$Curator_summary
+        ),
+        stringsAsFactors=FALSE)})
+    } else if (values$organism2 == "Medicago truncatula") { # strand is '+' or '-'
+      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
+          x$name,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$chromosome,
+          x$strand,
+          x$description
+        ),
+        stringsAsFactors=FALSE)})
+      
+      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
+          x$name,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$chromosome,
+          x$strand,
+          x$description
+        ),
+        stringsAsFactors=FALSE)})
+    }else{#} if(input$organism == "Sorghum"){#strand is '+' or '-'
+      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(sorgurlBase,x$ID),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s<br>Top TAIR Hit: %7$s<br>Top Rice Hit: %8$s</td></tr></table>",
+          x$name,
+          #1,#x$V2.1,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$chromosome,                                                                           
+          x$strand,
+          x$defLine,
+          x$bestArabHitDefline,
+          x$bestRiceHitDefline
+          # x$Curator_summary
+        ),
+        stringsAsFactors=FALSE)})   
+      
+      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(sorgurlBase,x$ID),
+        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s<br>Top TAIR Hit: %7$s<br>Top Rice Hit: %8$s</td></tr></table>",
+          x$name,
+          #1,#x$V2.1,
+          prettyNum(x$transcript_start, big.mark = ","),
+          prettyNum(x$transcript_end, big.mark = ","),
+          x$chromosome,                                                                           
+          x$strand,
+          x$defLine,
+          x$bestArabHitDefline,
+          x$bestRiceHitDefline
+          # x$Curator_summary
+        ),
+        stringsAsFactors=FALSE)})
+    }
+    
+    annotTable <- annotTable[,c("x","y","name","url")]
+    
+    if(nrow(annotTableReverse)==0){
+      annotTableReverse <- data.frame(x=character(0),y=character(0),name=character(0),url=character(0),stringsAsFactors = FALSE)
+    }
+    annotTableReverse <- annotTableReverse[,c("x","y","name","url")]
+    
+    annotArray <- toJSONArray2(annotTable, json = F, names = T)
+    annotArrayReverse <- toJSONArray2(annotTableReverse, json = F, names = T)
+    
+    b <- rCharts::Highcharts$new()
+    b$LIB$url <- 'highcharts/'
+    b$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
+    b$xAxis(title = list(text = "Base Pairs"),startOnTick=FALSE,min=winLow,max=winHigh,endOnTick=FALSE)      
+    if(input$axisLimBool2 == TRUE){
+      b$yAxis(title=list(text=input$yAxisColumn2),min=input$axisMin2,max=input$axisMax2,startOnTick=FALSE)
+      #create a hidden axis to put the gene track on, all the options are setting to hide everything from the axis 
+      b$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+    }else{      
+      b$yAxis(title=list(text=input$yAxisColumn2),startOnTick=FALSE) 
+      #create a hidden axis to put the gene track on, all the options are setting to hide everything from the axis
+      b$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+    }
+    
+    if(input$supportInterval2==TRUE){
+      if(input$SIaxisLimBool2 == TRUE){
+        b$yAxis(title=list(text=input$SIyAxisColumn2),min=input$SIaxisMin2,max=input$SIaxisMax2,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+      }else{
+        b$yAxis(title=list(text=input$SIyAxisColumn2),gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)   
+      }
+      
+      if(SIchart[1,input$SIyAxisColumn2] != -1){
+        d_ply(jlTable,.(trait),function(x){
+          b$series(
+            data = toJSONArray2(x,json=F,names=T),
+            type = "line",
+            dashStyle = 'Solid',
+            lineWidth = 10,
+            name = unique(x$trait),
+            yAxis=2,           
+            color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
+      }
+    }
+    
+    if(zoomChart[1,input$yAxisColumn2] != -1){
+      invisible(sapply(zoomSeries, function(x) {if(length(x)==0){return()};b$series(data = x, type = "scatter", color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = paste0(x[[1]]$trait))}))
+    }
+    
+    b$series(
+      data = annotArray,
+      type = "line",
+      name = "Forward Genes",
+      color = "#53377A",
+      yAxis = 1
+    )
+    
+    b$series(
+      data = annotArrayReverse,
+      type = "line",
+      name = "Reverse Genes",
+      color = "#53377A",
+      yAxis = 1
+    )
+    
+    b$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
+    b$plotOptions(
+      scatter = list(
+        cursor = "pointer",
+        point = list(
+          events = list(
+            click = "#! function(event) {alert(this.trait);} !#")), #display popup
+        marker = list(
+          symbol = "circle",
+          radius = 5
+        )
+      ),
+      line = list(
+        lineWidth = 6,
+        cursor = "pointer",
+        point = list(
+          events = list(
+            click = paste0(
+              "#! function() {",
+                "if (this.url.includes('legumeinfo.org')) {",
+                  # From the JSON at this.url, extract the URLs related to this gene.
+                  # Note that this.url = legumeInfo_urlBase + geneString + '/json'
+                  #  legumeInfo_urlBase currently has 34 characters (see above)
+                  #  and geneString = <5-character species abbreviation>.geneName
+                  # And for now, add the gene family phylogram URL by hand.
+                  "$.getJSON(this.url, function(data) {
+                    var geneString = this.url.substring(34, this.url.indexOf('/json'));
+                    var geneName = geneString.substring(6);
+                    var content = '';
+                    if (data.length == 0) {
+                      content = '<p>No ' + geneName + ' links found.</p>';
+                    } else {
+                      $.each(data, function(i, obj) {
+                        content = content + '<p><a href=' + obj.href + ' target=_blank>' + obj.text + '</a></p>';
+                        if (i == 0) {
+                          var urlPhylogram = 'http://legumeinfo.org/chado_gene_phylotree_v2?gene_name=' + geneString;
+                          var textPhylogram = 'View LIS gene family phylogram page for : ' + geneName;
+                          content = content + '<p><a href=' + urlPhylogram + ' target=_blank>' + textPhylogram + '</a></p>';
+                        }
+                      });
+                    }
+
+                    var $div = $('<div></div>');
+                    $div.html(content);
+                    $div.dialog({
+                      title: geneName + ' Links',
+                      width: 512,
+                      height: 'auto',
+                      modal: true
+                    });
+                  });",
+
+                "} else {",
+                  # for all other species
+                  "window.open(this.url);", #open webpage
+                "}",
+              "} !#"
+          ))),
+        marker = list(
+          enabled = FALSE,
+          radius = 1,
+          states = list(hover = list(enabled=FALSE))
+        )
+      )            
+    )
+    #it seems almost impossible to get the tooltip to hover along the chart with this version of highcharts (4.0.1), perhaps a question to stackoverflow could solve it.
+    #see an example of the problem here: http://jsfiddle.net/N5ymb/
+    #one hack/fix would be to add dummy points to the middle of the line that show up when moused over
+    b$tooltip(snap=5, useHTML = T, formatter = "#! function() { return this.point.name; } !#")
+    b$exporting(enabled=TRUE,filename='zoomChart',sourceWidth=2000)
+    b$credits(enabled=TRUE)
+    b$set(dom = 'zChart2')
+    return(b)
+  })#end zchart2
+  
   #highcharts test chart
   output$testChart <- renderChart({
     h1 <- hPlot(x = "Wr.Hnd", y = "NW.Hnd", data = MASS::survey, type = c("line", 
@@ -1799,6 +3236,23 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
      }
      colorTable
    })
+   colorTable2 <- reactive({     
+     traitVals <- list()
+     if(input$plotAll2 == FALSE){
+       for(i in input$traitColumns2){
+         i2 <- paste0(i, "2")
+         traitVals[[i]] <- input[[i2]]
+       }
+       
+       traits <- do.call(paste,c(expand.grid(traitVals),sep="_"))     
+       if(length(traits)==0){return(NULL)}
+       
+       colorTable <- data.frame(trait=traits,color=rep(allColors,ceiling(length(traits)/30))[1:length(traits)])
+     }else{
+       colorTable <- data.frame(trait=input$datasets2,color=allColors[1])
+     }
+     colorTable
+   })
    
   findGWASOverlaps <- function(genomeChart){  
     if(is.null(input$overlapSize)){return(genomeChart[1,])}
@@ -1818,7 +3272,25 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
 
     return(gwasDataOverlapDiffPheno)    
   }
-
+  findGWASOverlaps2 <- function(genomeChart){  
+    if(is.null(input$overlapSize2)){return(genomeChart[1,])}
+    tableIn <- genomeChart
+    tableIn$winStart <- tableIn[,input$bpColumn2]-input$overlapSize2
+    tableIn$winStop <- tableIn[,input$bpColumn2]+input$overlapSize2
+    
+    allGr <- GRanges(tableIn[,input$chrColumn2], IRanges(start=tableIn$winStart,end=tableIn$winStop))
+    
+    tableIn$group <- subjectHits(findOverlaps(allGr, reduce(allGr)))
+    
+    #just groups that have more than one unique SNP
+    gwasDataOverlap <- tableIn[tableIn$group %in% as.data.frame(table(tableIn$group))[as.data.frame(table(tableIn$group))$Freq>1,"Var1"],]
+    
+    #just groups that have more than one unique phenotype
+    gwasDataOverlapDiffPheno <- ddply(gwasDataOverlap,.(group),function(x){if(nrow(unique(as.data.frame(x[,"trait"])))>=input$numOverlaps2){x}else{x[0,]}})
+    
+    return(gwasDataOverlapDiffPheno)    
+  }
+  
    observe({     
     if(is.null(input$SubmitColsButton) || input$SubmitColsButton == 0){return()}
     isolate({
@@ -1848,7 +3320,24 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
 #      updateTabsetPanel(session, "datatabs", selected = "panel1")  
 #    }
    })
-  
+   observe({     
+     if(is.null(input$SubmitColsButton2) || input$SubmitColsButton2 == 0){return()}
+     isolate({
+       currDatasetProp <- datasetProp()
+       if(as.character(input$datasets2) %in% currDatasetProp$dataset){
+         currDatasetProp <- currDatasetProp[currDatasetProp$dataset != as.character(input$datasets2),]
+       }
+       cols <- varnames2()
+       currDatasetProp <-  rbind(currDatasetProp,data.frame(dataset=input$datasets2,chrColumn=names(cols[cols==input$chrColumn2]),bpColumn=names(cols[cols==input$bpColumn2]),
+         traitCol=paste(names(cols[cols %in% input$traitColumns2]),collapse=";"),yAxisColumn=names(cols[cols==input$yAxisColumn2]),
+         logP=input$logP2,axisLim=input$axisLimBool2,axisMin=input$axisMin2,axisMax=input$axisMax2,organism=values$organism2,plotAll=input$plotAll2,
+         supportInterval=input$supportInterval2,SIyAxisColumn=input$SIyAxisColumn2,SIbpStart=input$SIbpStart2,SIbpEnd=input$SIbpEnd2,
+         SIaxisLimBool=input$SIaxisLimBool2,SIaxisMin=input$SIaxisMin2,SIaxisMax=input$SIaxisMax2,stringsAsFactors=FALSE))      
+       write.table(file="./www/config/datasetProperties.csv",x=currDatasetProp,col.names=TRUE,row.names=FALSE,sep=",")
+       updateTabsetPanel(session, "datatabs", selected = "panel1")
+     })
+   })
+   
    observe({
      if(is.null(input$saveDatasetButton) || input$saveDatasetButton == 0){return()}
        isolate({
@@ -1856,6 +3345,14 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
             write.table(getdata(),paste0("./www/config/data/",input$datasets),sep=",",col.names=TRUE,row.names=FALSE) 
           }
        })
+   })
+   observe({
+     if(is.null(input$saveDatasetButton2) || input$saveDatasetButton2 == 0){return()}
+     isolate({
+       if(!file.exists(paste0("./www/config/data/",input$datasets2))){
+         write.table(getdata2(),paste0("./www/config/data/",input$datasets2),sep=",",col.names=TRUE,row.names=FALSE) 
+       }
+     })
    })
    
    datasetProp <- function(){
@@ -1881,7 +3378,15 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
     #print(band)
     session$sendCustomMessage(type = "customMsg", band)
    })  
-  
+   observe({
+     center <- as.numeric(input$selected2[[1]])
+     winHigh <- center + input$window2[1]
+     winLow <- center - input$window2[1]
+     #eventually I would use winLow/winHigh to change the plotband range
+     band = list(from = winLow, to = winHigh, color = "rgba(68, 170, 213, 0.4)")
+     session$sendCustomMessage(type = "customMsg2", band)
+   })
+   
 #  observe({
 #     print(input$datatabs)     
 #  })

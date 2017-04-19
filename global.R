@@ -194,6 +194,9 @@ moreColors <- c(
 
 allColors <- c(moreColors,colors)
 
+# background colors for comparing two datasets
+bgColors <- c("lightblue", "lightsalmon")
+
 #Steps to adding a new organism
 #1) Add organism name to dropbdown list in server.R -> output$organism
 #2) Add chromosome sizes to chrSize list in global.R

@@ -45,7 +45,8 @@ input[type="number"] {
 .well { 
   padding: 12px; 
   margin-bottom: 5px; 
-  max-width: 280px; 
+/* Commented out max-width to make the well panel fill its container.
+  max-width: 280px; */
 }
 /*
 .span4 { 
