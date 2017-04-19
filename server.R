@@ -10,7 +10,7 @@ shinyServer(function(input, output, session) {
   dataFiles <- c(dataFiles, legumeInfo.gwas)
   for(i in dataFiles){
     if (i %in% legumeInfo.gwas) {
-      values[[i]] <- build.gwas(i)
+      values[[i]] <- init.gwas(i)
     } else {
       values[[i]] <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)
     }
@@ -24,10 +24,6 @@ shinyServer(function(input, output, session) {
   observe({
     if (is.null(input$datasets)) return()
 
-    # Immediately uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
-    updateCheckboxInput(session, "appendSNPs", value = FALSE)
-    values$uploadFiles <- NULL # as there is no updateFileInput() method
-
     # Make sure the organism corresponds to the selected dataset
     # (invoke values$organism first to force a single reaction)
     if (is.null(values$organism)) {
@@ -37,11 +33,20 @@ shinyServer(function(input, output, session) {
         values$organism <- values$datasetToOrganism[[input$datasets]]
       })
     }
+
+    # Uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
+    updateSelectizeInput(session, "gwasTraits", choices = gwas.traits[[values$organism]], selected = NULL)
+    # As there is no updateFileInput() method,
+    # send a custom message (to clear the progress bar) and clear values$needsToUploadFiles
+    session$sendCustomMessage(type = "resetFileInputHandler", "uploadfile")
+    values$needsToUploadFiles <- FALSE
+    updateCheckboxInput(session, "appendSNPs", value = FALSE)
   })
 
-  # The user selected one or more GWAS data files to load or append
+  # The user selected one or more local GWAS files (not yet loaded)
   observe({
-    values$uploadFiles <- input$uploadfile
+    input$uploadfile
+    values$needsToUploadFiles <- TRUE
   })
 
   #handles what displays in the sidebar based on what tab is selected
@@ -58,8 +63,25 @@ shinyServer(function(input, output, session) {
                                              checkboxInput('header', 'Header', TRUE),
                                              radioButtons('sep', '', c(Comma=',', Semicolon=';', Tab='\t'), ',')                                             
                             ),
+                            selectizeInput("gwasTraits", "Remote Trait Files:", choices = NULL, multiple = TRUE),
+                            fileInput("uploadfile", "Local Trait Files:", multiple = TRUE),
                             checkboxInput("appendSNPs", "Append to current dataset", FALSE),
-                            uiOutput("localFiles")
+                            actionButton("loadTraits", "Load Data"),
+tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) {      
+  var id = '#' + x;
+  var idProgress = id + '_progress';
+  var idBar = id + ' .bar';
+  $(idProgress).css('visibility', 'hidden');
+  $(idBar).css('width', '0%');
+  // TODO: clear the loaded file(s) (none of the following work, for Javascript security reasons)
+  //$(id).val('');
+  //$(id).replaceWith($(id).val('').clone(true));
+  //$(id).replaceWith($(id) = $(id).clone(true));
+  //$(id).wrap('<form></form>').closest('form').reset();
+    //$(id).unwrap();
+    //$(id).stopPropagation();
+    //$(id).preventDefault();
+});")
            ),      
            conditionalPanel(condition = "input.dataType == 'examples'",
                             actionButton('loadExampleData', 'Load examples')
@@ -138,20 +160,38 @@ shinyServer(function(input, output, session) {
   })  
   outputOptions(output, "ui_finder", suspendWhenHidden=FALSE)
   output$datasets <- renderUI({   
-    inFile <- values$uploadFiles
-    if(!is.null(inFile)) {
-      # iterating through the files to upload
-      isolate({
+    if (is.null(input$loadTraits)) return()
+
+    # Load any requested GWAS files
+    isolate({
+      values$uploadFiles <- input$uploadfile
+      values$gwasTraits <- input$gwasTraits
+
+      # Local GWAS files
+      inFile <- NULL
+      if (values$needsToUploadFiles) inFile <- values$uploadFiles
+      if(!is.null(inFile)) {
+        # iterating through the files to upload
         for(i in 1:(dim(inFile)[1])) {
           loadUserData(inFile[i,'name'], inFile[i,'datapath'])
           # unlink(inFile[i,'datapath'], recursive = FALSE, force = TRUE)
         }
-      })
-    }
+        values$needsToUploadFiles <- FALSE # since we just loaded them
+      }
+      # Remote GWAS files
+      inTraits <- values$gwasTraits
+      if (!is.null(inTraits)) {
+        for (trait in inTraits) {
+          trait.url <- gwas.filenames[[values$organism]][which(gwas.traits[[values$organism]] == trait)]
+          loadRemoteData(trait, trait.url)
+        }
+      }
+    })
+
     dat <- isolate(input$datasets)
     if (!is.null(dat)) {
       appendSNPs <- isolate(input$appendSNPs)
-      if (appendSNPs || is.null(inFile)) {
+      if (appendSNPs || (is.null(inFile) && is.null(inTraits))) {
         val <- dat
       } else {
         val <- values$datasetlist[1]
@@ -163,11 +203,6 @@ shinyServer(function(input, output, session) {
     # Drop-down selection of data set
     # selectInput(inputId = "datasets", label = "Datasets:", choices = datasets, selected = datasets[1], multiple = FALSE)
     selectInput(inputId = "datasets", label = "Datasets:", choices = values$datasetlist, selected = values$datasetlist[values$datasetlist==val], multiple = FALSE, selectize=FALSE)
-  })
-  
-  # Let the user select traits whose GWAS data live in a local file.
-  output$localFiles <- renderUI({
-    fileInput("uploadfile", "Local GWAS Files:", multiple = TRUE)
   })
 
   reactiveAnnotTable <- reactive({
@@ -657,6 +692,33 @@ shinyServer(function(input, output, session) {
     }
   }
   
+  # Load data from .csv files at a remote URL
+  loadRemoteData <- function(trait, traitUrl) { # filename, uFile) {  
+    ext <- file_ext(traitUrl)
+    objname <- sub(paste(".",ext,sep = ""),"",basename(traitUrl))
+
+    appendSNPs <- isolate(input$appendSNPs)
+    if (!appendSNPs) {
+      # add new datasets to the datasetToOrganism map
+      values$datasetToOrganism[[objname]] <- values$organism
+    }
+    if(length(values[['datasetlist']]) == 0 || values[['datasetlist']][1] == '') {
+      values[['datasetlist']] <- c(objname)
+    } else if (!appendSNPs) {
+      values[['datasetlist']] <- unique(c(objname,values[['datasetlist']]))
+    }
+
+    loaded.values <- load.gwas.remote(values$organism, traitUrl, trait)
+
+    if (appendSNPs) {
+      values[[input$datasets]]$totalBP <- NULL
+      names(loaded.values) <- names(values[[input$datasets]])
+      values[[input$datasets]] <- rbind(values[[input$datasets]], loaded.values)
+    } else {
+      values[[objname]] <- loaded.values
+    }
+  }
+
   #add a totalBP column to an input dataset if not already present
   calculateTotalBP <- reactive({ 
     if("totalBP" %in% colnames(values[[input$datasets]])){
