@@ -210,6 +210,16 @@ tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) 
            downloadButton('downloadAnnot','Download')
          )
       ),#end conditional panel for Annotation Table
+      # Genomic Linkages panel
+      conditionalPanel(condition = "input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",
+        wellPanel(
+          h5("Genomic Linkage options:"),
+          checkboxInput('boolGenomicLinkage', 'ON', FALSE),
+          numericInput("neighbors", "Neighbors:", min = 1, max = 20, value=10),
+          numericInput("matched", "Matched:", min = 1, max = 20, value=6),
+          numericInput("intermediate", "Intermediate:", min = 1, max = 10, value=3)
+        )
+      ),
 conditionalPanel(condition = "input.datatabs == 'panel1' || input.datatabs == 'panel2' || $('li.active a').first().html()==='Chromosome View'",
   wellPanel(
     style = paste0("background-color: ", bgColors[2], ";"),
@@ -2756,42 +2766,121 @@ output$dataviewer2 <-renderDataTable({
           events = list(
             click = paste0(
               "#! function() {",
-                "if (this.url.includes('legumeinfo.org')) {",
-                  # From the JSON at this.url, extract the URLs related to this gene.
-                  # Note that this.url = legumeInfo_urlBase + geneString + '/json'
-                  #  legumeInfo_urlBase currently has 34 characters (see above)
-                  #  and geneString = <5-character species abbreviation>.geneName
-                  # And for now, add the gene family phylogram URL by hand.
-                  "$.getJSON(this.url, function(data) {
-                    var geneString = this.url.substring(34, this.url.indexOf('/json'));
-                    var geneName = geneString.substring(6);
-                    var content = '';
-                    if (data.length == 0) {
-                      content = '<p>No ' + geneName + ' links found.</p>';
-                    } else {
-                      $.each(data, function(i, obj) {
-                        content = content + '<p><a href=' + obj.href + ' target=_blank>' + obj.text + '</a></p>';
-                        if (i == 0) {
-                          var urlPhylogram = 'http://legumeinfo.org/chado_gene_phylotree_v2?gene_name=' + geneString;
-                          var textPhylogram = 'View LIS gene family phylogram page for : ' + geneName;
-                          content = content + '<p><a href=' + urlPhylogram + ' target=_blank>' + textPhylogram + '</a></p>';
+                "if ($('input#boolGenomicLinkage').prop('checked')) {",
+                  "var url1 = '';
+                  var url2 = '';
+                  var speciesName2 = '';
+                  var geneString = '';
+                  mt0 = this.url.search('medtr');
+                  mt1 = this.url.search('/json');
+                  if (mt0 >= 0) {
+                    geneString = this.url.substring(mt0, mt1);
+                    url1 = 'legumeinfo.org';
+                    url2 = 'legumefederation.org';
+                    speciesName2 = 'A.thaliana';
+                  } else if (this.url.search('arabidopsis.org') >= 0) {
+                    at0 = this.url.search('name=');
+                    geneString = this.url.substring(at0 + 5);
+                    url1 = 'legumefederation.org';
+// TODO: The requested URL /lis_context_server/services/v1/gene-to-query-track/ was not found on this server.
+                    url2 = 'legumeinfo.org';
+                    speciesName2 = 'M.truncatula';
+                  } else {
+                    return;
+                  }",
+                  "$.ajax({
+                    url: 'https://' + url1 + '/lis_context_server/services/v1/gene-to-query-track/',
+                    dataType: 'json',
+                    data: JSON.stringify({
+                      gene: geneString,
+                      neighbors: $('input#neighbors').val()
+                    }),
+                    type: 'POST',
+                    success: function(response) {
+                      var obj = JSON.parse(response);
+                      var families = [];
+                      for (var g of obj.genes) {
+                        if (g.family.length > 0) {
+                          families[g.family] = 1;
                         }
+                      }
+                      $.ajax({
+                        url: 'https://' + url2 + '/lis_context_server/services/v1/micro-synteny-search/',
+                        dataType: 'json',
+                        data: JSON.stringify({
+                          query: Object.keys(families),
+                          matched: $('input#matched').val(),
+                          intermediate: $('input#intermediate').val()
+                        }),
+                        type: 'POST',
+                        success: function(response2) {
+                          var obj2 = JSON.parse(response2);
+                          var relatedGenes = [];
+                          var chromosomes = [];
+                          var minBP = 0;
+                          var maxBP = 0;
+                          for (var gr of obj2.groups) {
+                            if (gr.species_name == speciesName2) {
+                              chromosomes[gr.chromosome_name] = 1;
+                              for (var gene of gr.genes) {
+                                relatedGenes[gene.name] = 1;
+                                if (minBP == 0 || gene.fmin < minBP) minBP = gene.fmin;
+                                if (maxBP == 0 || gene.fmax > maxBP) maxBP = gene.fmax;
+                              }
+                            }
+                          }
+                          centerBP = parseInt((minBP + maxBP)/2);
+                          windowWidth = parseInt((maxBP - minBP)/2);
+                          chrKey0 = Object.keys(chromosomes)[0];
+                          chr2 = parseInt(chrKey0.substring(chrKey0.length - 1));
+                          $('select#chr2').val(chr2).trigger('change');
+                          $('input#selected2').val(centerBP).trigger('change');
+                          $('input#window2').val(windowWidth).trigger('change'); // TODO: this fails to move the slider knob for some reason...
+                        },
+                        error: function(errmsg2) { alert('FAIL2: ' + errmsg2.responseText); }
                       });
-                    }
-
-                    var $div = $('<div></div>');
-                    $div.html(content);
-                    $div.dialog({
-                      title: geneName + ' Links',
-                      width: 512,
-                      height: 'auto',
-                      modal: true
-                    });
+                    },
+                    error: function(errmsg) { alert('FAIL: ' + errmsg.responseText); }
                   });",
 
                 "} else {",
-                  # for all other species
-                  "window.open(this.url);", #open webpage
+                  "if (this.url.includes('legumeinfo.org')) {",
+                    # From the JSON at this.url, extract the URLs related to this gene.
+                    # Note that this.url = legumeInfo_urlBase + geneString + '/json'
+                    #  legumeInfo_urlBase currently has 34 characters (see above)
+                    #  and geneString = <5-character species abbreviation>.geneName
+                    # And for now, add the gene family phylogram URL by hand.
+                    "$.getJSON(this.url, function(data) {
+                      var geneString = this.url.substring(34, this.url.indexOf('/json'));
+                      var geneName = geneString.substring(6);
+                      var content = '';
+                      if (data.length == 0) {
+                        content = '<p>No ' + geneName + ' links found.</p>';
+                      } else {
+                        $.each(data, function(i, obj) {
+                          content = content + '<p><a href=' + obj.href + ' target=_blank>' + obj.text + '</a></p>';
+                          if (i == 0) {
+                            var urlPhylogram = 'http://legumeinfo.org/chado_gene_phylotree_v2?gene_name=' + geneString;
+                            var textPhylogram = 'View LIS gene family phylogram page for : ' + geneName;
+                            content = content + '<p><a href=' + urlPhylogram + ' target=_blank>' + textPhylogram + '</a></p>';
+                          }
+                        });
+                      }
+
+                      var $div = $('<div></div>');
+                      $div.html(content);
+                      $div.dialog({
+                        title: geneName + ' Links',
+                        width: 512,
+                        height: 'auto',
+                        modal: true
+                      });
+                    });",
+
+                  "} else {",
+                    # for all other species
+                    "window.open(this.url);", #open webpage
+                  "}",
                 "}",
               "} !#"
         ))),
