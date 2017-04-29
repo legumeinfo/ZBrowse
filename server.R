@@ -544,6 +544,27 @@ tags$div(
             chartXAxis.removePlotBand()
             chartXAxis.addPlotBand(bandOpts)
           })'),
+          tags$script("Shiny.addCustomMessageHandler('highlightRelatedGenes', function(genes) {
+            b = $('#zChart').highcharts();
+            for (var g of genes) {
+              yh = 0.02;
+              sid = 'reverse-genes';
+              if (g.strand == 1) {
+                yh = 0.06;
+                sid = 'forward-genes';
+              }
+              b.addSeries({
+                type: 'line',
+                data: [
+                  { x: g.minBP, y: yh },
+                  { x: g.maxBP, y: yh }
+                ],
+                color: g.color,
+                linkedTo: sid,
+                lineWidth: 12, yAxis: 1, zIndex: 0
+              });
+            }
+          })"),
           style = paste0("background-color: ", bgColors[1], ";")
         ),
         wellPanel(showOutput("pChart2", "highcharts"), showOutput("zChart2", "highcharts"),
@@ -552,6 +573,32 @@ tags$div(
             chartXAxis.removePlotBand()
             chartXAxis.addPlotBand(bandOpts)
           })'),
+          tags$script("Shiny.addCustomMessageHandler('highlightRelatedGenes2', function(genes) {
+            // Delay the enclosed code by 3 seconds to give zchart2 a chance to update
+            // (to the selected chromosome and base pair range) before adding these highlights.
+            delaySeconds = 3;
+            setTimeout(function() {
+              b = $('#zChart2').highcharts();
+              for (var g of genes) {
+                yh = 0.02;
+                sid = 'reverse-genes';
+                if (g.strand == 1) {
+                  yh = 0.06;
+                  sid = 'forward-genes';
+                }
+                b.addSeries({
+                  type: 'line',
+                  data: [
+                    { x: g.minBP, y: yh },
+                    { x: g.maxBP, y: yh }
+                  ],
+                  color: g.color,
+                  linkedTo: sid,
+                  lineWidth: 12, yAxis: 1, zIndex: 0
+                });
+              }
+            }, delaySeconds*1000)
+          })"),
           style = paste0("background-color: ", bgColors[2], ";")
         )
       ),
@@ -2476,7 +2523,7 @@ output$dataviewer2 <-renderDataTable({
     sorgurlBase <- 'http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:'
     legumeInfo_urlBase <- 'https://legumeinfo.org/gene_links/'
 
-    annotYvalReverse <- 0.01    
+    annotYvalReverse <- 0.02
     #if(input$axisLimBool == TRUE){annotYvalReverse <- input$axisMin+0.01}
     annotYvalForward <- annotYvalReverse + 0.04
     if(values$organism == "Corn"){
@@ -2727,6 +2774,8 @@ output$dataviewer2 <-renderDataTable({
       data = annotArray,
       type = "line",
       name = "Forward Genes",
+      id = "forward-genes",
+      zIndex = 1,
       color = "#53377A",
       yAxis = 1
     )    
@@ -2735,6 +2784,8 @@ output$dataviewer2 <-renderDataTable({
       data = annotArrayReverse,
       type = "line",
       name = "Reverse Genes",
+      id = "reverse-genes",
+      zIndex = 1,
       color = "#53377A",
       yAxis = 1
     )      
@@ -2780,9 +2831,8 @@ output$dataviewer2 <-renderDataTable({
                     speciesName2 = 'A.thaliana';
                   } else if (this.url.search('arabidopsis.org') >= 0) {
                     at0 = this.url.search('name=');
-                    geneString = this.url.substring(at0 + 5);
+                    geneString = 'arath.Col.' + this.url.substring(at0 + 5);
                     url1 = 'legumefederation.org';
-// TODO: The requested URL /lis_context_server/services/v1/gene-to-query-track/ was not found on this server.
                     url2 = 'legumeinfo.org';
                     speciesName2 = 'M.truncatula';
                   } else {
@@ -2797,45 +2847,54 @@ output$dataviewer2 <-renderDataTable({
                     }),
                     type: 'POST',
                     success: function(response) {
-                      var obj = JSON.parse(response);
-                      var families = [];
-                      for (var g of obj.genes) {
-                        if (g.family.length > 0) {
-                          families[g.family] = 1;
-                        }
-                      }
+                      obj1 = JSON.parse(response);
+                      families1 = Array.from(obj1.genes, x => x.family);
+                      minBP1 = Array.from(obj1.genes, x => x.fmin);
+                      maxBP1 = Array.from(obj1.genes, x => x.fmax);
+                      strand1 = Array.from(obj1.genes, x => x.strand);
                       $.ajax({
                         url: 'https://' + url2 + '/lis_context_server/services/v1/micro-synteny-search/',
                         dataType: 'json',
                         data: JSON.stringify({
-                          query: Object.keys(families),
+                          query: families1,
                           matched: $('input#matched').val(),
                           intermediate: $('input#intermediate').val()
                         }),
                         type: 'POST',
                         success: function(response2) {
-                          var obj2 = JSON.parse(response2);
-                          var relatedGenes = [];
-                          var chromosomes = [];
-                          var minBP = 0;
-                          var maxBP = 0;
+                          obj2 = JSON.parse(response2);
+                          var minBpOverall = []; // BP range of all related genes in the chromosome
+                          var maxBpOverall = [];
                           for (var gr of obj2.groups) {
                             if (gr.species_name == speciesName2) {
-                              chromosomes[gr.chromosome_name] = 1;
-                              for (var gene of gr.genes) {
-                                relatedGenes[gene.name] = 1;
-                                if (minBP == 0 || gene.fmin < minBP) minBP = gene.fmin;
-                                if (maxBP == 0 || gene.fmax > maxBP) maxBP = gene.fmax;
+                              for (var g2 of gr.genes) {
+                                if (typeof minBpOverall[gr.chromosome_name] == 'undefined' || g2.fmin < minBpOverall[gr.chromosome_name]) minBpOverall[gr.chromosome_name] = g2.fmin;
+                                if (typeof maxBpOverall[gr.chromosome_name] == 'undefined' || g2.fmax > maxBpOverall[gr.chromosome_name]) maxBpOverall[gr.chromosome_name] = g2.fmax;
+                                families2 = Array.from(gr.genes, x => x.family);
+                                minBP2 = Array.from(gr.genes, x => x.fmin);
+                                maxBP2 = Array.from(gr.genes, x => x.fmax);
+                                strand2 = Array.from(gr.genes, x => x.strand);
                               }
                             }
                           }
-                          centerBP = parseInt((minBP + maxBP)/2);
-                          windowWidth = parseInt((maxBP - minBP)/2);
-                          chrKey0 = Object.keys(chromosomes)[0];
-                          chr2 = parseInt(chrKey0.substring(chrKey0.length - 1));
-                          $('select#chr2').val(chr2).trigger('change');
-                          $('input#selected2').val(centerBP).trigger('change');
-                          $('input#window2').val(windowWidth).trigger('change'); // TODO: this fails to move the slider knob for some reason...
+                          // TODO: when there are related genes in multiple chromosomes, allow the user to select one
+                          selectedChromosome = Object.keys(minBpOverall)[0];
+                          chr2 = parseInt(selectedChromosome.substring(selectedChromosome.length - 1));
+                          centerBP = parseInt((minBpOverall[selectedChromosome] + maxBpOverall[selectedChromosome])/2);
+                          // windowWidth = parseInt((maxBpOverall[selectedChromosome] - minBpOverall[selectedChromosome])/2);
+                          // Send information about neighboring and related genes back to the chart
+                          Shiny.onInputChange('relatedGenes', {
+                            families1: families1,
+                            minBP1: minBP1,
+                            maxBP1: maxBP1,
+                            strand1: strand1,
+                            chr2: chr2,
+                            centerBP: centerBP,
+                            families2: families2,
+                            minBP2: minBP2,
+                            maxBP2: maxBP2,
+                            strand2: strand2
+                          });
                         },
                         error: function(errmsg2) { alert('FAIL2: ' + errmsg2.responseText); }
                       });
@@ -3029,7 +3088,7 @@ output$dataviewer2 <-renderDataTable({
     sorgurlBase <- 'http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:'
     legumeInfo_urlBase <- 'https://legumeinfo.org/gene_links/'
     
-    annotYvalReverse <- 0.01
+    annotYvalReverse <- 0.02
     annotYvalForward <- annotYvalReverse + 0.04
     if(values$organism2 == "Corn"){
       annotTable <- adply(thisAnnot[thisAnnot$transcript_strand==1,],1,function(x) {data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(urlBase,x$transcript_id),
@@ -3212,6 +3271,8 @@ output$dataviewer2 <-renderDataTable({
       data = annotArray,
       type = "line",
       name = "Forward Genes",
+      id = "forward-genes",
+      zIndex = 1,
       color = "#53377A",
       yAxis = 1
     )
@@ -3220,6 +3281,8 @@ output$dataviewer2 <-renderDataTable({
       data = annotArrayReverse,
       type = "line",
       name = "Reverse Genes",
+      id = "reverse-genes",
+      zIndex = 1,
       color = "#53377A",
       yAxis = 1
     )
@@ -3476,6 +3539,37 @@ output$dataviewer2 <-renderDataTable({
      session$sendCustomMessage(type = "customMsg2", band)
    })
    
+  observe({
+    if (is.null(input$relatedGenes)) return()
+    rg <- lapply(input$relatedGenes, unlist)
+
+    # Update the selected chromosome and base pair range
+    updateSelectInput(session, "chr2", selected = rg$chr2)
+    updateNumericInput(session, "selected2", value = rg$centerBP)
+
+    # Add the highlighted genes to the genome charts
+    families <- setdiff(intersect(rg$families1, rg$families2), "") # omit undefined gene families
+    nf <- length(families)
+    if (nf == 0) return()
+    # build nf colors
+    fc <- rainbow(nf, end = 5/6) # TODO: a more clearly distinguishable set of colors
+    familyColors <- vector("list", nf)
+    for (i in 1:nf) familyColors[[families[i]]] <- fc[i]
+
+    i1 <- which(rg$families1 %in% families)
+    i2 <- which(rg$families2 %in% families)
+    # build the chart data
+    df.genes1 <- data.frame(minBP = rg$minBP1[i1], maxBP = rg$maxBP1[i1], strand = rg$strand1[i1],
+      color = unlist(lapply(i1, FUN = function(i) familyColors[rg$families1[i]])), stringsAsFactors = FALSE)
+    df.genes2 <- data.frame(minBP = rg$minBP2[i2], maxBP = rg$maxBP2[i2], strand = rg$strand2[i2],
+      color = unlist(lapply(i2, FUN = function(i) familyColors[rg$families2[i]])), stringsAsFactors = FALSE)
+    ja1 <- toJSONArray2(df.genes1, json = FALSE, names = TRUE)
+    ja2 <- toJSONArray2(df.genes2, json = FALSE, names = TRUE)
+
+    session$sendCustomMessage(type = "highlightRelatedGenes", ja1)
+    session$sendCustomMessage(type = "highlightRelatedGenes2", ja2)
+  })
+
 #  observe({
 #     print(input$datatabs)     
 #  })
