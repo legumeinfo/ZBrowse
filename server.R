@@ -41,6 +41,9 @@ shinyServer(function(input, output, session) {
     session$sendCustomMessage(type = "resetFileInputHandler", "uploadfile")
     values$needsToUploadFiles <- FALSE
     updateCheckboxInput(session, "appendSNPs", value = FALSE)
+    # Clear all genomic linkages if either organism changes
+    values$genes1 <- values$genes2 <- NULL
+    values$genes1chr <- values$genes2chr <- NULL
   })
   # This should be the first code block to detect a change in input$datasets2
   observe({
@@ -63,6 +66,9 @@ shinyServer(function(input, output, session) {
     session$sendCustomMessage(type = "resetFileInputHandler", "uploadfile2")
     values$needsToUploadFiles2 <- FALSE
     updateCheckboxInput(session, "appendSNPs2", value = FALSE)
+    # Clear all genomic linkages if either organism changes
+    values$genes1 <- values$genes2 <- NULL
+    values$genes1chr <- values$genes2chr <- NULL
   })
 
   # The user selected one or more local GWAS files (not yet loaded)
@@ -544,27 +550,6 @@ tags$div(
             chartXAxis.removePlotBand()
             chartXAxis.addPlotBand(bandOpts)
           })'),
-          tags$script("Shiny.addCustomMessageHandler('highlightRelatedGenes', function(genes) {
-            b = $('#zChart').highcharts();
-            for (var g of genes) {
-              yh = 0.02;
-              sid = 'reverse-genes';
-              if (g.strand == 1) {
-                yh = 0.06;
-                sid = 'forward-genes';
-              }
-              b.addSeries({
-                type: 'line',
-                data: [
-                  { x: g.minBP, y: yh },
-                  { x: g.maxBP, y: yh }
-                ],
-                color: g.color,
-                linkedTo: sid,
-                lineWidth: 12, yAxis: 1, zIndex: 0
-              });
-            }
-          })"),
           style = paste0("background-color: ", bgColors[1], ";")
         ),
         wellPanel(showOutput("pChart2", "highcharts"), showOutput("zChart2", "highcharts"),
@@ -573,32 +558,6 @@ tags$div(
             chartXAxis.removePlotBand()
             chartXAxis.addPlotBand(bandOpts)
           })'),
-          tags$script("Shiny.addCustomMessageHandler('highlightRelatedGenes2', function(genes) {
-            // Delay the enclosed code by 3 seconds to give zchart2 a chance to update
-            // (to the selected chromosome and base pair range) before adding these highlights.
-            delaySeconds = 3;
-            setTimeout(function() {
-              b = $('#zChart2').highcharts();
-              for (var g of genes) {
-                yh = 0.02;
-                sid = 'reverse-genes';
-                if (g.strand == 1) {
-                  yh = 0.06;
-                  sid = 'forward-genes';
-                }
-                b.addSeries({
-                  type: 'line',
-                  data: [
-                    { x: g.minBP, y: yh },
-                    { x: g.maxBP, y: yh }
-                  ],
-                  color: g.color,
-                  linkedTo: sid,
-                  lineWidth: 12, yAxis: 1, zIndex: 0
-                });
-              }
-            }, delaySeconds*1000)
-          })"),
           style = paste0("background-color: ", bgColors[2], ";")
         )
       ),
@@ -2790,6 +2749,37 @@ output$dataviewer2 <-renderDataTable({
       yAxis = 1
     )      
 
+    if (!is.null(values$genes1) && !is.null(values$genes1chr) && values$genes1chr == input$chr) {
+      apply(values$genes1, 1, FUN = function(g) {
+        g.strand <- as.integer(g["strand"])
+        g.color <- g["color"]
+        names(g.color) <- NULL
+        yh <- -1
+        if (g.strand == 1) {
+          yh <- annotYvalForward
+          sid <- "forward-genes"
+        } else if (g.strand == -1) {
+          yh <- annotYvalReverse
+          sid <- "reverse-genes"
+        }
+        if (yh > 0) {
+          g.data <- vector("list", 2)
+          g.data[[1]]$x <- as.integer(g["minBP"])
+          g.data[[2]]$x <- as.integer(g["maxBP"])
+          g.data[[1]]$y <- g.data[[2]]$y <- yh
+          b$series(
+            type = "line",
+            data = g.data,
+            color = g.color,
+            linkedTo = sid,
+            lineWidth = 12,
+            yAxis = 1,
+            zIndex = 0
+          )
+        }
+      })
+    }
+
     #b$series(data = annotSeries[[1]], type = "columnrange", pointWidth=15,pointPadding=0,pointPlacement=0,name = "Genes")    
     b$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
     #b$title(text=paste("NAM GWAS Results",sep=" "))
@@ -3287,6 +3277,37 @@ output$dataviewer2 <-renderDataTable({
       yAxis = 1
     )
     
+    if (!is.null(values$genes2) && !is.null(values$genes2chr) && values$genes2chr == input$chr2) {
+      apply(values$genes2, 1, FUN = function(g) {
+        g.strand <- as.integer(g["strand"])
+        g.color <- g["color"]
+        names(g.color) <- NULL
+        yh <- -1
+        if (g.strand == 1) {
+          yh <- annotYvalForward
+          sid <- "forward-genes"
+        } else if (g.strand == -1) {
+          yh <- annotYvalReverse
+          sid <- "reverse-genes"
+        }
+        if (yh > 0) {
+          g.data <- vector("list", 2)
+          g.data[[1]]$x <- as.integer(g["minBP"])
+          g.data[[2]]$x <- as.integer(g["maxBP"])
+          g.data[[1]]$y <- g.data[[2]]$y <- yh
+          b$series(
+            type = "line",
+            data = g.data,
+            color = g.color,
+            linkedTo = sid,
+            lineWidth = 12,
+            yAxis = 1,
+            zIndex = 0
+          )
+        }
+      })
+    }
+
     b$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
     b$plotOptions(
       scatter = list(
@@ -3540,6 +3561,7 @@ output$dataviewer2 <-renderDataTable({
    })
    
   observe({
+    # We received information on related genes from a query
     if (is.null(input$relatedGenes)) return()
     rg <- lapply(input$relatedGenes, unlist)
 
@@ -3551,23 +3573,20 @@ output$dataviewer2 <-renderDataTable({
     families <- setdiff(intersect(rg$families1, rg$families2), "") # omit undefined gene families
     nf <- length(families)
     if (nf == 0) return()
-    # build nf colors
+    # Create nf colors
     fc <- rainbow(nf, end = 5/6) # TODO: a more clearly distinguishable set of colors
     familyColors <- vector("list", nf)
-    for (i in 1:nf) familyColors[[families[i]]] <- fc[i]
+    for (i in 1:nf) familyColors[[families[i]]] <- stri_sub(fc[i], 1, 7)
 
+    # Construct the chart data
     i1 <- which(rg$families1 %in% families)
     i2 <- which(rg$families2 %in% families)
-    # build the chart data
-    df.genes1 <- data.frame(minBP = rg$minBP1[i1], maxBP = rg$maxBP1[i1], strand = rg$strand1[i1],
+    values$genes1 <- data.frame(minBP = rg$minBP1[i1], maxBP = rg$maxBP1[i1], strand = rg$strand1[i1],
       color = unlist(lapply(i1, FUN = function(i) familyColors[rg$families1[i]])), stringsAsFactors = FALSE)
-    df.genes2 <- data.frame(minBP = rg$minBP2[i2], maxBP = rg$maxBP2[i2], strand = rg$strand2[i2],
+    values$genes2 <- data.frame(minBP = rg$minBP2[i2], maxBP = rg$maxBP2[i2], strand = rg$strand2[i2],
       color = unlist(lapply(i2, FUN = function(i) familyColors[rg$families2[i]])), stringsAsFactors = FALSE)
-    ja1 <- toJSONArray2(df.genes1, json = FALSE, names = TRUE)
-    ja2 <- toJSONArray2(df.genes2, json = FALSE, names = TRUE)
-
-    session$sendCustomMessage(type = "highlightRelatedGenes", ja1)
-    session$sendCustomMessage(type = "highlightRelatedGenes2", ja2)
+    values$genes1chr <- isolate(input$chr)
+    values$genes2chr <- rg$chr2
   })
 
 #  observe({
