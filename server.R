@@ -562,7 +562,7 @@ tags$div(
           })'),
           style = paste0("background-color: ", bgColors[1], ";")
         ),
-        wellPanel(showOutput("pChart2", "highcharts"), showOutput("zChart2", "highcharts"),
+        wellPanel(showOutput("zChart2", "highcharts"), showOutput("pChart2", "highcharts"),
           tags$script('Shiny.addCustomMessageHandler("customMsg2", function(bandOpts){
             chartXAxis = $("#pChart2").highcharts().xAxis[0]
             chartXAxis.removePlotBand()
