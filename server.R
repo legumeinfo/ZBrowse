@@ -3543,15 +3543,23 @@ output$dataviewer2 <-renderDataTable({
     selectInput("relatedRegions", "Related Regions:", choices = NULL, selectize = FALSE)
   })
   observe({
-    if (is.null(input$relatedRegions) || length(input$relatedRegions) == 0) return()
-
-    ss <- strsplit(input$relatedRegions, split = " ")[[1]]
-    chr <- as.integer(stri_sub(ss[1], 4))
-    ss2 <- strsplit(ss[2], split = "-")[[1]]
-    centerBP <- as.integer(1.0e6*mean(as.numeric(ss2)))
-    updateSelectInput(session, "chr2", selected = chr) #input$relatedRegions$chr)
-    updateNumericInput(session, "selected2", value = centerBP) #(input$relatedRegions$minBP + input$relatedRegions$maxBP) %/% 2)
+    if (is.null(input$relatedRegions) || length(input$relatedRegions) == 0) {
+      updateNumericInput(session, "selected2", value = input$selected2)
+    } else {
+      # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
+      ss <- strsplit(input$relatedRegions, split = " ")[[1]]
+      chr <- as.integer(stri_sub(ss[1], 4))
+      ss2 <- strsplit(ss[2], split = "-")[[1]]
+      centerBP <- as.integer(1.0e6*mean(as.numeric(ss2)))
+      updateSelectInput(session, "chr2", selected = chr)
+      updateNumericInput(session, "selected2", value = centerBP)
+    }
   })
+
+  clearGenomicLinkages <- function() {
+    values$glGenes1 <- values$glGenes2 <- NULL
+    updateSelectInput(session, "relatedRegions", choices = character(0))
+  }
 
   observe({
     # Handle and display genomic linkage query results
@@ -3560,12 +3568,16 @@ output$dataviewer2 <-renderDataTable({
     # Parse neighboring genes from species 1
     results1 <- input$genomicLinkages$results1
     values$glSelectedGene <- results1$genes[[(length(results1$genes) + 1) %/% 2]]$name
-    glChr1 <- as.integer(stri_match(results1$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
     glGenes1 <- data.frame(matrix(unlist(results1$genes), nrow = length(results1$genes), byrow = TRUE),
       stringsAsFactors = FALSE)[, 3:6]
-    glGenes1$chr <- glChr1
+    glGenes1$chr <- as.integer(stri_match(results1$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
     names(glGenes1) <- c("family", "fmin", "fmax", "strand", "chr")
     glGenes1 <- glGenes1[nchar(glGenes1$family) > 0, ]
+    if (nrow(glGenes1) == 0) {
+      # could reach here if none of the (2*neighbors + 1) genes has a family id
+      clearGenomicLinkages()
+      return()
+    }
 
     # Convert (for example) "Medicago truncatula" to "M.truncatula"
     ss.org2 <- strsplit(values$organism2, split = " ")[[1]]
@@ -3573,59 +3585,61 @@ output$dataviewer2 <-renderDataTable({
     # Parse related genes from species 2
     results2 <- input$genomicLinkages$results2
     if (length(results2$groups) == 0) {
-      values$glGenes1 <- values$glGenes2 <- NULL
-      updateSelectInput(session, "relatedRegions", choices = NULL)
-
-    } else {
-      for (i in 1:length(results2$groups)) {
-        results2$groups[[i]]$id <- i
-      }
-      glGenes2 <- do.call(rbind, lapply(results2$groups, FUN = function(gr) {
-        gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
-        if (gr$species_name == abbrSpeciesName2 && !is.na(gr.chr)) {
-          gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
-            stringsAsFactors = FALSE)[, 3:6]
-          gr.genes$chr <- gr.chr
-          gr.genes$id <- gr$id
-          names(gr.genes) <- c("family", "fmin", "fmax", "strand", "chr", "id")
-          gr.genes <- gr.genes[nchar(gr.genes$family) > 0, ]
-          gr.genes
-        }
-      }))
-
-      # Highlight families common to both genomes
-      families <- intersect(glGenes1$family, glGenes2$family)
-      nf <- length(families)
-      if (nf == 0) return()
-      # Create nf colors
-      fc <- rainbow(nf, end = 5/6) # TODO: a more clearly distinguishable set of colors
-      familyColors <- vector("list", nf)
-      for (i in 1:nf) familyColors[[families[i]]] <- stri_sub(fc[i], 1, 7)
-
-      # Construct the chart data
-      glGenes1 <- glGenes1[glGenes1$family %in% families, ]
-      glGenes1$color <- familyColors[glGenes1$family]
-      glGenes2 <- glGenes2[glGenes2$family %in% families, ]
-      glGenes2$color <- familyColors[glGenes2$family]
-      values$glGenes1 <- glGenes1
-      values$glGenes2 <- glGenes2
-
-      # Construct the related regions (each corresponds to a group from results2$groups)
-      glGroupIds <- unique(glGenes2$id)
-      if (length(glGroupIds) == 0) {
-        glRelatedRegions <- NULL
-      } else {
-        glRelatedRegions <- unlist(compact(lapply(results2$groups, FUN = function(gr) {
-          if (gr$id %in% glGroupIds) {
-            gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
-            gr.minBP <- gr$genes[[1]]$fmin
-            gr.maxBP <- gr$genes[[length(gr$genes)]]$fmax
-            sprintf("chr%d %3.2f-%3.2f Mbp", gr.chr, gr.minBP*1.0e-6, gr.maxBP*1.0e-6)
-          }
-        })))
-      }
-      updateSelectInput(session, "relatedRegions", choices = glRelatedRegions)
+      clearGenomicLinkages()
+      return()
     }
+    for (i in 1:length(results2$groups)) {
+      results2$groups[[i]]$id <- i
+    }
+    glGenes2 <- do.call(rbind, lapply(results2$groups, FUN = function(gr) {
+      gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
+      if (gr$species_name == abbrSpeciesName2 && !is.na(gr.chr)) {
+        gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
+          stringsAsFactors = FALSE)[, 3:6]
+        gr.genes$chr <- gr.chr
+        gr.genes$id <- gr$id
+        names(gr.genes) <- c("family", "fmin", "fmax", "strand", "chr", "id")
+        gr.genes <- gr.genes[nchar(gr.genes$family) > 0, ]
+        gr.genes
+      }
+    }))
+
+    # Highlight families common to both genomes
+    families <- intersect(glGenes1$family, glGenes2$family)
+    nf <- length(families)
+    if (nf == 0) {
+      clearGenomicLinkages()
+      return()
+    }
+    # Create nf colors
+    fc <- rainbow(nf, end = 5/6) # TODO: a more clearly distinguishable set of colors
+    familyColors <- vector("list", nf)
+    for (i in 1:nf) familyColors[[families[i]]] <- stri_sub(fc[i], 1, 7)
+
+    # Construct the chart data
+    glGenes1 <- glGenes1[glGenes1$family %in% families, ]
+    glGenes1$color <- familyColors[glGenes1$family]
+    glGenes2 <- glGenes2[glGenes2$family %in% families, ]
+    glGenes2$color <- familyColors[glGenes2$family]
+
+    # Construct the related regions (each corresponds to a group from results2$groups)
+    glGroupIds <- unique(glGenes2$id)
+    glRelatedRegions <- unlist(compact(lapply(results2$groups, FUN = function(gr) {
+      if (gr$id %in% glGroupIds) {
+        gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
+        gr.minBP <- gr$genes[[1]]$fmin
+        gr.maxBP <- gr$genes[[length(gr$genes)]]$fmax
+        sprintf("chr%d %3.2f-%3.2f Mbp", gr.chr, gr.minBP*1.0e-6, gr.maxBP*1.0e-6)
+      }
+    })))
+
+    # Recenter the window around the selected gene
+    centerBP1 <- (as.integer(glGenes1$fmin[1]) + as.integer(glGenes1$fmax[nrow(glGenes1)])) %/% 2
+    updateNumericInput(session, "selected", value = centerBP1)
+    # Update the charts and other output
+    values$glGenes1 <- glGenes1
+    values$glGenes2 <- glGenes2
+    updateSelectInput(session, "relatedRegions", choices = glRelatedRegions)
   })
 
 #  observe({
