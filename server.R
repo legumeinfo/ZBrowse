@@ -1837,6 +1837,7 @@ shinyServer(function(input, output, session) {
       id = "forward-genes",
       zIndex = 1,
       color = "#53377A",
+      marker = list(symbol = "circle", enabled = FALSE),
       yAxis = 1
     )    
     
@@ -1847,6 +1848,7 @@ shinyServer(function(input, output, session) {
       id = "reverse-genes",
       zIndex = 1,
       color = "#53377A",
+      marker = list(symbol = "circle", enabled = FALSE),
       yAxis = 1
     )      
     
