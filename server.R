@@ -49,7 +49,7 @@ shinyServer(function(input, output, session) {
     updateCheckboxInput(session, jth_ref("appendSNPs", j), value = FALSE)
     # Clear all genomic linkages if either organism changes
     values$glSelectedGene <- NULL
-    values$glGenes <- values$glGenes2 <- NULL
+    values$glGenes <- values$glGenes2 <- values$glColors <- NULL
   }
   # This should be the first code block to detect a change in input$datasets
   observe(datasetChanged(1))
@@ -1994,6 +1994,23 @@ shinyServer(function(input, output, session) {
       "} !#"
     ), bGenomicLinkage)
 
+    glColors <- values$glColors
+    doClickOnColumn <- paste(
+      "#! function() {",
+        "window.open('https://legumeinfo.org/chado_phylotree/' + this.name);", # go to the gene family's web page
+        "return false;", # and disable toggling the legend item
+      "} !#"
+    )
+    sapply(names(glColors), FUN = function(x) {
+      b$series(
+        data = list(),
+        type = "column",
+        name = x,
+        color = glColors[[x]],
+        events = list(legendItemClick = doClickOnColumn)
+      )
+    })
+
     b$plotOptions(
       scatter = list(
         cursor = "pointer",
@@ -2181,9 +2198,18 @@ shinyServer(function(input, output, session) {
   })
 
   clearGenomicLinkages <- function() {
-    values$glGenes <- values$glGenes2 <- NULL
+    values$glGenes <- values$glGenes2 <- values$glColors <- NULL
     updateSelectInput(session, "relatedRegions", choices = character(0))
   }
+
+  # If the user unchecks Genomic Linkage options, clear any existing genomic linkage query results
+  observe({
+    glOn <- input$boolGenomicLinkage
+    if (!(is.null(glOn) || glOn)) {
+      values$glSelectedGene <- NULL
+      clearGenomicLinkages()
+    }
+  })
 
   observe({
     # Handle and display genomic linkage query results
@@ -2237,8 +2263,8 @@ shinyServer(function(input, output, session) {
     }
     # Create nf colors
     fc <- rainbow(nf, end = 5/6) # TODO: a more clearly distinguishable set of colors
-    familyColors <- vector("list", nf)
-    for (i in 1:nf) familyColors[[families[i]]] <- stri_sub(fc[i], 1, 7)
+    familyColors <- list()
+    lapply(1:nf, FUN = function(i) familyColors[[families[i]]] <<- stri_sub(fc[i], 1, 7))
 
     # Construct the chart data
     glGenes <- glGenes[glGenes$family %in% families, ]
@@ -2263,6 +2289,7 @@ shinyServer(function(input, output, session) {
     # Update the charts and other output
     values$glGenes <- glGenes
     values$glGenes2 <- glGenes2
+    values$glColors <- familyColors
     updateSelectInput(session, "relatedRegions", choices = glRelatedRegions)
   })
 
