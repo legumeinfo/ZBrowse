@@ -1996,19 +1996,33 @@ shinyServer(function(input, output, session) {
       "} !#"
     ), bGenomicLinkage)
 
-    glColors <- values$glColors
+    # Create the gene family legend, using only the visible gene families
+    glFamilies <- names(values$glColors)
+    if (j == 2 && !is.null(values$glGenes2) && !(is.null(input$relatedRegions) || length(input$relatedRegions) == 0)) {
+      glGenes2 <- values$glGenes2
+      # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
+      ss <- strsplit(input$relatedRegions, split = " ")[[1]]
+      chr <- as.integer(stri_sub(ss[1], 4))
+      bp <- 1.0e6*as.numeric(strsplit(ss[2], split = "-")[[1]])
+      # extend range to account for previous rounding
+      ext <- 10000
+      bpmin <- bp[1] - ext
+      bpmax <- bp[2] + ext
+      glFamilies <- intersect(glFamilies, glGenes2$family[glGenes2$chr == chr &
+          glGenes2$fmin >= bpmin & glGenes2$fmin <= bpmax & glGenes2$fmax >= bpmin & glGenes2$fmax <= bpmax])
+    }
     doClickOnColumn <- paste(
       "#! function() {",
         "window.open('https://legumeinfo.org/chado_phylotree/' + this.name);", # go to the gene family's web page
         "return false;", # and disable toggling the legend item
       "} !#"
     )
-    sapply(names(glColors), FUN = function(x) {
+    sapply(glFamilies, FUN = function(f) {
       b$series(
         data = list(),
         type = "column",
-        name = x,
-        color = glColors[[x]],
+        name = f,
+        color = values$glColors[[f]],
         events = list(legendItemClick = doClickOnColumn)
       )
     })
