@@ -1827,12 +1827,13 @@ shinyServer(function(input, output, session) {
     #     }
     #     
     if(zoomChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
-      invisible(sapply(zoomSeries, function(x) {if(length(x)==0){return()};b$series(data = x, type = "scatter", color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = paste0(x[[1]]$trait))}))
+      invisible(sapply(zoomSeries, function(x) {if(length(x)==0){return()};b$series(data = x, type = "scatter", showInLegend = FALSE, color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = paste0(x[[1]]$trait))}))
     }
     
     b$series(
       data = annotArray,
       type = "line",
+      showInLegend = FALSE,
       name = "Forward Genes",
       id = "forward-genes",
       zIndex = 1,
@@ -1844,6 +1845,7 @@ shinyServer(function(input, output, session) {
     b$series(
       data = annotArrayReverse,
       type = "line",
+      showInLegend = FALSE,
       name = "Reverse Genes",
       id = "reverse-genes",
       zIndex = 1,
