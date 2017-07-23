@@ -2290,14 +2290,17 @@ shinyServer(function(input, output, session) {
 
     # Construct the related regions (each corresponds to a group from results2$groups)
     glGroupIds <- unique(glGenes2$id)
-    glRelatedRegions <- unlist(compact(lapply(results2$groups, FUN = function(gr) {
+    glRelatedRegions <- do.call(rbind.data.frame, compact(lapply(results2$groups, FUN = function(gr) {
       if (gr$id %in% glGroupIds) {
         gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
         gr.minBP <- gr$genes[[1]]$fmin
         gr.maxBP <- gr$genes[[length(gr$genes)]]$fmax
-        sprintf("chr%d %3.2f-%3.2f Mbp", gr.chr, gr.minBP*1.0e-6, gr.maxBP*1.0e-6)
+        list(region = sprintf("chr%d %3.2f-%3.2f Mbp", gr.chr, gr.minBP*1.0e-6, gr.maxBP*1.0e-6),
+          chr = gr.chr, minBP = gr.minBP, maxBP = gr.maxBP)
       }
     })))
+    # Sort the related regions
+    glRelatedRegions <- glRelatedRegions[with(glRelatedRegions, order(chr, minBP)), ]
 
     # Recenter the window around the selected gene
     centerBP1 <- (as.integer(glGenes$fmin[1]) + as.integer(glGenes$fmax[nrow(glGenes)])) %/% 2
@@ -2306,7 +2309,7 @@ shinyServer(function(input, output, session) {
     values$glGenes <- glGenes
     values$glGenes2 <- glGenes2
     values$glColors <- familyColors
-    updateSelectInput(session, "relatedRegions", choices = glRelatedRegions)
+    updateSelectInput(session, "relatedRegions", choices = glRelatedRegions$region)
   })
 
 })#end server
