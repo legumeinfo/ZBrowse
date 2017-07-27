@@ -1996,20 +1996,14 @@ shinyServer(function(input, output, session) {
       "} !#"
     ), bGenomicLinkage)
 
-    # Create the gene family legend, using only the visible gene families
+    # Create the gene family legend. For organism 2, show only the gene families on the currently selected chromosome.
     glFamilies <- names(values$glColors)
     if (j == 2 && !is.null(values$glGenes2) && !(is.null(input$relatedRegions) || length(input$relatedRegions) == 0)) {
       glGenes2 <- values$glGenes2
       # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
       ss <- strsplit(input$relatedRegions, split = " ")[[1]]
       chr <- as.integer(stri_sub(ss[1], 4))
-      bp <- 1.0e6*as.numeric(strsplit(ss[2], split = "-")[[1]])
-      # extend range to account for previous rounding
-      ext <- 10000
-      bpmin <- bp[1] - ext
-      bpmax <- bp[2] + ext
-      glFamilies <- intersect(glFamilies, glGenes2$family[glGenes2$chr == chr &
-          glGenes2$fmin >= bpmin & glGenes2$fmin <= bpmax & glGenes2$fmax >= bpmin & glGenes2$fmax <= bpmax])
+      glFamilies <- intersect(glFamilies, glGenes2$family[glGenes2$chr == chr])
     }
     doClickOnColumn <- paste(
       "#! function() {",
