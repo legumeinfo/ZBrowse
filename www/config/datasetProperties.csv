@@ -5,4 +5,9 @@
 "RiceDiversity.44k.MSU6.GWAS.csv","CHR {integer}","position.IRGSP.v4 {integer}","variable {character}","logP {numeric}",FALSE,FALSE,0,1,"Arabidopsis",FALSE,FALSE,"CHR","SNPID","SNPID",TRUE,0,1
 "Example GWAS with JL","chr {integer}","bp {integer}","loc {character};Trait {character}","modIncProb {numeric}",FALSE,TRUE,0,1,"Corn",FALSE,TRUE,"F","lowerCIbp","upperCIbp",FALSE,0,1
 "Arabidopsis thaliana GWAS","Chromosome {integer}","Position {integer}","Trait {character}","P.Value {numeric}",TRUE,FALSE,0,1,"Arabidopsis thaliana",FALSE,FALSE,"Chromosome","Position","Position",FALSE,0,1
-"Medicago truncatula GWAS","Chromosome {integer}","pos {integer}","Trait {character}","P.value {numeric}",TRUE,FALSE,0,1,"Medicago truncatula",FALSE,FALSE,"Chromosome","pos","pos",FALSE,0,1
+"Pigeonpea GWAS","Chromosome {factor}","Position {integer}","Trait {character}","p_value {numeric}",FALSE,FALSE,0,1,"Pigeonpea",FALSE,FALSE,"Chromosome","Position","Position",FALSE,0,1
+"Medicago truncatula GWAS","Chromosome {factor}","pos {integer}","Trait {character}","P.value {numeric}",TRUE,FALSE,0,1,"Medicago truncatula",FALSE,FALSE,"Chromosome","pos","pos",FALSE,0,1
+"totalnod_results","Chromosome {character}","pos {integer}","Trait {character}","P.value {numeric}",TRUE,FALSE,0,1,"Medicago truncatula",FALSE,FALSE,"Chromosome","pos","pos",FALSE,0,1
+"occupancyB_results","Chromosome {factor}","pos {integer}","Trait {character}","P.value {numeric}",TRUE,FALSE,0,1,"Medicago truncatula",FALSE,FALSE,"Chromosome","pos","pos",FALSE,0,1
+"Soybase_GWAS_R2","Chromosome {character}","Position {integer}","GWAS_class {character}","R2 {numeric}",FALSE,FALSE,0,1,"Soybean",FALSE,FALSE,"Chromosome","Position","Position",FALSE,0,1
+"Soybase_GWAS_pvalue","Chromosome {integer}","Position {integer}","GWAS_class {character}","p_value {numeric}",TRUE,FALSE,0,0.1,"Soybean",FALSE,FALSE,"Chromosome","Position","Position",FALSE,0,0.1

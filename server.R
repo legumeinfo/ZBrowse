@@ -1590,9 +1590,9 @@ shinyServer(function(input, output, session) {
 
     } else if(values[[jth_ref("organism", j)]] == "Soybean") { #strand is '+' or '-'
       annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
-        data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(soyurlBase,x$transcript_id),
+        data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
           name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
-            x$transcript_id,
+            x$name,
             prettyNum(x$transcript_start, big.mark = ","),
             prettyNum(x$transcript_end, big.mark = ","),
             x$Protein.Length,
@@ -1605,9 +1605,9 @@ shinyServer(function(input, output, session) {
         )
       })
       annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {
-        data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(soyurlBase,x$transcript_id),
+        data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
           name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
-            x$transcript_id,
+            x$name,
             prettyNum(x$transcript_start, big.mark = ","),
             prettyNum(x$transcript_end, big.mark = ","),
             x$Protein.Length,
@@ -1673,6 +1673,34 @@ shinyServer(function(input, output, session) {
             x$chromosome,
             x$strand,
             x$description
+          ),
+          stringsAsFactors=FALSE
+        )
+      })
+
+    } else if (values[[jth_ref("organism", j)]] == "Pigeonpea") { # strand is '+' or '-'
+      annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
+        data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
+          name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
+            x$name,
+            prettyNum(x$transcript_start, big.mark = ","),
+            prettyNum(x$transcript_end, big.mark = ","),
+            x$chromosome,
+            x$strand,
+            x$attributes
+          ),
+          stringsAsFactors=FALSE
+        )
+      })
+      annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {
+        data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
+          name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
+            x$name,
+            prettyNum(x$transcript_start, big.mark = ","),
+            prettyNum(x$transcript_end, big.mark = ","),
+            x$chromosome,
+            x$strand,
+            x$attributes
           ),
           stringsAsFactors=FALSE
         )
@@ -1865,7 +1893,9 @@ shinyServer(function(input, output, session) {
           yh <- annotYvalReverse
           sid <- "reverse-genes"
         }
-        if (yh > 0 && g$chr == input[[jth_ref("chr", j)]]) {
+        cat(paste("chr=",g$chr))
+        cat("\n")
+        if (yh > 0 && !(is.na(g$chr)) && g$chr == input[[jth_ref("chr", j)]]) {
           g.data <- vector("list", 2)
           g.data[[1]]$x <- as.integer(g$fmin)
           g.data[[2]]$x <- as.integer(g$fmax)
@@ -1920,8 +1950,20 @@ shinyServer(function(input, output, session) {
       "var geneString = '';",
       "mt0 = this.url.search('medtr');",
       "mt1 = this.url.search('/json');",
+      "cc0 = this.url.search('cajca');",
+      "gm0 = this.url.search('glyma');",
       "if (mt0 >= 0) {",
         "geneString = this.url.substring(mt0, mt1);",
+        "url1 = 'legumeinfo.org';",
+        "url2 = 'legumefederation.org';",
+        "speciesName2 = 'A.thaliana';",
+      "} else if (gm0 >= 0) {",
+        "geneString = this.url.substring(gm0, mt1);",
+        "url1 = 'legumeinfo.org';",
+        "url2 = 'legumefederation.org';",
+        "speciesName2 = 'A.thaliana';",
+      "} else if (cc0 >= 0) {",
+        "geneString = this.url.substring(cc0, mt1);",
         "url1 = 'legumeinfo.org';",
         "url2 = 'legumefederation.org';",
         "speciesName2 = 'A.thaliana';",
@@ -2230,7 +2272,9 @@ shinyServer(function(input, output, session) {
     values$glSelectedGene <- results1$genes[[(length(results1$genes) + 1) %/% 2]]$name
     glGenes <- data.frame(matrix(unlist(results1$genes), nrow = length(results1$genes), byrow = TRUE),
       stringsAsFactors = FALSE)[, 3:6]
-    glGenes$chr <- as.integer(stri_match(results1$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
+    cat(results1$chromosome_name)
+    cat("\n")
+    glGenes$chr <- as.integer(stri_match(results1$chromosome_name, regex = "(?i)(?<=(chr||LG))\\d+$")[, 1])
     names(glGenes) <- c("family", "fmin", "fmax", "strand", "chr")
     glGenes <- glGenes[nchar(glGenes$family) > 0, ]
     if (nrow(glGenes) == 0) {
@@ -2252,8 +2296,8 @@ shinyServer(function(input, output, session) {
       results2$groups[[i]]$id <- i
     }
     glGenes2 <- do.call(rbind, lapply(results2$groups, FUN = function(gr) {
-      gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
-      if (gr$species_name == abbrSpeciesName2 && !is.na(gr.chr)) {
+      gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=(chr||LG))\\d+$")[, 1])
+      if (paste(substr(gr$genus,1,1),gr$species,sep=".") == abbrSpeciesName2 && !is.na(gr.chr)) {
         gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
           stringsAsFactors = FALSE)[, 3:6]
         gr.genes$chr <- gr.chr
@@ -2286,7 +2330,7 @@ shinyServer(function(input, output, session) {
     glGroupIds <- unique(glGenes2$id)
     glRelatedRegions <- do.call(rbind.data.frame, compact(lapply(results2$groups, FUN = function(gr) {
       if (gr$id %in% glGroupIds) {
-        gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=\\.chr)\\d+$")[, 1])
+        gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=(chr||LG))\\d+$")[, 1])
         gr.minBP <- gr$genes[[1]]$fmin
         gr.maxBP <- gr$genes[[length(gr$genes)]]$fmax
         list(region = sprintf("chr%d %3.2f-%3.2f Mbp", gr.chr, gr.minBP*1.0e-6, gr.maxBP*1.0e-6),
