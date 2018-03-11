@@ -99,6 +99,7 @@ for(i in 1:length(files)){
 
 #Add organisms from files instead of hardcoded arrays
 annotGeneLoc<-list()
+glUrlBase <- list()
 for(i in 1:length(files)){
   if(tools::file_ext(files[i]) == "txt"){
     filename=""
@@ -110,12 +111,15 @@ for(i in 1:length(files)){
     annotFilename <- data[3]
     if (stri_startswith_fixed(annotFilename, "http")) {
       chromosome.lengths <- as.integer(stri_split_fixed(data[2], ",")[[1]])
-      locValue <- build.annotations(annotFilename, chromosome.lengths)
+      locValue <- build.annotations(key, annotFilename, chromosome.lengths)
     } else {
       locValue<-read.table(annotFilename,sep=",",head=TRUE,stringsAsFactors = FALSE,quote = c("\""))
     }
     annotGeneLoc[key]<-list(locValue)
-    
+    if (length(data) >= 4) {
+      glUrlBase[key] <- data[4]
+    }
+
     close(conn)
   }
 }

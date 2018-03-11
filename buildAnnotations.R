@@ -8,14 +8,7 @@ library(stringi)
 # --------------------------------------------------------------
 
 extract.gff.attribute <- function(text, s) {
-  i <- regexpr(s, text)
-  if (length(i) == 0) return("")
-
-  isc <- regexpr(";", text)
-  isc <- isc[isc > i]
-  if (length(isc) == 0) return(stri_sub(text, i + nchar(s) + 1))
-
-  stri_sub(text, i + nchar(s) + 1, isc[1] - 1)
+  stri_match_first(text, regex = sprintf("%s=(.*?)(;|$)", s))[, 2]
 }
 
 # --------------------------------------------------------------
@@ -37,30 +30,53 @@ replace.special.characters <- function(text) {
 
 # --------------------------------------------------------------
 
-# The following assumes that column 3 (type) = "gene".
-# If not, include and filter on that column.
-gff.cols <- c(1, 4, 5, 7, 9) # see names(df.annot) below
+# GFF column indices for ("chromosome", "type", "transcript_start", "transcript_end", "strand", "attributes")
+gff.cols <- c(1, 3, 4, 5, 7, 9)
 
-# TODO: generalize for other possible formats of column 9 (attributes)
-build.annotations <- function(filename, chrLengths) {
+build.annotations <- function(key, filename, chrLengths) {
   t0 <- proc.time()[3]
   cat(paste("Constructing", key, "annotations ... "))
 
-  chrs <- paste0("chr", 1:length(chrLengths))
+  if (key == "Medicago truncatula") {
+    chrPrefix <- "chr" # "medtr.A17.gnm4.chr"
+  } else if (key == "Soybean") {
+    chrPrefix <- "glyma.Wm82.gnm2.Gm"
+  }
+  # We expect that the number part of the chromosome name will have enough leading zeros to allow alphabetic sorting.
+  # This is only necessary for this parsing step, afterward we will refer to chromosomes by number (1-N).
+  num.chromosomes <- length(chrLengths)
+  num.digits <- 1 + floor(log10(num.chromosomes))
+  chrs <- sprintf(sprintf("%s%%0%dd", chrPrefix, num.digits), 1:num.chromosomes)
   pp <- GRanges(seqnames = chrs, ranges = IRanges(start = 1, end = chrLengths))
 
-  df.annot <- unlist(scanTabix(filename, param = pp), use.names = FALSE)
+  if (startsWith(filename, "https:")) {
+    # since R cannot handle https directly
+    temp.dir <- tempdir()
+    temp.gz <- paste0(temp.dir, "/temp.gz")
+    temp.gz.tbi <- paste0(temp.dir, "/temp.gz.tbi")
+    download.file(filename, temp.gz, method = "wget", quiet = TRUE)
+    download.file(paste0(filename, ".tbi"), temp.gz.tbi, method = "wget", quiet = TRUE)
+    df.annot <- unlist(scanTabix(temp.gz, param = pp), use.names = FALSE)
+    unlink(temp.gz)
+    unlink(temp.gz.tbi)
+  } else {
+    df.annot <- unlist(scanTabix(filename, param = pp), use.names = FALSE)
+  }
   df.annot <- stri_split_fixed(df.annot, "\t")
   df.annot <- lapply(df.annot, FUN = function(x) x[gff.cols])
   df.annot <- as.data.frame(do.call(rbind, df.annot), stringsAsFactors = FALSE)
-#  df.annot <- df.annot[df.annot[, 2] == "gene", -2] # uncomment if type column is not already filtered
+  df.annot <- df.annot[df.annot[, 2] == "gene", -2] # filter and then remove the type column
   names(df.annot) <- c("chromosome", "transcript_start", "transcript_end", "strand", "attributes")
-  df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) stri_sub(chr, 4))
+  df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) as.integer(stri_sub(chr, nchar(chrPrefix) + 1)))
   df.annot$transcript_start <- as.integer(df.annot$transcript_start)
   df.annot$transcript_end <- as.integer(df.annot$transcript_end)
   df.annot$id <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "ID"))
-#  df.annot$name <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "Name"))
-  df.annot$name <- paste0("medtr.", df.annot$id)
+  if (key == "Medicago truncatula") {
+    # it has no Name field, so construct one
+    df.annot$name <- paste0("medtr.", df.annot$id)
+  } else {
+    df.annot$name <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "Name"))
+  }
   df.annot$description <- sapply(df.annot$attributes, FUN = function(s) replace.special.characters(extract.gff.attribute(s, "Note")))
   df.annot$attributes <- NULL # remove attributes column
 
@@ -70,10 +86,22 @@ build.annotations <- function(filename, chrLengths) {
 
 # Tests
 # mt.chromosome.lengths <- c(52991155, 45729672, 55515152, 56582383, 43630510, 35275713, 49172423, 45569985)
-# df.annot <- build.annotations(
+# mt.df.annot <- build.annotations(
+#   "Medicago truncatula",
 #   "http://data.comparative-legumes.org/genomes/medtr/Mt4.0v1_genes_20130731_1800.just_genes.gff3.gz",
 #   mt.chromosome.lengths
 # )
-# write.csv(df.annot, file = "Medicago_truncatula_annotations.csv", quote = 7, row.names = FALSE)
+# write.csv(mt.df.annot, file = "Medicago_truncatula_annotations.csv", quote = 7, row.names = FALSE)
+
+# gm.chromosome.lengths <- c(
+#   55915595, 51656713, 47781076, 49243852, 41936504, 50722821, 44683157, 46995532, 46843750, 50969635,
+#   39172790, 40113140, 44408971, 49711204, 50939160, 37397385, 41906774, 62308140, 50589441, 46773167
+# )
+# gm.df.annot <- build.annotations(
+#   "Soybean",
+#   "https://legumeinfo.org/data/public/Glycine_max/Wm82.gnm2.ann1.RVB6/glyma.Wm82.gnm2.ann1.RVB6.gene_models_main.gff3.gz",
+#   gm.chromosome.lengths
+# )
+# write.csv(gm.df.annot, file = "Soybean_annotations.csv", quote = 7, row.names = FALSE)
 
 # --------------------------------------------------------------
