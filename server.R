@@ -48,7 +48,7 @@ shinyServer(function(input, output, session) {
     # send a custom message (to clear the progress bar) and clear values$needsToUploadFiles
     session$sendCustomMessage(type = "resetFileInputHandler", jth_ref("uploadfile", j))
     values[[jth_ref("needsToUploadFiles", j)]] <- FALSE
-    updateCheckboxInput(session, jth_ref("appendSNPs", j), value = FALSE)
+    updateCheckboxInput(session, jth_ref("appendSNPs", j), value = TRUE)
     # Clear all genomic linkages if either organism changes
     values$glSelectedGene <- NULL
     values$glGenes <- values$glGenes2 <- values$glColors <- NULL
@@ -92,7 +92,7 @@ shinyServer(function(input, output, session) {
           ),
           selectizeInput(jth_ref("gwasTraits", j), "Remote Trait Files:", choices = NULL, multiple = TRUE),
           fileInput(jth_ref("uploadfile", j), "Local Trait Files:", multiple = TRUE),
-          checkboxInput(jth_ref("appendSNPs", j), "Append to current dataset", FALSE),
+          checkboxInput(jth_ref("appendSNPs", j), "Append to current dataset (combine multiple traits)", TRUE),
           actionButton(jth_ref("loadTraits", j), "Load Data")
         ),
         conditionalPanel(condition = paste0("input.", jth_ref("dataType", j), " == 'examples'"),
