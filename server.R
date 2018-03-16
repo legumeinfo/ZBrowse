@@ -162,9 +162,9 @@ shinyServer(function(input, output, session) {
       conditionalPanel("input.boolGenomicLinkage == true",
         wellPanel(
           uiOutput("selectedGene"),
-          numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = 10),
-          numericInput("matched", "Matched:", min = 1, max = 20, value = 6),
-          numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = 3),
+          numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = 20),
+          numericInput("matched", "Matched:", min = 1, max = 20, value = 4),
+          numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = 5),
           style = paste0("background-color: ", bgColors[1], ";")
         ),
         wellPanel(
