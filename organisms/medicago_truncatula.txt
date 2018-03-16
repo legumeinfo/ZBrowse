@@ -1,4 +1,4 @@
 Medicago truncatula
 52991155,45729672,55515152,56582383,43630510,35275713,49172423,45569985
-http://data.comparative-legumes.org/genomes/medtr/Mt4.0v1_genes_20130731_1800.just_genes.gff3.gz
+https://legumefederation.org/data/public/Medicago_truncatula/A17_HM341.gnm4.ann2.G3ZY/medtr.A17_HM341.gnm4.ann2.G3ZY.gene_models_main.gff3.gz
 legumeinfo.org
