@@ -38,7 +38,7 @@ build.annotations <- function(key, filename, chrLengths) {
   cat(paste("Constructing", key, "annotations ... "))
 
   if (key == "Medicago truncatula") {
-    chrPrefix <- "chr" # "medtr.A17.gnm4.chr"
+    chrPrefix <- "medtr.A17_HM341.gnm4.chr" # "chr"`
   } else if (key == "Soybean") {
     chrPrefix <- "glyma.Wm82.gnm2.Gm"
   }
@@ -73,7 +73,11 @@ build.annotations <- function(key, filename, chrLengths) {
   df.annot$id <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "ID"))
   if (key == "Medicago truncatula") {
     # it has no Name field, so construct one
-    df.annot$name <- paste0("medtr.", df.annot$id)
+    #df.annot$name <- paste0("medtr.", df.annot$id)
+    # the Names in the new file have additional prefixing that miust be stripped off before the linkout service will 
+    # function properly
+    df.annot$name <- gsub("^medtr\\.A17_HM341\\.", "medtr.",
+            sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "Name")))
   } else {
     df.annot$name <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "Name"))
   }
