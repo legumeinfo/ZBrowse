@@ -1557,7 +1557,9 @@ shinyServer(function(input, output, session) {
 #    urlBase <- 'http://www.maizesequence.org/Zea_mays/Transcript/ProteinSummary?db=core;t='
     urlBase <- 'http://maizegdb.org/cgi-bin/displaygenemodelrecord.cgi?id='
     soyurlBase <- 'http://www.soybase.org/sbt/search/search_results.php?category=FeatureName&search_term='
-    araburlBase <- 'http://arabidopsis.org/servlets/TairObject?type=locus&name='
+    #TAIR subscription limit exceeded- changing to araport
+    #araburlBase <- 'http://arabidopsis.org/servlets/TairObject?type=locus&name='
+    araburlBase <- 'http://www.araport.org/locus/'
     sorgurlBase <- 'http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:'
     legumeInfo_urlBase <- 'https://legumeinfo.org/gene_links/'
     
