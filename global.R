@@ -109,7 +109,7 @@ for(i in 1:length(files)){
     
     key<-data[1]
     annotFilename <- data[3]
-    if (stri_startswith_fixed(annotFilename, "http")) {
+    if (stri_endswith_fixed(annotFilename, "gff3.gz")) {
       chromosome.lengths <- as.integer(stri_split_fixed(data[2], ",")[[1]])
       locValue <- build.annotations(key, annotFilename, chromosome.lengths)
     } else {
