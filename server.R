@@ -43,7 +43,9 @@ shinyServer(function(input, output, session) {
     }
     
     # Uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
-    updateSelectizeInput(session, jth_ref("gwasTraits", j), choices = gwas.traits[[values[[jth_ref("organism", j)]]]], selected = NULL)
+    trait.choices <- gwas.traits[[values[[jth_ref("organism", j)]]]]
+    if (is.null(trait.choices)) trait.choices <- character(0)
+    updateSelectizeInput(session, jth_ref("gwasTraits", j), choices = trait.choices, selected = NULL)
     # As there is no updateFileInput() method,
     # send a custom message (to clear the progress bar) and clear values$needsToUploadFiles
     session$sendCustomMessage(type = "resetFileInputHandler", jth_ref("uploadfile", j))
