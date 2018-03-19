@@ -710,7 +710,7 @@ shinyServer(function(input, output, session) {
     lapply(input[[jth_ref("traitColumns", j)]], function(i) {
       traits <- c("Select All ",sort(unique(values[[input[[jth_ref("datasets", j)]]]][,i])))
       selectizeInput(inputId=jth_ref(i, j), label=paste0("Select ",i),traits,
-        selected=traits[2],
+        selected=traits[1], # 1 for Select All, 2 for the first trait, etc
         multiple=TRUE, options = list(dropdownParent="body",plugins=list("remove_button")))
     })
   }
