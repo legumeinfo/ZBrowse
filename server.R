@@ -14,7 +14,7 @@ shinyServer(function(input, output, session) {
   # Add your organism to legumeInfo.gwas if its GWAS files live on a server instead of locally.
   legumeInfo.gwas <- c("Arabidopsis thaliana GWAS", "Medicago truncatula GWAS")
   # TODO: Do we really need legumeInfo.organisms?
-  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean")
+  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea")
   dataFiles <- c(dataFiles, legumeInfo.gwas)
   for(i in dataFiles){
     if (i %in% legumeInfo.gwas) {
@@ -1660,7 +1660,7 @@ shinyServer(function(input, output, session) {
         )
       })
 
-    } else if (values[[jth_ref("organism", j)]] %in% c("Medicago truncatula", "Soybean")) { # strand is '+' or '-'
+    } else if (values[[jth_ref("organism", j)]] %in% c("Medicago truncatula", "Soybean", "Cowpea")) { # strand is '+' or '-'
       annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
         data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
           name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
@@ -1942,7 +1942,7 @@ shinyServer(function(input, output, session) {
         "}),",
         "type: 'POST',",
         "success: function(response2) {",
-          "obj2 = JSON.parse(response2);",
+          "obj2 = response2;",
           # Send information about neighboring and related genes back to the chart
           "Shiny.onInputChange('genomicLinkages', {",
             "results1: obj1,",
@@ -1960,11 +1960,14 @@ shinyServer(function(input, output, session) {
       "mt0 = this.url.search('medtr');",
       "cc0 = this.url.search('cajca');",
       "gm0 = this.url.search('glyma');",
+      "vu0 = this.url.search('vigun');",
       "js1 = this.url.search('/json');",
       "if (mt0 >= 0) {",
         "geneString = this.url.substring(mt0, js1);",
       "} else if (gm0 >= 0) {",
         "geneString = this.url.substring(gm0, js1);",
+      "} else if (vu0 >= 0) {",
+        "geneString = this.url.substring(vu0, js1);",
       "} else if (cc0 >= 0) {",
         "geneString = this.url.substring(cc0, js1);",
       "} else if (this.url.search('arabidopsis.org') >= 0) {",
@@ -1982,7 +1985,7 @@ shinyServer(function(input, output, session) {
         "}),",
         "type: 'POST',",
         "success: function(response) {",
-          "obj1 = JSON.parse(response);",
+          "obj1 = response;",
           "families1 = Array.from(obj1.genes, x => x.family);",
           microSyntenySearch,
         "},",
@@ -2268,11 +2271,14 @@ shinyServer(function(input, output, session) {
     results1 <- input$genomicLinkages$results1
     values$glSelectedGene <- results1$genes[[(length(results1$genes) + 1) %/% 2]]$name
     glGenes <- data.frame(matrix(unlist(results1$genes), nrow = length(results1$genes), byrow = TRUE),
-      stringsAsFactors = FALSE)[, 3:6]
-    # cat(results1$chromosome_name)
-    # cat("\n")
-    glGenes$chr <- as.integer(stri_match(results1$chromosome_name, regex = "(?i)(?<=(chr|LG))\\d+$")[, 1])
-    names(glGenes) <- c("family", "fmin", "fmax", "strand", "chr")
+      #FIXME: the order dependency on how the props come back in json is BRITTLE
+      stringsAsFactors = FALSE)[, c(1,3,4,7)]
+     #cat(results1$chromosome_name)
+     #cat("\n")
+    #FIXME: probably just capture the numerical bit at the end
+    glGenes$chr <- as.integer(stri_match(results1$chromosome_name, regex = "(?i)(?<=(chr|LG|Gm|Vu))\\d+$")[, 1])
+      #FIXME: the order dependency on how the props come back in json is BRITTLE
+    names(glGenes) <- c("fmin", "family", "fmax", "strand", "chr")
     glGenes <- glGenes[nchar(glGenes$family) > 0, ]
     if (nrow(glGenes) == 0) {
       # could reach here if none of the (2*neighbors + 1) genes has a family id
@@ -2283,11 +2289,14 @@ shinyServer(function(input, output, session) {
     # Convert (for example) "Medicago truncatula" to "M.truncatula"
     ss.org2 <- strsplit(values$organism2, split = " ")[[1]]
     abbrSpeciesName2 <- paste(stri_sub(ss.org2[1], 1, 1), ss.org2[2], sep = ".")
+    #FIXME- probably just making the organism consistent with what comes back from GCV services is the way to go for this
     # (hard-code these for now)
     if (values$organism2 == "Pigeonpea") {
       abbrSpeciesName2 <- "C.cajan"
     } else if (values$organism2 == "Soybean") {
       abbrSpeciesName2 <- "G.max"
+    } else if (values$organism2 == "Cowpea") {
+      abbrSpeciesName2 <- "V.unguiculata"
     }
     # Parse related genes from species 2
     results2 <- input$genomicLinkages$results2
@@ -2295,21 +2304,31 @@ shinyServer(function(input, output, session) {
       clearGenomicLinkages()
       return()
     }
+     #cat("made it")
+     #cat("\n")
     for (i in 1:length(results2$groups)) {
       results2$groups[[i]]$id <- i
     }
     glGenes2 <- do.call(rbind, lapply(results2$groups, FUN = function(gr) {
-      gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=(chr|LG))\\d+$")[, 1])
+    #FIXME: probably just capture the numerical bit at the end
+      gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=(chr|LG|Gm|Vu))\\d+$")[, 1])
       if (paste(substr(gr$genus,1,1),gr$species,sep=".") == abbrSpeciesName2 && !is.na(gr.chr)) {
         gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
-          stringsAsFactors = FALSE)[, 3:6]
+      #FIXME: the order dependency on how the props come back in json is BRITTLE
+          stringsAsFactors = FALSE)[, c(2:4,6)]
         gr.genes$chr <- gr.chr
         gr.genes$id <- gr$id
-        names(gr.genes) <- c("family", "fmin", "fmax", "strand", "chr", "id")
+      #FIXME: the order dependency on how the props come back in json is BRITTLE
+        names(gr.genes) <- c("family", "fmax", "fmin", "strand", "chr", "id")
         gr.genes <- gr.genes[nchar(gr.genes$family) > 0, ]
         gr.genes
       }
     }))
+     #cat(glGenes$family)
+     #cat("\n")
+     #cat(glGenes2$family)
+     #cat("\n")
+
 
     # Highlight families common to both genomes
     families <- intersect(glGenes$family, glGenes2$family)
@@ -2318,6 +2337,8 @@ shinyServer(function(input, output, session) {
       clearGenomicLinkages()
       return()
     }
+     #cat("made it2")
+     #cat("\n")
     # Create nf colors
     fc <- rainbow(nf, end = 5/6) # TODO: a more clearly distinguishable set of colors
     familyColors <- list()
@@ -2333,7 +2354,8 @@ shinyServer(function(input, output, session) {
     glGroupIds <- unique(glGenes2$id)
     glRelatedRegions <- do.call(rbind.data.frame, compact(lapply(results2$groups, FUN = function(gr) {
       if (gr$id %in% glGroupIds) {
-        gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=(chr|LG))\\d+$")[, 1])
+    #FIXME: probably just capture the numerical bit at the end
+        gr.chr <- as.integer(stri_match(gr$chromosome_name, regex = "(?i)(?<=(chr|LG|Gm|Vu))\\d+$")[, 1])
         gr.minBP <- gr$genes[[1]]$fmin
         gr.maxBP <- gr$genes[[length(gr$genes)]]$fmax
         list(region = sprintf("chr%d %3.2f-%3.2f Mbp", gr.chr, gr.minBP*1.0e-6, gr.maxBP*1.0e-6),
@@ -2343,6 +2365,18 @@ shinyServer(function(input, output, session) {
     # Sort the related regions
     glRelatedRegions <- glRelatedRegions[with(glRelatedRegions, order(chr, minBP)), ]
 
+#    cat("fmin1 ")
+#    cat(glGenes$fmin[1])
+#    cat("\n")
+#    cat("fmax1 ")
+#    cat(glGenes$fmax[1])
+#    cat("\n")
+#    cat("fminN ")
+#    cat(glGenes$fmin[nrow(glGenes)])
+#    cat("\n")
+#    cat("fmaxN ")
+#    cat(glGenes$fmax[nrow(glGenes)])
+#    cat("\n")
     # Recenter the window around the selected gene
     centerBP1 <- (as.integer(glGenes$fmin[1]) + as.integer(glGenes$fmax[nrow(glGenes)])) %/% 2
     updateNumericInput(session, "selected", value = centerBP1)
