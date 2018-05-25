@@ -41,6 +41,8 @@ build.annotations <- function(key, filename, chrLengths) {
     chrPrefix <- "medtr.A17_HM341.gnm4.chr" # "chr"`
   } else if (key == "Soybean") {
     chrPrefix <- "glyma.Wm82.gnm2.Gm"
+  } else if (key == "Cowpea") {
+    chrPrefix <- "vigun.IT97K-499-35.gnm1.Vu"
   }
   # We expect that the number part of the chromosome name will have enough leading zeros to allow alphabetic sorting.
   # This is only necessary for this parsing step, afterward we will refer to chromosomes by number (1-N).
@@ -51,14 +53,14 @@ build.annotations <- function(key, filename, chrLengths) {
 
   if (startsWith(filename, "https:")) {
     # since R cannot handle https directly
-    temp.dir <- tempdir()
-    temp.gz <- paste0(temp.dir, "/temp.gz")
-    temp.gz.tbi <- paste0(temp.dir, "/temp.gz.tbi")
-    download.file(filename, temp.gz, method = "wget", quiet = TRUE)
-    download.file(paste0(filename, ".tbi"), temp.gz.tbi, method = "wget", quiet = TRUE)
-    df.annot <- unlist(scanTabix(temp.gz, param = pp), use.names = FALSE)
-    unlink(temp.gz)
-    unlink(temp.gz.tbi)
+    annotations.dir <- "./annotations/"
+    gff <- paste0(annotations.dir, chrPrefix, ".gz")
+    #allow this to be cached
+    if (! file.exists(gff)) { 
+        download.file(filename, gff, method = "wget", quiet = TRUE)
+        download.file(paste0(filename, ".tbi"), paste0(gff, ".tbi"), method = "wget", quiet = TRUE)
+    }
+    df.annot <- unlist(scanTabix(gff, param = pp), use.names = FALSE)
   } else {
     df.annot <- unlist(scanTabix(filename, param = pp), use.names = FALSE)
   }
