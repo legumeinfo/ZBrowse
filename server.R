@@ -1933,7 +1933,7 @@ shinyServer(function(input, output, session) {
     # User clicked on a line -> various possible responses:
     microSyntenySearch <- paste(
       "$.ajax({",
-        "url: 'https://' + url2 + '/lis_context_server/services/v1/micro-synteny-search/',",
+        "url: 'https://' + url2 + '/services/v1/micro-synteny-search/',",
         "dataType: 'json',",
         "data: JSON.stringify({",
           "query: families1,",
@@ -1977,7 +1977,7 @@ shinyServer(function(input, output, session) {
         "return;",
       "}",
       "$.ajax({",
-        "url: 'https://' + url1 + '/lis_context_server/services/v1/gene-to-query-track/',",
+        "url: 'https://' + url1 + '/services/v1/gene-to-query-track/',",
         "dataType: 'json',",
         "data: JSON.stringify({",
           "gene: geneString,",
