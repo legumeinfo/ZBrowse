@@ -1903,8 +1903,6 @@ shinyServer(function(input, output, session) {
           yh <- annotYvalReverse
           sid <- "reverse-genes"
         }
-        # cat(paste("chr=",g$chr))
-        # cat("\n")
         if (yh > 0 && !(is.na(g$chr)) && g$chr == input[[jth_ref("chr", j)]]) {
           g.data <- vector("list", 2)
           g.data[[1]]$x <- as.integer(g$fmin)
@@ -2273,8 +2271,6 @@ shinyServer(function(input, output, session) {
     glGenes <- data.frame(matrix(unlist(results1$genes), nrow = length(results1$genes), byrow = TRUE),
       #FIXME: the order dependency on how the props come back in json is BRITTLE
       stringsAsFactors = FALSE)[, c(1,3,4,7)]
-     #cat(results1$chromosome_name)
-     #cat("\n")
     #FIXME: probably just capture the numerical bit at the end
     glGenes$chr <- as.integer(stri_match(results1$chromosome_name, regex = "(?i)(?<=(chr|LG|Gm|Vu))\\d+$")[, 1])
       #FIXME: the order dependency on how the props come back in json is BRITTLE
@@ -2304,8 +2300,6 @@ shinyServer(function(input, output, session) {
       clearGenomicLinkages()
       return()
     }
-     #cat("made it")
-     #cat("\n")
     for (i in 1:length(results2$groups)) {
       results2$groups[[i]]$id <- i
     }
@@ -2324,11 +2318,6 @@ shinyServer(function(input, output, session) {
         gr.genes
       }
     }))
-     #cat(glGenes$family)
-     #cat("\n")
-     #cat(glGenes2$family)
-     #cat("\n")
-
 
     # Highlight families common to both genomes
     families <- intersect(glGenes$family, glGenes2$family)
@@ -2337,8 +2326,7 @@ shinyServer(function(input, output, session) {
       clearGenomicLinkages()
       return()
     }
-     #cat("made it2")
-     #cat("\n")
+
     # Create nf colors
     fc <- rainbow(nf, end = 5/6) # TODO: a more clearly distinguishable set of colors
     familyColors <- list()
@@ -2365,18 +2353,6 @@ shinyServer(function(input, output, session) {
     # Sort the related regions
     glRelatedRegions <- glRelatedRegions[with(glRelatedRegions, order(chr, minBP)), ]
 
-#    cat("fmin1 ")
-#    cat(glGenes$fmin[1])
-#    cat("\n")
-#    cat("fmax1 ")
-#    cat(glGenes$fmax[1])
-#    cat("\n")
-#    cat("fminN ")
-#    cat(glGenes$fmin[nrow(glGenes)])
-#    cat("\n")
-#    cat("fmaxN ")
-#    cat(glGenes$fmax[nrow(glGenes)])
-#    cat("\n")
     # Recenter the window around the selected gene
     centerBP1 <- (as.integer(glGenes$fmin[1]) + as.integer(glGenes$fmax[nrow(glGenes)])) %/% 2
     updateNumericInput(session, "selected", value = centerBP1)
