@@ -1,6 +1,6 @@
 #Load GenomicRange packages locally, order here matters
 pkgs <- c("BiocGenerics","S4Vectors","IRanges","XVector","GenomeInfoDb","GenomicRanges")
-source("http://bioconductor.org/biocLite.R")
+if (!require("BiocManager")) install.packages("BiocManager", dependencies = TRUE)
 
 # For constructing the (Medicago truncatula) annotations data frame on the fly
 source("./buildAnnotations.R")
@@ -9,7 +9,7 @@ source("./buildGWAS.R")
 
 for(p in pkgs){
   if(system.file(package=p) == ""){
-    biocLite(p)
+    BiocManager::install(p, update = FALSE)
   }  
   suppressPackageStartupMessages(library(p, quietly=TRUE, character.only=TRUE))
 }
