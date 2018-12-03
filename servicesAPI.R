@@ -69,7 +69,7 @@ getProvideMultipleURLs <- function() {
   paste(
     # From the JSON at this.url, extract the URLs related to this gene.
     # Note that this.url = legumeInfo_urlBase + geneString + '/json'
-    #  legumeInfo_urlBase currently has 34 characters (see above)
+    #  legumeInfo_urlBase currently has 34 characters (defined in zChart.R)
     #  and geneString = <5-character species abbreviation>.geneName
     # And for now, add the gene family phylogram URL by hand.
     "$.getJSON(this.url, function(data) {",

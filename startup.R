@@ -8,4 +8,6 @@ if(!is.element('rCharts', installed.packages()[,1])){
   install_github('rCharts', 'ramnathv')
 }
 
-shiny::runApp(launch.browser = TRUE)
+# Specify the port to match the reverse proxy that enables Broadcast Channel communication.
+# Default host is 127.0.0.1 or shiny.host, and must be an IPv4, not localhost.
+shiny::runApp(launch.browser = TRUE, port = 5200)

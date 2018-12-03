@@ -1102,4 +1102,34 @@ shinyServer(function(input, output, session) {
     updateSelectInput(session, "relatedRegions", choices = glRelatedRegions$region)
   })
 
+  # Handle Broadcast Channel messages
+  observeEvent(input$bc_gcv, {
+    if (input$bc_gcv$type == 'select') {
+      print(input$bc_gcv$targets)
+      cat("--------------------\n")
+    }
+  })
+  # The messages GCV currently implements conform to the following schema:
+    # {
+    #   type: "select" | "deselect",
+    #   targets: {
+    #     organism?: String,  // an organism identifier of the form "<genus> <species>"
+    #     chromosome?: String,  // a chromosome identifier
+    #     gene?: String,  // a gene identifier
+    #     family?: String,  // a gene family identifier
+    #     extent?: Integer[2],  // a length 2 array representing a genomic interval
+    #     block?: {  // an object representing a pairwise synteny block
+    #       source: {
+    #         chromosome: String,
+    #         locus: Integer[2]
+    #       },
+    #       reference: {
+    #         chromosome: String,
+    #         locus: Integer[2]
+    #       },
+    #       orientation: "+" | "-"
+    #     }
+    #   }
+    # }
+
 })#end server
