@@ -113,3 +113,11 @@ findGWASOverlaps <- function(genomeChart, j, input) {
   
   return(gwasDataOverlapDiffPheno)    
 }
+
+# Return the trailing integer value of a string like "phavu.Chr02",
+# or NA if it does not exist
+trailingInteger <- function(s) {
+  n <- as.integer(regmatches(s, regexpr("\\d+$", s)))
+  if (length(n) == 0) return(NA)
+  n
+}

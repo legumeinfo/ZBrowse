@@ -1011,7 +1011,7 @@ shinyServer(function(input, output, session) {
       stringsAsFactors = FALSE)
     names(glGenes) <- names(results1$genes[[1]])
     glGenes <- glGenes[, c("family", "fmin", "fmax", "strand")]
-    glGenes$chr <- as.integer(regmatches(results1$chromosome_name, regexpr("\\d+$", results1$chromosome_name)))
+    glGenes$chr <- trailingInteger(results1$chromosome_name)
     glGenes <- glGenes[nchar(glGenes$family) > 0, ]
     if (nrow(glGenes) == 0) {
       # could reach here if none of the (2*neighbors + 1) genes has a family id
@@ -1041,7 +1041,7 @@ shinyServer(function(input, output, session) {
       results2$groups[[i]]$id <- i
     }
     glGenes2 <- do.call(rbind, lapply(results2$groups, FUN = function(gr) {
-      gr.chr <- as.integer(regmatches(gr$chromosome_name, regexpr("\\d+$", gr$chromosome_name)))
+      gr.chr <- trailingInteger(gr$chromosome_name)
       if (paste(substr(gr$genus,1,1),gr$species,sep=".") == abbrSpeciesName2 && !is.na(gr.chr)) {
         gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
           stringsAsFactors = FALSE)
@@ -1077,7 +1077,7 @@ shinyServer(function(input, output, session) {
     glGroupIds <- unique(glGenes2$id)
     glRelatedRegions <- do.call(rbind.data.frame, compact(lapply(results2$groups, FUN = function(gr) {
       if (gr$id %in% glGroupIds) {
-        gr.chr <- as.integer(regmatches(gr$chromosome_name, regexpr("\\d+$", gr$chromosome_name)))
+        gr.chr <- trailingInteger(gr$chromosome_name)
         gr.minBP <- gr$genes[[1]]$fmin
         gr.maxBP <- gr$genes[[length(gr$genes)]]$fmax
         list(region = sprintf("chr%d %3.2f-%3.2f Mbp", gr.chr, gr.minBP*1.0e-6, gr.maxBP*1.0e-6),
