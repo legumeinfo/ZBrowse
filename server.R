@@ -1097,11 +1097,106 @@ shinyServer(function(input, output, session) {
     updateSelectInput(session, "relatedRegions", choices = glRelatedRegions$region)
   })
 
-  # Handle Broadcast Channel messages
+  # Handle Broadcast Channel messages from the Genome Context Viewer
   observeEvent(input$bc_gcv, {
     if (input$bc_gcv$type == 'select') {
-      print(input$bc_gcv$targets)
-      cat("--------------------\n")
+      # Parse the message
+      flags = 0
+      if (!is.null(input$bc_gcv$targets$organism)) flags <- flags + 1
+      if (!is.null(input$bc_gcv$targets$chromosome)) flags <- flags + 2
+      if (!is.null(input$bc_gcv$targets$genes)) flags <- flags + 4
+      if (!is.null(input$bc_gcv$targets$family)) flags <- flags + 8
+      if (!is.null(input$bc_gcv$targets$extent)) flags <- flags + 16
+      if (!is.null(input$bc_gcv$targets$block)) flags <- flags + 32
+      isMacroSyntenyRow <- (flags == 3)
+      isMacroSyntenyBlock <- (flags == 33)
+      isMacroSyntenyOrganism <- (flags == 1)
+      isMicroSyntenyRow <- (flags == 23)
+      isMicroSyntenyGene <- isMicroSyntenyFamily <- FALSE
+      if (flags == 12) {
+        isMicroSyntenyGene <- (length(input$bc_gcv$targets$genes) == 1)
+        isMicroSyntenyFamily <- !isMicroSyntenyGene
+      }
+      # TODO:
+      # isDotPlot <- isMicroSyntenyGene # they have the same fields
+      # Multi-view fields:
+      # isMacroSyntenyCircosInnerBlock <- isMacroSyntenyRow # they have the same fields
+      # isMacroSyntenyCircosOuterBlock <- (flags == 32)
+
+      # Do something
+      if (isMacroSyntenyRow) {
+        j <- 0
+        org <- input$bc_gcv$targets$organism
+        # Note - the following tests only work for "Genus species" organism names
+        if (org == values$organism) {
+          j <- 1
+        } else if (org == values$organism2) {
+          j <- 2
+        }
+        if (j > 0) {
+          # Extract the chromosome number
+          chr <- trailingInteger(input$bc_gcv$targets$chromosome)
+          # Adjust the Chromosome window to match the selection
+          updateTabsetPanel(session, "datatabs", selected = "Chrom")
+          updateSelectInput(session, jth_ref("chr", j), selected = chr)
+        }
+
+      } else if (isMacroSyntenyBlock) {
+        org <- input$bc_gcv$targets$organism
+        blk <- input$bc_gcv$targets$block
+        # TODO: ...
+
+      } else if (isMacroSyntenyOrganism) {
+        org <- input$bc_gcv$targets$organism
+        # TODO: ...
+
+      } else if (isMicroSyntenyRow) {
+        if (input$bc_gcv$targets$organism == values$organism) {
+          # Extract the chromosome number
+          chr <- trailingInteger(input$bc_gcv$targets$chromosome)
+          # Range of base pairs
+          bpMin <- input$bc_gcv$targets$extent[[1]]
+          bpMax <- input$bc_gcv$targets$extent[[2]]
+          centerBP <- (bpMax + bpMin) %/% 2
+          widthBP <- (bpMax - bpMin) %/% 2 + 1000 # give it 1000 BPs on either side to ensure visibility
+          # Adjust the Chromosome window to match the selection
+          updateTabsetPanel(session, "datatabs", selected = "Chrom")
+          updateSelectInput(session, "chr", selected = chr)
+          updateNumericInput(session, "selected", value = centerBP)
+          updateSliderInput(session, "window", value = widthBP)
+
+          # TODO: Do something with the genes?
+          # genes <- input$bc_gcv$targets$genes
+        }
+
+      } else if (isMicroSyntenyGene) {
+        gene <- input$bc_gcv$targets$genes[[1]]
+        fam <- input$bc_gcv$targets$family
+        # TODO: (possibilities)
+        # Center the gene in its organism's window
+        # Highlight the gene
+        # Highlight other genes in the same family (in a different color?)
+
+      } else if (isMicroSyntenyFamily) {
+        # Check for singleton and orphan genes
+        genes <- input$bc_gcv$targets$genes
+        fam <- input$bc_gcv$targets$family
+        isSingletons <- startsWith(fam, "singleton")
+        isOrphans <- (fam == "")
+
+        if (isSingletons) {
+          # Parse "singleton,phytozome_10_2.xxxxxxxx,phytozome_10_2.yyyyyyyy,..."
+          families <- strsplit(fam, split = ",")[[1]][-1]
+          # TODO:
+          # Highlight all singleton genes, for both organisms
+        } else if (isOrphans) {
+          # TODO:
+          # Highlight all genes with no family, for both organisms
+        } else {
+          # TODO:
+          # Highlight all genes in the selected family, for both organisms
+        }
+      }
     }
   })
   # The messages GCV currently implements conform to the following schema:
@@ -1110,7 +1205,7 @@ shinyServer(function(input, output, session) {
     #   targets: {
     #     organism?: String,  // an organism identifier of the form "<genus> <species>"
     #     chromosome?: String,  // a chromosome identifier
-    #     gene?: String,  // a gene identifier
+    #     genes?: String[],  // an array of gene identifiers
     #     family?: String,  // a gene family identifier
     #     extent?: Integer[2],  // a length 2 array representing a genomic interval
     #     block?: {  // an object representing a pairwise synteny block
