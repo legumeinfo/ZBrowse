@@ -26,6 +26,8 @@ library(tools)
 #devtools::install_github("shiny-incubator", "rstudio")
 #library(shinyIncubator)
 #options(shiny.maxRequestSize=-1)
+library(jsonlite)
+library(shinyjs)
 
 addResourcePath('datatables','www/DataTables/')
 addResourcePath('tabletools','www/TableTools/')
@@ -278,3 +280,11 @@ bgColors <- c("lightblue", "lightsalmon")
 # mergedArabAnnot <- mergedArabAnnot[which(mergedArabAnnot$name %in% repGenes$V1),]
 # write.table(mergedArabAnnot,"mergedTAIR10Annotations.modifiedForBrowser.txt",sep="\t",col.names=T,row.names=F,qmethod="d")
 
+# Chromosome name format for each organism, for sending chromosome-based queries
+# to the Genome Context Viewer
+# TODO: move to the organism files?
+orgToChrFmt <- list()
+orgToChrFmt[["Arabidopsis thaliana"]] <- "arath.Col.Chr%d"
+orgToChrFmt[["Medicago truncatula"]] <- "medtr.chr%d"
+orgToChrFmt[["Pigeonpea"]] <- "cajca.CcLG%02d"
+orgToChrFmt[["Soybean"]] <- "glyma.Chr%02d"

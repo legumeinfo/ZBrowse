@@ -12,6 +12,7 @@ shinyUI(pageWithSidebar(
   ),
   mainPanel(
     tagList( # The four core files: 3 JS files and 1 CSS file --
+      useShinyjs(),
 #      singleton(tags$head(tags$script(src='js/highcharts.js',type='text/javascript'))),
       singleton(tags$head(tags$script(src='DataTables/js/jquery.dataTables.js',type='text/javascript'))),
       singleton(tags$head(tags$script(src='TableTools/js/TableTools.js',type='text/javascript'))),

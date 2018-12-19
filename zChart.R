@@ -594,8 +594,14 @@ create_zChart <- function(j, input, values) {
   }
   doClickOnColumn <- paste(
     "#! function() {",
-    "window.open('https://legumeinfo.org/chado_phylotree/' + this.name);", # go to the gene family's web page
-    "return false;", # and disable toggling the legend item
+      "if ($('input#boolBroadcastToBC').prop('checked')) {",
+        # Broadcast the gene family to the Genome Context Viewer
+        "Shiny.onInputChange('gcvGeneFamily', this.name);",
+      "} else {",
+        # Go to the gene family's web page
+        "window.open('https://legumeinfo.org/chado_phylotree/' + this.name);",
+      "}",
+      "return false;", # and disable toggling the legend item
     "} !#"
   )
   sapply(glFamilies, FUN = function(f) {

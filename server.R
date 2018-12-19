@@ -159,11 +159,20 @@ shinyServer(function(input, output, session) {
       h5("Genomic Linkage options:"),
       checkboxInput('boolGenomicLinkage', 'ON', FALSE),
       conditionalPanel("input.boolGenomicLinkage == true",
+        h5("Broadcast Channel options:"),
+        checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
+        checkboxInput('boolListenToBC', 'Listen', TRUE),
+# conditionalPanel("input.boolBroadcastToBC == true",
+#   actionLink("gcvtest", "GCV Test")
+# ),
         wellPanel(
           uiOutput("selectedGene"),
           numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = 20),
           numericInput("matched", "Matched:", min = 1, max = 20, value = 4),
           numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = 5),
+          conditionalPanel("input.boolBroadcastToBC == true",
+            actionLink("viewInGCV", "View in GCV")
+          ),
           style = paste0("background-color: ", bgColors[1], ";")
         ),
         wellPanel(
@@ -988,6 +997,7 @@ shinyServer(function(input, output, session) {
 
   clearGenomicLinkages <- function() {
     values$glGenes <- values$glGenes2 <- values$glColors <- NULL
+    values$glGenesGlobalPlot <- NULL
     updateSelectInput(session, "relatedRegions", choices = character(0))
   }
 
@@ -1004,6 +1014,7 @@ shinyServer(function(input, output, session) {
     # Handle and display genomic linkage query results
     if (is.null(input$genomicLinkages)) return()
 
+isolate({
     # Parse neighboring genes from species 1
     results1 <- input$genomicLinkages$results1
     values$glSelectedGene <- results1$genes[[(length(results1$genes) + 1) %/% 2]]$name
@@ -1063,7 +1074,7 @@ shinyServer(function(input, output, session) {
     }
 
     # Create nf colors
-    fc <- rainbow(nf, end = 5/6) # TODO: a more clearly distinguishable set of colors
+    fc <- getRainbowColors(nf)
     familyColors <- list()
     lapply(1:nf, FUN = function(i) familyColors[[families[i]]] <<- stri_sub(fc[i], 1, 7))
 
@@ -1095,13 +1106,56 @@ shinyServer(function(input, output, session) {
     values$glGenes2 <- glGenes2
     values$glColors <- familyColors
     updateSelectInput(session, "relatedRegions", choices = glRelatedRegions$region)
+})
+  })
+
+  observe({
+    if (is.null(input$genesGlobalPlot)) return()
+    if (!(input$boolGenomicLinkage && input$boolListenToBC)) return()
+isolate({
+    clearGenomicLinkages()
+
+    # Parse the genes
+    glGenes <- input$genesGlobalPlot$genes
+    if (length(glGenes) == 0) return()
+    nn <- names(glGenes[[1]]) # the column names
+    glGenes <- data.frame(matrix(unlist(glGenes), nrow = length(glGenes), byrow = TRUE),
+      stringsAsFactors = FALSE)
+    names(glGenes) <- nn
+    glGenes <- glGenes[, c("family", "fmin", "fmax", "strand")]
+    glGenes$chr <- trailingInteger(input$genesGlobalPlot$chromosome)
+    centerBP <- as.numeric(input$selected[[1]])
+    winHigh <- centerBP + input$window[1]
+    winLow <- centerBP - input$window[1]
+    glGenes <- glGenes[as.integer(glGenes$fmax) >= winLow & as.integer(glGenes$fmin) <= winHigh, ]
+    glGenes <- glGenes[order(as.integer(glGenes$fmin)), ] # sort as they may not be in order
+    # assign colors
+    ff <- unique(glGenes$family)
+    nf <- length(ff)
+    fc <- getRainbowColors(nf)
+    familyColors <- list()
+    lapply(1:nf, FUN = function(i) {
+      if (i <= nf) familyColors[[ff[i]]] <<- stri_sub(fc[i], 1, 7)
+    })
+    glGenes$color <- familyColors[glGenes$family]
+
+    if (nrow(glGenes) > 0) {
+      values$glGenes <- glGenes
+      values$glColors <- familyColors
+    }
+})
   })
 
   # Handle Broadcast Channel messages from the Genome Context Viewer
+  # (move to a separate file?...)
   observeEvent(input$bc_gcv, {
+    if (!(input$boolGenomicLinkage && input$boolListenToBC)) return()
+    # TODO: move to servicesAPI.R ?
     if (input$bc_gcv$type == 'select') {
       # Parse the message
       flags = 0
+# or handle each one separately...
+# TODO: add a SNPs field
       if (!is.null(input$bc_gcv$targets$organism)) flags <- flags + 1
       if (!is.null(input$bc_gcv$targets$chromosome)) flags <- flags + 2
       if (!is.null(input$bc_gcv$targets$genes)) flags <- flags + 4
@@ -1172,6 +1226,9 @@ shinyServer(function(input, output, session) {
       } else if (isMicroSyntenyGene) {
         gene <- input$bc_gcv$targets$genes[[1]]
         fam <- input$bc_gcv$targets$family
+# print(gene)
+# print(fam)
+# print("-----------------")
         # TODO: (possibilities)
         # Center the gene in its organism's window
         # Highlight the gene
@@ -1185,16 +1242,31 @@ shinyServer(function(input, output, session) {
         isOrphans <- (fam == "")
 
         if (isSingletons) {
-          # Parse "singleton,phytozome_10_2.xxxxxxxx,phytozome_10_2.yyyyyyyy,..."
-          families <- strsplit(fam, split = ",")[[1]][-1]
-          # TODO:
           # Highlight all singleton genes, for both organisms
+          chr <- organismToChromosomeName(values$organism, as.integer(input$chr))
+          # genes <- genes[-1] # ?
+          # Parse "singleton,phytozome_10_2.xxxxxxxx,phytozome_10_2.yyyyyyyy,..."
+          fam <- strsplit(fam, split = ",")[[1]][-1]
+          fam <- paste0("'", fam, "'", collapse = ",")
+          fam <- sprintf("[%s]", fam)
+          query <- getGlobalPlot(chr, fam)
+          runjs(query)
+
         } else if (isOrphans) {
-          # TODO:
           # Highlight all genes with no family, for both organisms
+          chr <- organismToChromosomeName(values$organism, as.integer(input$chr))
+          fam <- sprintf("['%s']", fam)
+          # TODO: (can the GCV return genes with no family?)
+          query <- getGlobalPlot(chr, fam)
+          runjs(query)
+
         } else {
-          # TODO:
           # Highlight all genes in the selected family, for both organisms
+          chr <- organismToChromosomeName(values$organism, as.integer(input$chr))
+          fam <- sprintf("['%s']", fam)
+          query <- getGlobalPlot(chr, fam)
+          runjs(query)
+          # TODO: organism 2
         }
       }
     }
@@ -1221,5 +1293,42 @@ shinyServer(function(input, output, session) {
     #     }
     #   }
     # }
+
+  # Turn off (deselect) any old highlighted targets
+  clearGCVHighlights <- function() {
+    if (!is.null(values$gcvTargets)) {
+      robj <- list(type = "deselect", targets = values$gcvTargets)
+      msg <- sprintf("bc.postMessage(JSON.parse('%s'));", toJSON(robj, auto_unbox = TRUE))
+      runjs(msg)
+    }
+  }
+
+  # View the current genomic linkage query in the Genome Context Viewer
+  # (this does not involve Broadcast Channel)
+  observeEvent(input$viewInGCV, isolate({
+    if (!is.null(values$glSelectedGene)) {
+      gensp2 <- tolower(gensp(values$organism2))
+      gcvQuery <- sprintf("window.open('http://127.0.0.1:4700/lis/gcv/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
+        values$glSelectedGene, input$neighbors, input$matched, input$intermediate, gensp2)
+      runjs(gcvQuery)
+    }
+  }))
+
+  # Post a Broadcast Channel message to the Genome Context Viewer
+  # (which handles the same kind of messages it sends)
+  observe({
+    if (is.null(input$gcvGeneFamily)) return()
+    isolate(clearGCVHighlights())
+
+    # User selected a family (in the Chromosome View) to highlight in the Genome Context Viewer
+    gcvTargets = list(family = input$gcvGeneFamily)
+    robj <- list(type = "select", targets = gcvTargets)
+    msg <- sprintf("bc.postMessage(JSON.parse('%s'));", toJSON(robj, auto_unbox = TRUE))
+    values$gcvTargets <- gcvTargets
+    runjs(msg)
+
+    # Then reset it to enable selecting the same family in the future
+    runjs("Shiny.onInputChange('gcvGeneFamily', null);")
+  })
 
 })#end server

@@ -114,10 +114,26 @@ findGWASOverlaps <- function(genomeChart, j, input) {
   return(gwasDataOverlapDiffPheno)    
 }
 
+# Return an organism's 5-character species abbreviation, like "Medtr"
+gensp <- function(organism) {
+  ss <- strsplit(organism, split = " ")[[1]]
+  sprintf("%s%s", stri_sub(ss[1], 1, 3), stri_sub(ss[2], 1, 2))
+}
+
+organismToChromosomeName <- function(organism, chromosomeNumber) {
+  sprintf(orgToChrFmt[[organism]], chromosomeNumber)
+}
+
 # Return the trailing integer value of a string like "phavu.Chr02",
 # or NA if it does not exist
 trailingInteger <- function(s) {
   n <- as.integer(regmatches(s, regexpr("\\d+$", s)))
   if (length(n) == 0) return(NA)
   n
+}
+
+getRainbowColors <- function(n) {
+  # Return n rainbow colors (from red to magenta)
+  # TODO: a more clearly distinguishable set of colors
+  rainbow(n, end = 5/6)
 }
