@@ -362,8 +362,7 @@ shinyServer(function(input, output, session) {
   output$nrowDataset2 <- reactive(createNrowDataset(2))
 
   createColumnSettingsPanel <- function(j) {
-    tags$div(
-      class = "container",
+    wellPanel(
       style = paste0("background-color: ", bgColors[j], ";"),
 
       htmlOutput(jth_ref("htmlDataExample", j)),
