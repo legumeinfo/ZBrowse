@@ -162,9 +162,6 @@ shinyServer(function(input, output, session) {
         h5("Broadcast Channel options:"),
         checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
         checkboxInput('boolListenToBC', 'Listen', TRUE),
-# conditionalPanel("input.boolBroadcastToBC == true",
-#   actionLink("gcvtest", "GCV Test")
-# ),
         wellPanel(
           uiOutput("selectedGene"),
           numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = 20),
