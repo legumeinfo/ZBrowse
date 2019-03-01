@@ -2,6 +2,7 @@
 # Build a GWAS data frame from files accessible by HTTP
 # --------------------------------------------------------------
 
+library(jsonlite)
 library(stringi)
 
 # --------------------------------------------------------------
@@ -19,17 +20,23 @@ gwas.filenames[["Arabidopsis thaliana"]] <- c(
   "http://de.cyverse.org/dl/d/9B68EAA3-D105-49B7-B2C1-E1690E8BAF23/Trichome avg JA.gwas"
   # ...
 )
+
+# Get the GWAS filenames from DSCensor
+gwasBaseUrl <- "http://dev.lis.ncgr.org:50020/api/v1/nodes/labels/"
 organisms.gwas <- c("Medicago truncatula") #, "Soybean", "Pigeonpea", "Cowpea")
-gwas.filenames[["Medicago truncatula"]] <- c(
-  "http://de.cyverse.org/dl/d/8F20C8BF-BEEC-4801-BCFF-41534832958B/floweringdate_results.gwas",
-  "http://de.cyverse.org/dl/d/DAAF68FD-3A80-4E5D-83D5-2245C7E0D747/height_results.gwas",
-  "http://de.cyverse.org/dl/d/03FCF51A-8501-487F-A12E-DF4F8CDB0446/noda_results.gwas",
-  "http://de.cyverse.org/dl/d/D7082A0C-5945-47DB-B5B0-3301C78BB12D/nodb_results.gwas",
-  "http://de.cyverse.org/dl/d/2C0AC931-4C07-47F9-B236-DDB581497979/occupancyA_results.gwas",
-  "http://de.cyverse.org/dl/d/EE69C622-4432-479C-82CF-66BF33C1C38C/occupancyB_results.gwas",
-  "http://de.cyverse.org/dl/d/F2485FCD-D5D3-4F55-B693-F00551B4FF47/totalnod_results.gwas",
-  "http://de.cyverse.org/dl/d/6030E8B2-4BD9-4393-87D6-6E67D60DA7E8/trichomes_results.gwas"
-)
+for (o.gwas in organisms.gwas) {
+  ss <- strsplit(org.Genus_species[[o.gwas]], split = " ")[[1]]
+  genus <- ss[1]
+  species <- ss[2]
+
+  query <- fromJSON(paste0(gwasBaseUrl, tolower(genus), ":", species, ":gwas"))
+  if (length(query$data$url) == 0) {
+    gwas.filenames[[paste(ss[1], ss[2])]] <- c()
+  } else {
+    oo <- order(sapply(query$data$url, basename))
+    gwas.filenames[[paste(ss[1], ss[2])]] <- query$data$url[oo]
+  }
+}
 
 gwas.traits <- list()
 gwas.traits[["Arabidopsis thaliana"]] <- stri_match(basename(gwas.filenames[["Arabidopsis thaliana"]]), regex = ".*(?=.gwas)")[, 1]
