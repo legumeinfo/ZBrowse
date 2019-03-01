@@ -19,6 +19,7 @@ gwas.filenames[["Arabidopsis thaliana"]] <- c(
   "http://de.cyverse.org/dl/d/9B68EAA3-D105-49B7-B2C1-E1690E8BAF23/Trichome avg JA.gwas"
   # ...
 )
+organisms.gwas <- c("Medicago truncatula") #, "Soybean", "Pigeonpea", "Cowpea")
 gwas.filenames[["Medicago truncatula"]] <- c(
   "http://de.cyverse.org/dl/d/8F20C8BF-BEEC-4801-BCFF-41534832958B/floweringdate_results.gwas",
   "http://de.cyverse.org/dl/d/DAAF68FD-3A80-4E5D-83D5-2245C7E0D747/height_results.gwas",
@@ -32,17 +33,25 @@ gwas.filenames[["Medicago truncatula"]] <- c(
 
 gwas.traits <- list()
 gwas.traits[["Arabidopsis thaliana"]] <- stri_match(basename(gwas.filenames[["Arabidopsis thaliana"]]), regex = ".*(?=.gwas)")[, 1]
-gwas.traits[["Medicago truncatula"]] <- stri_match(basename(gwas.filenames[["Medicago truncatula"]]), regex = ".*(?=_results.gwas)")[, 1]
+for (o.gwas in organisms.gwas) {
+  gwas.traits[[o.gwas]] <- stri_match(basename(gwas.filenames[[o.gwas]]), regex = ".*(?=_results.gwas)")[, 1]
+}
 
 # TODO: standardize column names
 gwas.cols <- list()
 gwas.cols[["Arabidopsis thaliana"]] <- c("Chromosome", "Position", "Trait", "P.Value", "negLogP", "MAF")
-gwas.cols[["Medicago truncatula"]] <- c("Chromosome", "pos", "P.value")
+for (o.gwas in organisms.gwas) {
+  # TODO: this works for Medicago truncatula;
+  # either make sure it works for other species, or generalize it
+  gwas.cols[[o.gwas]] <- c("Chromosome", "pos", "P.value")
+}
 
 # Start with an empty data frame
-init.gwas <- function(organism.gwas) {
-  organism <- stri_match(organism.gwas, regex = ".*(?= GWAS)")[, 1]
+init.gwas <- function(o.gwas) {
+  organism <- stri_match(o.gwas, regex = ".*(?= GWAS)")[, 1]
   if (organism == "Medicago truncatula") {
+    # TODO: this works for Medicago truncatula;
+    # either make sure it works for other species, or generalize it
     df.gwas <- data.frame(Chromosome = "1", pos = 1L, Trait = "-", P.value = 0.1, stringsAsFactors = FALSE)
   } else if (organism == "Arabidopsis thaliana") {
     df.gwas <- data.frame(Chromosome = "1", Position = 1L, Trait = "-", P.Value = 0.1, negLogP = 1.0, MAF = 0.01, stringsAsFactors = FALSE)
@@ -60,6 +69,8 @@ load.gwas.remote <- function(organism, filename, trait) {
   cols <- gwas.cols[[organism]]
 
   if (organism == "Medicago truncatula") {
+    # TODO: this works for Medicago truncatula;
+    # either make sure it works for other species, or generalize it
     df.gwas <- read.table(file = url(filename, method = "libcurl"), header = TRUE, sep = "\t", quote = "\"", stringsAsFactors = FALSE)[, cols]
     df.gwas$Trait <- trait
 

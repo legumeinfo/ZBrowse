@@ -1,4 +1,7 @@
 Cowpea
 42129361,33908088,65292630,42731077,48746289,34463471,40876636,38363498,43933251,41327797,41684185
-https://legumeinfo.org/data/public/Vigna_unguiculata/IT97K-499-35.gnm1.ann1.zb5D/vigun.IT97K-499-35.gnm1.ann1.gene_models_main.gff3.gz
+Vigna unguiculata,V.unguiculata,Vigun
+https://v1.legumefederation.org/data/public/Vigna_unguiculata/IT97K-499-35.gnm1.ann1.zb5D/vigun.IT97K-499-35.gnm1.ann1.zb5D.gene_models_main.gff3.gz
+vigun.IT97K-499-35.gnm1.Vu
 v1.legumefederation.org/gcv_lis_phytozome
+vigun.Chr%02d

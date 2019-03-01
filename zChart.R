@@ -179,8 +179,8 @@ create_zChart <- function(j, input, values) {
   #     #     })
   
   #build annotation series
-  #thisChrAnnot <- subset(annotGeneLoc,chromosome==input[[jth_ref("chr", j)]])
-  thisChrAnnot <- subset(annotGeneLoc[values[[jth_ref("organism", j)]]][[1]],chromosome==input[[jth_ref("chr", j)]])
+  #thisChrAnnot <- subset(org.annotGeneLoc,chromosome==input[[jth_ref("chr", j)]])
+  thisChrAnnot <- subset(org.annotGeneLoc[values[[jth_ref("organism", j)]]][[1]],chromosome==input[[jth_ref("chr", j)]])
   thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]
   if(nrow(thisAnnot)==0){ #nothing is in the window, but lets still make a data.frame (actually make it big just to hopefully pick up one row from each strand...)
     thisAnnot <- thisChrAnnot[1:100,]
@@ -567,7 +567,7 @@ create_zChart <- function(j, input, values) {
   doClickOnPoint <- "#! function(event) { alert(this.trait); } !#"
   # User clicked on a line -> various possible responses:
   microSyntenySearch <- getMicroSyntenySearch()
-  geneToQueryTrack <- getGeneToQueryTrack(glUrlBase[values$organism], glUrlBase[values$organism2], microSyntenySearch)
+  geneToQueryTrack <- getGeneToQueryTrack(org.gcvUrlBase[values$organism], org.gcvUrlBase[values$organism2], microSyntenySearch)
   provideMultipleURLs <- getProvideMultipleURLs()
   bGenomicLinkage <- ifelse(j == 1, 1, 0)
   doClickOnLine <- sprintf(paste(

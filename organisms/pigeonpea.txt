@@ -1,4 +1,7 @@
 Pigeonpea
 17676265,36921656,29476785,12502730,5133333,23791330,19579009,20383548,10489139,22571102,48970052
+Cajanus cajan,C.cajan,Cajca
 annotations/pigeonpea.cajca.ICPL87119.gnm1.ann1.AHRD.genes.csv
+cajca.ICPL87119.gnm1.CcLG
 v1.legumefederation.org/gcv_lis_phytozome
+cajca.CcLG%02d

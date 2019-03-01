@@ -33,17 +33,10 @@ replace.special.characters <- function(text) {
 # GFF column indices for ("chromosome", "type", "transcript_start", "transcript_end", "strand", "attributes")
 gff.cols <- c(1, 3, 4, 5, 7, 9)
 
-build.annotations <- function(key, filename, chrLengths) {
+build.annotations <- function(key, filename, chrLengths, chrPrefix) {
   t0 <- proc.time()[3]
   cat(paste("Constructing", key, "annotations ... "))
 
-  if (key == "Medicago truncatula") {
-    chrPrefix <- "medtr.A17_HM341.gnm4.chr" # "chr"`
-  } else if (key == "Soybean") {
-    chrPrefix <- "glyma.Wm82.gnm2.Gm"
-  } else if (key == "Cowpea") {
-    chrPrefix <- "vigun.IT97K-499-35.gnm1.Vu"
-  }
   # We expect that the number part of the chromosome name will have enough leading zeros to allow alphabetic sorting.
   # This is only necessary for this parsing step, afterward we will refer to chromosomes by number (1-N).
   num.chromosomes <- length(chrLengths)

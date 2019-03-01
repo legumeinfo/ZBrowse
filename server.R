@@ -11,7 +11,7 @@ shinyServer(function(input, output, session) {
   # Add your organism to legumeInfo.gwas if its GWAS files live on a server instead of locally.
   legumeInfo.gwas <- c("Arabidopsis thaliana GWAS", "Medicago truncatula GWAS")
   # TODO: Do we really need legumeInfo.organisms?
-  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea")
+  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea", "Pigeonpea")
   dataFiles <- c(dataFiles, legumeInfo.gwas)
   for(i in dataFiles){
     if (i %in% legumeInfo.gwas) {
@@ -21,8 +21,6 @@ shinyServer(function(input, output, session) {
     }
   }  
   values$datasetlist <- dataFiles
-#  values[["ionomics"]] <- aggTable
-#  values$datasetlist <- dataFiles
   values$datasetToOrganism <- NULL # map each dataset to an organism
 
   # what to do when the user changes the jth dataset selection
@@ -318,7 +316,7 @@ shinyServer(function(input, output, session) {
     winHigh <- centerBP + input[[jth_ref("window", j)]][1]
     winLow <- centerBP - input[[jth_ref("window", j)]][1]
     if (winLow < 0) { winLow <- 0 }
-    thisChrAnnot <- subset(annotGeneLoc[values[[jth_ref("organism", j)]]][[1]], chromosome == input[[jth_ref("chr", j)]])
+    thisChrAnnot <- subset(org.annotGeneLoc[values[[jth_ref("organism", j)]]][[1]], chromosome == input[[jth_ref("chr", j)]])
     thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh, ]
     thisAnnot
   }
@@ -1026,18 +1024,6 @@ isolate({
       return()
     }
 
-    # Convert (for example) "Medicago truncatula" to "M.truncatula"
-    ss.org2 <- strsplit(values$organism2, split = " ")[[1]]
-    abbrSpeciesName2 <- paste(stri_sub(ss.org2[1], 1, 1), ss.org2[2], sep = ".")
-    #FIXME- probably just making the organism consistent with what comes back from GCV services is the way to go for this
-    # (hard-code these for now)
-    if (values$organism2 == "Pigeonpea") {
-      abbrSpeciesName2 <- "C.cajan"
-    } else if (values$organism2 == "Soybean") {
-      abbrSpeciesName2 <- "G.max"
-    } else if (values$organism2 == "Cowpea") {
-      abbrSpeciesName2 <- "V.unguiculata"
-    }
     # Parse related genes from species 2
     results2 <- input$genomicLinkages$results2
     if (length(results2$groups) == 0) {
@@ -1049,7 +1035,7 @@ isolate({
     }
     glGenes2 <- do.call(rbind, lapply(results2$groups, FUN = function(gr) {
       gr.chr <- trailingInteger(gr$chromosome_name)
-      if (paste(substr(gr$genus,1,1),gr$species,sep=".") == abbrSpeciesName2 && !is.na(gr.chr)) {
+      if (paste(substr(gr$genus,1,1),gr$species,sep=".") == org.G.species[values$organism2] && !is.na(gr.chr)) {
         gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
           stringsAsFactors = FALSE)
         names(gr.genes) <- names(gr$genes[[1]])
@@ -1303,9 +1289,8 @@ isolate({
   # (this does not involve Broadcast Channel)
   observeEvent(input$viewInGCV, isolate({
     if (!is.null(values$glSelectedGene)) {
-      gensp2 <- tolower(gensp(values$organism2))
       gcvQuery <- sprintf("window.open('http://127.0.0.1:4700/lis/gcv/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
-        values$glSelectedGene, input$neighbors, input$matched, input$intermediate, gensp2)
+        values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
       runjs(gcvQuery)
     }
   }))
