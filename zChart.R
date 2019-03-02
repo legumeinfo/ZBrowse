@@ -191,81 +191,16 @@ create_zChart <- function(j, input, values) {
     thisAnnot$attributes <- sapply(thisAnnot$attributes, FUN = function(a) replace.special.characters(extract.gff.attribute(a, "Note")))
   }
   
-  #    urlBase <- 'http://www.maizesequence.org/Zea_mays/Transcript/ProteinSummary?db=core;t='
-  urlBase <- 'http://maizegdb.org/cgi-bin/displaygenemodelrecord.cgi?id='
   soyurlBase <- 'http://www.soybase.org/sbt/search/search_results.php?category=FeatureName&search_term='
   #TAIR subscription limit exceeded- changing to araport
   #araburlBase <- 'http://arabidopsis.org/servlets/TairObject?type=locus&name='
   araburlBase <- 'http://www.araport.org/locus/'
-  sorgurlBase <- 'http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:'
   legumeInfo_urlBase <- 'https://legumeinfo.org/gene_links/'
   
   annotYvalReverse <- 0.02
   #if(input[[jth_ref("axisLimBool", j)]] == TRUE){annotYvalReverse <- input[[jth_ref("axisMin", j)]] + 0.01}
   annotYvalForward <- annotYvalReverse + 0.04
-  if (values[[jth_ref("organism", j)]] == "Corn") {
-    annotTable <- adply(thisAnnot[thisAnnot$transcript_strand==1,],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(urlBase,x$transcript_id),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
-                              x$translation_id,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,
-                              x$transcript_strand,
-                              x$V2
-                 ),
-                 marker=c(NA,"Arrow",NA),
-                 stringsAsFactors=FALSE
-      )
-    })
-    annotTableReverse <- adply(thisAnnot[thisAnnot$transcript_strand==-1,],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(urlBase,x$transcript_id),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
-                              x$translation_id,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,
-                              x$transcript_strand,
-                              x$V2
-                 ),
-                 marker=c("Arrow",NA,NA),
-                 stringsAsFactors=FALSE
-      )
-    })
-    
-    # } else if(values[[jth_ref("organism", j)]] == "Soybean") { #strand is '+' or '-'
-    # annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
-    #   data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
-    #     name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
-    #       x$name,
-    #       prettyNum(x$transcript_start, big.mark = ","),
-    #       prettyNum(x$transcript_end, big.mark = ","),
-    #       x$Protein.Length,
-    #       x$chromosome,                                                                           
-    #       x$strand,
-    #       x$TopTAIRHitDescription,
-    #       x$TopUniref100DescriptionExtraSmall
-    #     ),
-    #     stringsAsFactors=FALSE
-    #   )
-    # })
-    # annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {
-    #   data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
-    #     name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
-    #       x$name,
-    #       prettyNum(x$transcript_start, big.mark = ","),
-    #       prettyNum(x$transcript_end, big.mark = ","),
-    #       x$Protein.Length,
-    #       x$chromosome,                                                                           
-    #       x$strand,
-    #       x$TopTAIRHitDescription,
-    #       x$TopUniref100DescriptionExtraSmall
-    #     ),
-    #     stringsAsFactors=FALSE
-    #   )
-    # })
-    
-  } else if(values[[jth_ref("organism", j)]] %in% c("Arabidopsis", "Arabidopsis thaliana")) { #strand is '+' or '-'
+  if (values[[jth_ref("organism", j)]] == "Arabidopsis thaliana") { #strand is '+' or '-'
     annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
       data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(araburlBase,x$Locus),
                  name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Short Desc.: %6$s</td></tr></table>",
@@ -346,42 +281,6 @@ create_zChart <- function(j, input, values) {
                               x$chromosome,
                               x$strand,
                               x$attributes
-                 ),
-                 stringsAsFactors=FALSE
-      )
-    })
-    
-  } else { #} if(values[[jth_ref("organism", j)]] == "Sorghum"){#strand is '+' or '-'
-    annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(sorgurlBase,x$ID),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s<br>Top TAIR Hit: %7$s<br>Top Rice Hit: %8$s</td></tr></table>",
-                              x$name,
-                              #1,#x$V2.1,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,                                                                           
-                              x$strand,
-                              x$defLine,
-                              x$bestArabHitDefline,
-                              x$bestRiceHitDefline
-                              # x$Curator_summary
-                 ),
-                 stringsAsFactors=FALSE
-      )
-    })
-    annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(sorgurlBase,x$ID),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s<br>Top TAIR Hit: %7$s<br>Top Rice Hit: %8$s</td></tr></table>",
-                              x$name,
-                              #1,#x$V2.1,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,                                                                           
-                              x$strand,
-                              x$defLine,
-                              x$bestArabHitDefline,
-                              x$bestRiceHitDefline
-                              # x$Curator_summary
                  ),
                  stringsAsFactors=FALSE
       )

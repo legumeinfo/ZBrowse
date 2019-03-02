@@ -1,7 +1,0 @@
-Sorghum
-73933847,78027413,74539055,68108026,62428788,62294152,64407977,55559831,59722314,61076732
-Sorghum bicolor,S.bicolor,Sorbi
-./annotations/SorghumV1.4.with2.1annotations.mergedPhytozomeFiles.csv
-Chr
-NA
-Chr%d

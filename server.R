@@ -95,17 +95,19 @@ shinyServer(function(input, output, session) {
         conditionalPanel(condition = paste0("input.", jth_ref("dataType", j), " == 'examples'"),
           actionButton(jth_ref('loadExampleData', j), 'Load examples')
         )
-      ),
-      wellPanel(
-        style = paste0("background-color: ", bgColors[j], ";"),
-        h6("Once your file is finished uploading, press the Save Dataset button below and reload ZBrowse."),
-        actionButton(jth_ref('saveDatasetButton', j), 'Save Current Dataset'),
-        conditionalPanel(condition = paste0("input.", jth_ref("saveDatasetButton", j), " > 0"),
-          h5("Dataset successfully saved!")
-        )
-      )
+      ) #,
+      # wellPanel(
+      #   style = paste0("background-color: ", bgColors[j], ";"),
+      #   h6("Once your file is finished uploading, press the Save Dataset button below and reload ZBrowse."),
+      #   actionButton(jth_ref('saveDatasetButton', j), 'Save Current Dataset'),
+      #   conditionalPanel(condition = paste0("input.", jth_ref("saveDatasetButton", j), " > 0"),
+      #     h5("Dataset successfully saved!")
+      #   )
+      # )
     )
   }
+  observeEvent(input$appendSNPs, shinyjs::disable("appendSNPs"))
+  observeEvent(input$appendSNPs, shinyjs::disable("appendSNPs2"))
   
   createDataTableSidebar <- function(j) {
     wellPanel(
@@ -922,7 +924,7 @@ shinyServer(function(input, output, session) {
         SIaxisLimBool=input[[jth_ref("SIaxisLimBool", j)]],SIaxisMin=input[[jth_ref("SIaxisMin", j)]],SIaxisMax=input[[jth_ref("SIaxisMax", j)]],stringsAsFactors=FALSE))      
       #print("rbind")
       #print(currDatasetProp)
-      write.table(file="./www/config/datasetProperties.csv",x=currDatasetProp,col.names=TRUE,row.names=FALSE,sep=",")
+      # write.table(file="./www/config/datasetProperties.csv",x=currDatasetProp,col.names=TRUE,row.names=FALSE,sep=",")
       updateTabsetPanel(session, "datatabs", selected = "WhGen")
     })
 #    if(input$selected != 1e5){
@@ -932,16 +934,16 @@ shinyServer(function(input, output, session) {
   observe(handleSubmitColsButton(1))
   observe(handleSubmitColsButton(2))
 
-  saveDataset <- function(j) {
-    if (is.null(input[[jth_ref("saveDatasetButton", j)]]) || input[[jth_ref("saveDatasetButton", j)]] == 0) { return() }
-    isolate({
-      if(!file.exists(paste0("./www/config/data/",input[[jth_ref("datasets", j)]]))){
-        write.table(getdata(j),paste0("./www/config/data/",input[[jth_ref("datasets", j)]]),sep=",",col.names=TRUE,row.names=FALSE)
-      }
-    })
-  }
-  observe(saveDataset(1))
-  observe(saveDataset(2))
+  # saveDataset <- function(j) {
+  #   if (is.null(input[[jth_ref("saveDatasetButton", j)]]) || input[[jth_ref("saveDatasetButton", j)]] == 0) { return() }
+  #   isolate({
+  #     if(!file.exists(paste0("./www/config/data/",input[[jth_ref("datasets", j)]]))){
+  #       write.table(getdata(j),paste0("./www/config/data/",input[[jth_ref("datasets", j)]]),sep=",",col.names=TRUE,row.names=FALSE)
+  #     }
+  #   })
+  # }
+  # observe(saveDataset(1))
+  # observe(saveDataset(2))
   
    datasetProp <- function(){
      dp <- read.table("./www/config/datasetProperties.csv",sep=",",head=TRUE,stringsAsFactors=FALSE)
@@ -1289,7 +1291,7 @@ isolate({
   # (this does not involve Broadcast Channel)
   observeEvent(input$viewInGCV, isolate({
     if (!is.null(values$glSelectedGene)) {
-      gcvQuery <- sprintf("window.open('http://127.0.0.1:4700/lis/gcv/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
+      gcvQuery <- sprintf("window.open('/gcv/legfed_v1_0/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
         values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
       runjs(gcvQuery)
     }
