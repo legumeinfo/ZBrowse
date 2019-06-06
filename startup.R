@@ -5,7 +5,7 @@ if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
 
 if(!is.element('rCharts', installed.packages()[,1])){
   require(devtools)
-  install_github('rCharts', 'ramnathv')
+  install_github('ramnathv/rCharts')
 }
 
 # Specify the port to match the reverse proxy that enables Broadcast Channel communication.
