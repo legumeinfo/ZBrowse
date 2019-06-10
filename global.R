@@ -23,6 +23,7 @@ library(tools)
 #options(shiny.maxRequestSize=-1)
 library(jsonlite)
 library(shinyjs)
+library(rintrojs)
 
 addResourcePath('datatables','www/DataTables/')
 addResourcePath('tabletools','www/TableTools/')

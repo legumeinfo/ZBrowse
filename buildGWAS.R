@@ -29,8 +29,13 @@ for (o.gwas in organisms.gwas) {
   genus <- ss[1]
   species <- ss[2]
 
-  query <- fromJSON(paste0(gwasBaseUrl, tolower(genus), ":", species, ":gwas"))
-  if (length(query$data$url) == 0) {
+  # If the connection is valid, return the query as a list containing a data frame,
+  # otherwise return an empty list
+  query <- list()
+  tryCatch(
+    query <- fromJSON(paste0(gwasBaseUrl, tolower(genus), ":", species, ":gwas"))
+  )
+  if (length(query) == 0 || length(query$data$url) == 0) {
     gwas.filenames[[paste(ss[1], ss[2])]] <- c()
   } else {
     oo <- order(sapply(query$data$url, basename))
@@ -41,7 +46,11 @@ for (o.gwas in organisms.gwas) {
 gwas.traits <- list()
 gwas.traits[["Arabidopsis thaliana"]] <- stri_match(basename(gwas.filenames[["Arabidopsis thaliana"]]), regex = ".*(?=.gwas)")[, 1]
 for (o.gwas in organisms.gwas) {
-  gwas.traits[[o.gwas]] <- stri_match(basename(gwas.filenames[[o.gwas]]), regex = ".*(?=_results.gwas)")[, 1]
+  if (length(gwas.filenames[[o.gwas]]) == 0) {
+    gwas.traits[[o.gwas]] <- c()
+  } else {
+    gwas.traits[[o.gwas]] <- stri_match(basename(gwas.filenames[[o.gwas]]), regex = ".*(?=_results.gwas)")[, 1]
+  }
 }
 
 # TODO: standardize column names
