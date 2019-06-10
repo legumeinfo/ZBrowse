@@ -75,11 +75,11 @@ shinyServer(function(input, output, session) {
 
   createManageSidebar <- function(j) {
     list(
-      wellPanel(
+      tags$div(id = jth_ref("tour-dataset", j), wellPanel(
         style = paste0("background-color: ", bgColors[j], ";"),
         uiOutput(jth_ref("datasets", j))
-      ),
-      wellPanel(
+      )),
+      tags$div(id = jth_ref("tour-loaddata", j), wellPanel(
         style = paste0("background-color: ", bgColors[j], ";"),
         radioButtons(inputId = jth_ref("dataType", j), label = "Load data (Max. 5MB):", c(".csv" = "csv", ".rda" = "rda", "examples" = "examples"), selected = "csv"),
         conditionalPanel(condition = paste0("input.", jth_ref("dataType", j), " != 'examples'"),
@@ -95,7 +95,7 @@ shinyServer(function(input, output, session) {
         conditionalPanel(condition = paste0("input.", jth_ref("dataType", j), " == 'examples'"),
           actionButton(jth_ref('loadExampleData', j), 'Load examples')
         )
-      ),
+      )),
       wellPanel(
         style = paste0("background-color: ", bgColors[j], ";"),
         h6("Once your file is finished uploading, press the Save Dataset button below and reload ZBrowse."),
@@ -153,14 +153,14 @@ shinyServer(function(input, output, session) {
     )
   }
   createGenomicLinkageSidebar <- function() {
-    wellPanel(
+    tags$div(id = "tour-genLink", wellPanel(
       h5("Genomic Linkage options:"),
       checkboxInput('boolGenomicLinkage', 'ON', FALSE),
       conditionalPanel("input.boolGenomicLinkage == true",
         h5("Broadcast Channel options:"),
         checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
         checkboxInput('boolListenToBC', 'Listen', TRUE),
-        wellPanel(
+        tags$div(id = "tour-genLink-1", wellPanel(
           uiOutput("selectedGene"),
           numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = 20),
           numericInput("matched", "Matched:", min = 1, max = 20, value = 4),
@@ -169,18 +169,19 @@ shinyServer(function(input, output, session) {
             actionLink("viewInGCV", "View in GCV")
           ),
           style = paste0("background-color: ", bgColors[1], ";")
-        ),
-        wellPanel(
+        )),
+        tags$div(id = "tour-genLink-2", wellPanel(
           uiOutput("relatedRegions"),
           style = paste0("background-color: ", bgColors[2], ";")
-        )
+        ))
       )
-    )
+    ))
   }
 
   output$ui_All <- renderUI({
     list(
       conditionalPanel(condition = manageTabSelected,
+        actionLink("zbrowseTour", "Start Tour"),
         createManageSidebar(1),
         createManageSidebar(2),
         tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) {
@@ -201,11 +202,17 @@ shinyServer(function(input, output, session) {
           $(id).preventDefault();
           */
         });"),
-        helpModal('Manage','manage',includeMarkdown("tools/manage.md")),HTML('<p style="font-size:10px;">Powered by <a href="http://www.rstudio.com/shiny/">Shiny</a>, <a href="http://rcharts.io/">rCharts</a> and <a href="http://www.highcharts.com">Highcharts</a></p>')             
+        helpModal('Manage','manage', includeMarkdown("tools/manage.md")),
+        HTML(paste('<p style="font-size:10px;">Powered by',
+          '<a href="http://www.rstudio.com/shiny/">Shiny</a>,',
+          '<a href="http://rcharts.io/">rCharts</a>,',
+          '<a href="http://www.highcharts.com">Highcharts</a>,',
+          'and <a href="https://github.com/carlganz/rintrojs">rintrojs</a>',
+          '</p>'))
       ),#end conditional Manage
 
       conditionalPanel(condition = dataTableTabSelected,
-        createDataTableSidebar(1),
+        tags$div(id = "tour-datatableSidebar", createDataTableSidebar(1)),
         createDataTableSidebar(2),
         helpModal('Data Table View','view',includeMarkdown("tools/manage.md"))      
       ),#end conditional Table
@@ -360,7 +367,7 @@ shinyServer(function(input, output, session) {
   output$nrowDataset2 <- reactive(createNrowDataset(2))
 
   createColumnSettingsPanel <- function(j) {
-    wellPanel(
+    tags$div(id = jth_ref("tour-columnSettings", j), wellPanel(
       style = paste0("background-color: ", bgColors[j], ";"),
 
       htmlOutput(jth_ref("htmlDataExample", j)),
@@ -390,7 +397,7 @@ shinyServer(function(input, output, session) {
         col(2, uiOutput(jth_ref("SIyAxisColumn", j))),
         col(2, uiOutput(jth_ref("SIaxisLimBool", j)),uiOutput(jth_ref("SIaxisLim", j)))
       )
-    )
+    ))
   }
   output$ui_data_tabs <- renderUI({
     tabsetPanel(id = "datatabs",      
@@ -399,15 +406,21 @@ shinyServer(function(input, output, session) {
         createColumnSettingsPanel(2)
       ),
       tabPanel(title="Data Table",value="Table",
-        wellPanel(dataTableOutput("dataviewer"), style = paste0("background-color: ", bgColors[1], ";")),
+        tags$div(id = "tour-datatable",
+          wellPanel(dataTableOutput("dataviewer"), style = paste0("background-color: ", bgColors[1], ";"))
+        ),
         wellPanel(dataTableOutput("dataviewer2"), style = paste0("background-color: ", bgColors[2], ";"))
       ),
       tabPanel(title="Whole Genome View",value="WhGen",
-        wellPanel(showOutput("gChart", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
+        tags$div(id = "tour-wholegenome",
+          wellPanel(showOutput("gChart", "highcharts"), style = paste0("background-color: ", bgColors[1], ";"))
+        ),
         wellPanel(showOutput("gChart2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
       ),
       tabPanel(title="Chromosome View",value="Chrom",
-        wellPanel(showOutput("pChart", "highcharts"), showOutput("zChart", "highcharts"),
+        wellPanel(
+          tags$div(id = "tour-pChart", showOutput("pChart", "highcharts")),
+          tags$div(id = "tour-zChart", showOutput("zChart", "highcharts")),
           tags$script('Shiny.addCustomMessageHandler("customMsg", function(bandOpts){
             chartXAxis = $("#pChart").highcharts().xAxis[0]
             chartXAxis.removePlotBand()
@@ -425,7 +438,9 @@ shinyServer(function(input, output, session) {
         )
       ),
       tabPanel(title="Annotations Table",value="Annot",
-        wellPanel(dataTableOutput("annotViewer"), style = paste0("background-color: ", bgColors[1], ";")),
+        tags$div(id = "tour-annotations",
+          wellPanel(dataTableOutput("annotViewer"), style = paste0("background-color: ", bgColors[1], ";"))
+        ),
         wellPanel(dataTableOutput("annotViewer2"), style = paste0("background-color: ", bgColors[2], ";"))
       )
     )#end tabsetPanel
@@ -1310,6 +1325,16 @@ isolate({
 
     # Then reset it to enable selecting the same family in the future
     runjs("Shiny.onInputChange('gcvGeneFamily', null);")
+  })
+
+  # Tour based on rintrojs
+  df.tour <- read.csv(file = "tour.csv", header = TRUE)
+  observeEvent(input$zbrowseTour, {
+    introjs(session,
+      options = list(steps = df.tour, showBullets = FALSE, showStepNumbers = FALSE, skipLabel = "End Tour"),
+      # allow switching tabs
+      events = list(onbeforechange = readCallback("switchTabs"))
+    )
   })
 
 })#end server
