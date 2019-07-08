@@ -4,8 +4,19 @@
 
 library(jsonlite)
 library(stringi)
+library(RCurl)
 
 # --------------------------------------------------------------
+
+gwas.sources <- data.frame(
+  name = c("CyVerse", "DSCensor"),
+  # use more basic URLs
+  url = c("http://de.cyverse.org/dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas", "http://dev.lis.ncgr.org:50021"),
+  status = FALSE,
+  stringsAsFactors = FALSE
+)
+row.names(gwas.sources) <- gwas.sources$name
+gwas.sources$status <- sapply(gwas.sources$url, url.exists)
 
 # The following structure makes it easy to add any organism whose
 # GWAS files are in the same format as those for Medicago truncatula.
@@ -32,7 +43,7 @@ for (o.gwas in organisms.gwas) {
   # If the connection is valid, return the query as a list containing a data frame,
   # otherwise return an empty list
   query <- list()
-  tryCatch(
+  if (gwas.sources["DSCensor", "status"]) tryCatch(
     query <- fromJSON(paste0(gwasBaseUrl, tolower(genus), ":", species, ":gwas"))
   )
   if (length(query) == 0 || length(query$data$url) == 0) {
@@ -77,6 +88,11 @@ init.gwas <- function(o.gwas) {
 }
 
 load.gwas.remote <- function(organism, filename, trait) {
+  if (!gwas.sources["CyVerse", "status"]) {
+    print(paste("No connection to", filename))
+    return()
+  }
+
   t0 <- proc.time()[3]
   cat(paste("Loading", trait, "data ... "))
 

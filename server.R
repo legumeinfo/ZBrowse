@@ -178,10 +178,33 @@ shinyServer(function(input, output, session) {
     ))
   }
 
+  displayConnectionStatus <- function() {
+    apply(gwas.sources, FUN = function(ci) {
+      # id for each connection's label
+      nn <- paste("gwasSource", ci["name"], sep = "_")
+      # server part comes first
+      output[[nn]] <- renderText({
+        ci["status"] <- url.exists(ci["url"])
+        if (ci["status"]) {
+          cc <- "green"
+          ss <- ""
+        } else {
+          cc <- "red"
+          ss <- " unavailable"
+        }
+        tt <- 60000 # msec between connection tests
+        invalidateLater(tt, session)
+        paste0("<span style=\"color:", cc, "\">", ci["name"], ss, "</span>")
+      })
+      # then the ui part
+      htmlOutput(nn)
+    }, MARGIN = 1)
+  }
   output$ui_All <- renderUI({
     list(
       conditionalPanel(condition = manageTabSelected,
         actionLink("zbrowseTour", "Start Tour"),
+        wellPanel(h5("Connection Status"), displayConnectionStatus()),
         createManageSidebar(1),
         createManageSidebar(2),
         tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) {
