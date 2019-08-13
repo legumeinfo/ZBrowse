@@ -746,9 +746,9 @@ shinyServer(function(input, output, session) {
     if(is.null(input[[jth_ref("datasets", j)]])){return()}
     if(input[[jth_ref("plotAll", j)]] == TRUE){return()}
     lapply(input[[jth_ref("traitColumns", j)]], function(i) {
-      traits <- c("Select All ",sort(unique(values[[input[[jth_ref("datasets", j)]]]][,i])))
+      traits <- c("Select All", "Deselect All", sort(unique(values[[input[[jth_ref("datasets", j)]]]][,i])))
       selectizeInput(inputId=jth_ref(i, j), label=paste0("Select ",i),traits,
-        selected=traits[1], # 1 for Select All, 2 for the first trait, etc
+        selected = traits[1], # 1 for Select All, 2 for Deselect All, 3 for the first trait, etc
         multiple=TRUE, options = list(dropdownParent="body",plugins=list("remove_button")))
     })
   }
@@ -757,9 +757,11 @@ shinyServer(function(input, output, session) {
 
   updateTraitsMenu <- function(j) {
     lapply(input[[jth_ref("traitColumns", j)]], function(i){
-      if("Select All " %in% input[[jth_ref(i, j)]]){
+      if ("Select All" %in% input[[jth_ref(i, j)]]) {
         selected_choices <- sort(unique(values[[input[[jth_ref("datasets", j)]]]][,i]))
         updateSelectizeInput(session, jth_ref(i, j), selected = selected_choices)
+      } else if ("Deselect All" %in% input[[jth_ref(i, j)]]) {
+        updateSelectizeInput(session, jth_ref(i, j), selected = character(0))
       }
     })
   }
