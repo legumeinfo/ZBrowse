@@ -11,7 +11,7 @@ library(RCurl)
 gwas.sources <- data.frame(
   name = c("CyVerse", "DSCensor"),
   # use more basic URLs
-  url = c("http://de.cyverse.org/dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas", "http://dev.lis.ncgr.org:50021"),
+  url = c("http://de.cyverse.org/dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas", "http://dev.lis.ncgr.org:50020"),
   status = FALSE,
   stringsAsFactors = FALSE
 )
