@@ -489,10 +489,10 @@ shinyServer(function(input, output, session) {
   )
   output$annotViewer <- renderDataTable({
     createAnnotTable(1)
-  }, options = annotViewer.options)
+  }, options = annotViewer.options, escape = FALSE)
   output$annotViewer2 <- renderDataTable({
     createAnnotTable(2)
-  }, options = annotViewer.options)
+  }, options = annotViewer.options, escape = FALSE)
 
   dataViewer.options <- annotViewer.options # they happen to be identical, but we could make them different
   createDataViewer <- function(j) {
@@ -524,8 +524,8 @@ shinyServer(function(input, output, session) {
     # html <- sub("<TABLE border=1>","<table class='table table-condensed table-hover'>", html)
     # html
   }
-  output$dataviewer <-renderDataTable(createDataViewer(1), options = dataViewer.options)
-  output$dataviewer2 <-renderDataTable(createDataViewer(2), options = dataViewer.options)
+  output$dataviewer <-renderDataTable(createDataViewer(1), options = dataViewer.options, escape = FALSE)
+  output$dataviewer2 <-renderDataTable(createDataViewer(2), options = dataViewer.options, escape = FALSE)
   
   createDownloadAnnot <- function(j) {
     downloadHandler(
