@@ -13,14 +13,18 @@
 // It probably does not matter, as messages will be ignored unless a session exists.
 $(document).on('shiny:connected', function(e) {
 //$(document).on('shiny:sessioninitialized', function(e) {
-  bc = new BroadcastChannel('GCV');
+  try {
+    bc = new BroadcastChannel('GCV');
 
-  bc.onmessage = function(e) {
-    Shiny.onInputChange("bc_gcv", e.data);
-    //console.log(e.data);
-  };
+    bc.onmessage = function(e) {
+      Shiny.onInputChange("bc_gcv", e.data);
+      //console.log(e.data);
+    };
 
-  //console.log('Opened GCV broadcast channel');
+    //console.log('Opened GCV broadcast channel');
+  } catch (ex) {
+    //console.log('Could not open a GCV broadcast channel');
+  }
 });
 
 $(document).on('shiny:disconnected', function(e) {

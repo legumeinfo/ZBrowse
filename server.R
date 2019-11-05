@@ -1320,7 +1320,7 @@ isolate({
   clearGCVHighlights <- function() {
     if (!is.null(values$gcvTargets)) {
       robj <- list(type = "deselect", targets = values$gcvTargets)
-      msg <- sprintf("bc.postMessage(JSON.parse('%s'));", toJSON(robj, auto_unbox = TRUE))
+      msg <- sprintf("try { bc.postMessage(JSON.parse('%s')); } catch (ex) {}", toJSON(robj, auto_unbox = TRUE))
       runjs(msg)
     }
   }
@@ -1344,7 +1344,7 @@ isolate({
     # User selected a family (in the Chromosome View) to highlight in the Genome Context Viewer
     gcvTargets = list(family = input$gcvGeneFamily)
     robj <- list(type = "select", targets = gcvTargets)
-    msg <- sprintf("bc.postMessage(JSON.parse('%s'));", toJSON(robj, auto_unbox = TRUE))
+    msg <- sprintf("try { bc.postMessage(JSON.parse('%s')); } catch (ex) {}", toJSON(robj, auto_unbox = TRUE))
     values$gcvTargets <- gcvTargets
     runjs(msg)
 
