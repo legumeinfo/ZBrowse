@@ -1362,4 +1362,42 @@ isolate({
     )
   })
 
+  # Input values specified in the URL: set once on initialization
+  observeEvent(input$chr, {
+    tabsetNames <- c("datatabs")
+    selectInputNames <- outer(c("chr"), 1:2, FUN = jth_ref)
+    numericInputNames <- outer(c("selected"), 1:2, FUN = jth_ref)
+    numericInputNames <- c(numericInputNames, "neighbors", "matched", "intermediate")
+    sliderInputNames <- outer(c("window"), 1:2, FUN = jth_ref)
+    checkboxInputNames <- c("boolGenomicLinkage")
+
+    pqs <- parseQueryString(session$clientData$url_search)
+    names.pqs <- names(pqs)
+    for (x in intersect(names.pqs, tabsetNames)) {
+      updateTabsetPanel(session, x, selected = pqs[[x]])
+    }
+    for (x in intersect(names.pqs, selectInputNames)) {
+      updateSelectInput(session, x, selected = pqs[[x]])
+    }
+    for (x in intersect(names.pqs, numericInputNames)) {
+      updateNumericInput(session, x, value = as.integer(pqs[[x]]))
+    }
+    for (x in intersect(names.pqs, sliderInputNames)) {
+      updateSliderInput(session, x, value = as.integer(pqs[[x]]))
+    }
+    for (x in intersect(names.pqs, checkboxInputNames)) {
+      updateCheckboxInput(session, x, value = pqs[[x]])
+    }
+  }, once = TRUE)
+  # Handle datasets inputs separately to prevent them from resetting the chromosomes
+  observeEvent(input$datasets, {
+    selectInputNames <- outer(c("datasets"), 1:2, FUN = jth_ref)
+
+    pqs <- parseQueryString(session$clientData$url_search)
+    names.pqs <- names(pqs)
+    for (x in intersect(names.pqs, selectInputNames)) {
+      updateSelectInput(session, x, selected = pqs[[x]])
+    }
+  }, once = TRUE)
+
 })#end server
