@@ -234,6 +234,10 @@ shinyServer(function(input, output, session) {
           '</p>'))
       ),#end conditional Manage
 
+      conditionalPanel(condition = "input.datatabs != 'Manage'",
+        actionLink("copyAsUrl", "Copy as URL to Clipboard")
+      ),
+
       conditionalPanel(condition = dataTableTabSelected,
         tags$div(id = "tour-datatableSidebar", createDataTableSidebar(1)),
         createDataTableSidebar(2),
@@ -1362,6 +1366,28 @@ isolate({
     )
   })
 
+  # Copy application state to clipboard, as a URL
+  observeEvent(input$copyAsUrl, {
+    url <- paste0(session$clientData$url_protocol, "//",
+      session$clientData$url_hostname, ":", session$clientData$url_port,
+      session$clientData$url_pathname)
+    url_search <- ""
+    ss <- outer(c("datasets", "chr", "selected", "window"), 1:2, FUN = jth_ref)
+    ss <- c(ss, "datatabs")
+    ss <- c(ss, "boolGenomicLinkage", "neighbors", "matched", "intermediate")
+    for (s in ss) {
+      x <- isolate(input[[s]])
+      if (!is.null(x)) {
+        url_search <- paste0(url_search, ifelse(nchar(url_search) == 0, "?", "&"), s, "=", x)
+      }
+    }
+    url <- paste0(url, url_search)
+
+    clip <- pipe("pbcopy", "w")
+    write(url, file = clip)
+    close(clip)
+  })
+
   # Input values specified in the URL: set once on initialization
   observeEvent(input$chr, {
     tabsetNames <- c("datatabs")
@@ -1386,7 +1412,7 @@ isolate({
       updateSliderInput(session, x, value = as.integer(pqs[[x]]))
     }
     for (x in intersect(names.pqs, checkboxInputNames)) {
-      updateCheckboxInput(session, x, value = pqs[[x]])
+      updateCheckboxInput(session, x, value = (tolower(pqs[[x]]) == "true"))
     }
   }, once = TRUE)
   # Handle datasets inputs separately to prevent them from resetting the chromosomes
