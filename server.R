@@ -236,10 +236,6 @@ shinyServer(function(input, output, session) {
           '</p>'))
       ),#end conditional Manage
 
-      conditionalPanel(condition = "input.datatabs != 'Manage'",
-        actionLink("copyAsUrl", "Copy as URL to Clipboard")
-      ),
-
       conditionalPanel(condition = dataTableTabSelected,
         tags$div(id = "tour-datatableSidebar", createDataTableSidebar(1)),
         createDataTableSidebar(2),
@@ -753,9 +749,16 @@ shinyServer(function(input, output, session) {
     if(input[[jth_ref("plotAll", j)]] == TRUE){return()}
     lapply(input[[jth_ref("traitColumns", j)]], function(i) {
       traits <- c("Select All", "Deselect All", sort(unique(values[[input[[jth_ref("datasets", j)]]]][,i])))
-      selectizeInput(inputId=jth_ref(i, j), label=paste0("Select ",i),traits,
-        selected = traits[1], # 1 for Select All, 2 for Deselect All, 3 for the first trait, etc
-        multiple=TRUE, options = list(dropdownParent="body",plugins=list("remove_button")))
+      # trait index is 1 for Select All, 2 for Deselect All, 3 for the first trait, etc
+      selectedTraits <- traits[1] # default is Select All
+      trj <- jth_ref("traits", j)
+      if (!is.null(values[[trj]])) {
+        # user-specified selected traits
+        selectedTraits <- values[[trj]]
+      }
+      selectizeInput(inputId = jth_ref(i, j), label = paste0("Select ", i),
+        choices = traits, selected = selectedTraits, multiple = TRUE,
+        options = list(dropdownParent = "body", plugins = list("remove_button")))
     })
   }
   output$traitColBoxes <- renderUI(createTraitColBoxes(1))
@@ -1368,27 +1371,54 @@ isolate({
     )
   })
 
-  # Copy application state to clipboard, as a URL
-  observeEvent(input$copyAsUrl, {
-    url <- paste0(session$clientData$url_protocol, "//",
-      session$clientData$url_hostname, ":", session$clientData$url_port,
-      session$clientData$url_pathname)
-    url_search <- ""
+  # Update application state to URL on the fly
+  updateURL <- function() {
+    # required for query string: selected tab; inputs for each organism
+    selectedTab <- isolate(input$datatabs)
+    url.q <- paste0("?datatabs=", selectedTab)
     ss <- outer(c("datasets", "chr", "selected", "window"), 1:2, FUN = jth_ref)
-    ss <- c(ss, "datatabs")
-    ss <- c(ss, "boolGenomicLinkage", "neighbors", "matched", "intermediate")
     for (s in ss) {
       x <- isolate(input[[s]])
       if (!is.null(x)) {
-        url_search <- paste0(url_search, ifelse(nchar(url_search) == 0, "?", "&"), s, "=", x)
+        url.q <- paste0(url.q, "&", s, "=", x)
       }
     }
-    url <- paste0(url, url_search)
-
-    clip <- pipe("pbcopy", "w")
-    write(url, file = clip)
-    close(clip)
-  })
+    # optional: selected traits
+    if (selectedTab %in% c("WhGen", "Chrom")) {
+      traits <- ""
+      for (j in 1:2) {
+        trj <- jth_ref("traits", j)
+        for (i in input[[jth_ref("traitColumns", j)]]) {
+          x <- input[[jth_ref(i, j)]]
+          if (!is.null(x)) traits <- paste0(x, collapse=";")
+        }
+        if (traits != "") url.q <- paste0(url.q, "&", trj, "=", traits)
+      }
+    }
+    # optional: genomic linkage information
+    if (isolate(input$boolGenomicLinkage)) {
+      url.q <- paste0(url.q, "&boolGenomicLinkage=true")
+      ss.gl <- c("neighbors", "matched", "intermediate")
+      for (s in ss.gl) {
+        x <- isolate(input[[s]])
+        if (!is.null(x)) {
+          url.q <- paste0(url.q, "&", s, "=", x)
+        }
+      }
+    }
+    updateQueryString(url.q)
+    # updateQueryString(url.q, mode = "push") # to save history
+    # runjs(paste0("document.title = 'ZBrowse ", rbinom(1, 16, 0.5), "';"))
+  }
+  observeEvent(
+    eventExpr = list(
+      input$datatabs, input$datasets, input$datasets2,
+      input$chr, input$chr2, input$selected, input$selected2, input$window, input$window2,
+      input$boolGenomicLinkage, input$neighbors, input$matched, input$intermediate,
+      sapply(input$traitColumns, function(i) input[[i]]),
+      sapply(input$traitColumns2, function(i) input[[jth_ref(i, 2)]])
+    ),
+    handlerExpr = updateURL(), ignoreInit = TRUE)
 
   # Input values specified in the URL: set once on initialization
   observeEvent(input$chr, {
@@ -1427,5 +1457,19 @@ isolate({
       updateSelectInput(session, x, selected = pqs[[x]])
     }
   }, once = TRUE)
+  # (finally,) update traits
+  observeEvent(input$datatabs, {
+    if (input$datatabs %in% c("WhGen", "Chrom")) {
+      pqs <- parseQueryString(session$clientData$url_search)
+      names.pqs <- names(pqs)
+      for (j in 1:2) {
+        trj <- jth_ref("traits", j)
+        if (trj %in% names.pqs) {
+          stj <- pqs[[trj]]
+          values[[trj]] <- strsplit(stj, split = ";")[[1]]
+        }
+      }
+    }
+  })
 
 })#end server
