@@ -23,6 +23,11 @@ shinyServer(function(input, output, session) {
   values$datasetlist <- dataFiles
   values$datasetToOrganism <- NULL # map each dataset to an organism
 
+  # Extract initial values specified in the URL
+  isolate({
+    values$urlFields <- parseQueryString(session$clientData$url_search)
+  })
+
   # what to do when the user changes the jth dataset selection
   datasetChanged <- function(j) {
     if (is.null(input[[jth_ref("datasets", j)]])) return()
@@ -153,18 +158,30 @@ shinyServer(function(input, output, session) {
     )
   }
   createGenomicLinkageSidebar <- function() {
+    glOn <- isolate(values$urlFields$genomicLinkage)
+    if (is.null(glOn)) {
+      glOn <- FALSE
+    } else {
+      glOn <- (tolower(glOn) == "true")
+    }
+    val.n <- isolate(values$urlFields$neighbors)
+    if (is.null(val.n)) val.n = 20
+    val.m = isolate(values$urlFields$matched)
+    if (is.null(val.m)) val.m = 4
+    val.i = isolate(values$urlFields$intermediate)
+    if (is.null(val.i)) val.i = 5
     tags$div(id = "tour-genLink", wellPanel(
       h5("Genomic Linkage options:"),
-      checkboxInput('boolGenomicLinkage', 'ON', FALSE),
+      checkboxInput('boolGenomicLinkage', 'ON', glOn),
       conditionalPanel("input.boolGenomicLinkage == true",
         h5("Broadcast Channel options:"),
         checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
         checkboxInput('boolListenToBC', 'Listen', TRUE),
         tags$div(id = "tour-genLink-1", wellPanel(
           uiOutput("selectedGene"),
-          numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = 20),
-          numericInput("matched", "Matched:", min = 1, max = 20, value = 4),
-          numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = 5),
+          numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = val.n),
+          numericInput("matched", "Matched:", min = 1, max = 20, value = val.m),
+          numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = val.i),
           conditionalPanel("input.boolBroadcastToBC == true",
             actionLink("viewInGCV", "View in GCV")
           ),
@@ -337,9 +354,13 @@ shinyServer(function(input, output, session) {
     # Drop-down selection of data set
     selectInput(inputId = jth_ref("datasets", j), label = paste0("Dataset ", j, ":"), choices = values$datasetlist, selected = values$datasetlist[values$datasetlist == val], multiple = FALSE, selectize = FALSE)
   }
-  output$datasets <- renderUI(renderDatasets(1, "Medicago truncatula GWAS"))
-  output$datasets2 <- renderUI(renderDatasets(2, "Arabidopsis thaliana GWAS"))
-  
+  initialDataset <- isolate(values$urlFields$datasets)
+  if (is.null(initialDataset)) initialDataset <- "Medicago truncatula GWAS"
+  output$datasets <- renderUI(renderDatasets(1, initialDataset))
+  initialDataset2 <- isolate(values$urlFields$datasets2)
+  if (is.null(initialDataset2)) initialDataset2 <- "Arabidopsis thaliana GWAS"
+  output$datasets2 <- renderUI(renderDatasets(2, initialDataset2))
+
   createAnnotTable <- function(j) {
     if (is.null(input[[jth_ref("datasets", j)]])) return()
     centerBP <- as.numeric(input[[jth_ref("selected", j)]][[1]])
@@ -365,6 +386,13 @@ shinyServer(function(input, output, session) {
     dat <- data.frame(dat[1:nr,, drop = FALSE])
 
     #dat <- date2character_dat(dat) #may be needed to print table if there is a data column
+
+    # Now that the data exist, select the tab specified in the URL (if any)
+    initialTab <- isolate(values$urlFields$tab)
+    if (!is.null(initialTab)) {
+      updateTabsetPanel(session, "datatabs", selected = initialTab)
+      values$urlFields$tab <- NULL # to reset it
+    }
 
     html <- print(xtable::xtable(dat), type='html', print.results = FALSE)
     html <- sub("<TABLE border=1>","<table class='table table-condensed table-hover'>", html)
@@ -749,10 +777,10 @@ shinyServer(function(input, output, session) {
       traits <- c("Select All", "Deselect All", sort(unique(values[[input[[jth_ref("datasets", j)]]]][,i])))
       # trait index is 1 for Select All, 2 for Deselect All, 3 for the first trait, etc
       selectedTraits <- traits[1] # default is Select All
-      trj <- jth_ref("traits", j)
-      if (!is.null(values[[trj]])) {
-        # user-specified selected traits
-        selectedTraits <- values[[trj]]
+      # Select traits specified in the URL (if any)
+      traitsFromUrl <- isolate(values$urlFields[[jth_ref("traits", j)]])
+      if (!is.null(traitsFromUrl)) {
+        selectedTraits <- strsplit(traitsFromUrl, split = ";")[[1]]
       }
       selectizeInput(inputId = jth_ref(i, j), label = paste0("Select ", i),
         choices = traits, selected = selectedTraits, multiple = TRUE,
@@ -811,8 +839,14 @@ shinyServer(function(input, output, session) {
   output$overlapSize2 <- renderUI(createOverlapSize(2))
 
   createSelectChr <- function(j) {
-    if (is.null(values[[jth_ref("organism", j)]])) { return() }
-    selectInput(jth_ref("chr", j), "Chromosome:", chrName[values[[jth_ref("organism", j)]]][[1]], selectize = FALSE)
+    organism <- values[[jth_ref("organism", j)]]
+    if (is.null(organism)) { return() }
+    chrChoices <- chrName[organism][[1]]
+    chr <- jth_ref("chr", j)
+    # Select the chromosome specified in the URL (if any)
+    initialChromosome <- isolate(values$urlFields[[chr]])
+    if (is.null(initialChromosome)) { initialChromosome <- NULL }
+    selectInput(chr, "Chromosome:", chrChoices, selected = initialChromosome, selectize = FALSE)
   }
   output$selectChr <- renderUI(createSelectChr(1))
   outputOptions(output, "selectChr", suspendWhenHidden=FALSE)
@@ -820,7 +854,11 @@ shinyServer(function(input, output, session) {
   outputOptions(output, "selectChr2", suspendWhenHidden=FALSE)
   
   createSelectedOut <- function(j) {
-    numericInput(jth_ref("selected", j), "", value=100000)
+    selected <- jth_ref("selected", j)
+    # Select the center position specified in the URL (if any)
+    initialCenter <- isolate(values$urlFields[[selected]])
+    if (is.null(initialCenter)) { initialCenter <- 100000 }
+    numericInput(selected, "", value = initialCenter)
   }
   output$selectedOut <- renderUI(createSelectedOut(1))
   outputOptions(output, "selectedOut", suspendWhenHidden=FALSE)
@@ -828,7 +866,12 @@ shinyServer(function(input, output, session) {
   outputOptions(output, "selectedOut2", suspendWhenHidden=FALSE)
 
   createWindowOut <- function(j) {
-    sliderInput(inputId=jth_ref("window", j), label="Window size around selected point:",min=1000,max=.5e6,value=2.5e5)
+    window <- jth_ref("window", j)
+    # Select the window size (half-width) specified in the URL (if any)
+    initialWindowSize <- isolate(values$urlFields[[window]])
+    if (is.null(initialWindowSize)) { initialWindowSize <- 250000 }
+    sliderInput(inputId = window, label="Window size around selected point:",
+      min = 1000, max = 500000, value = initialWindowSize)
   }
   output$windowOut <- renderUI(createWindowOut(1))
   outputOptions(output, "windowOut", suspendWhenHidden=FALSE)
@@ -1134,7 +1177,16 @@ isolate({
     values$glGenes <- glGenes
     values$glGenes2 <- glGenes2
     values$glColors <- familyColors
-    updateSelectInput(session, "relatedRegions", choices = glRelatedRegions$region)
+    # Select the related region specified in the URL (if any)
+    selectedRegion <- values$urlFields$relatedRegion
+    if (!(is.null(selectedRegion) || selectedRegion %in% glRelatedRegions$region)) {
+      # If the user-specified region does not exist, select the first one
+      # (TODO: select the best match instead)
+      selectedRegion <- NULL
+    }
+    values$urlFields$relatedRegion <- NULL # to reset it
+    updateSelectInput(session, "relatedRegions", choices = glRelatedRegions$region,
+      selected = selectedRegion)
 })
   })
 
@@ -1334,13 +1386,13 @@ isolate({
 
   # View the current genomic linkage query in the Genome Context Viewer
   # (this does not involve Broadcast Channel)
-  observeEvent(input$viewInGCV, isolate({
+  observeEvent(input$viewInGCV, {
     if (!is.null(values$glSelectedGene)) {
       gcvQuery <- sprintf("window.open('http://127.0.0.1:4700/lis/gcv/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
         values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
       runjs(gcvQuery)
     }
-  }))
+  })
 
   # Post a Broadcast Channel message to the Genome Context Viewer
   # (which handles the same kind of messages it sends)
@@ -1372,8 +1424,7 @@ isolate({
   # Update application state to URL on the fly
   updateURL <- function() {
     # required for query string: selected tab; inputs for each organism
-    selectedTab <- isolate(input$datatabs)
-    url.q <- paste0("?datatabs=", selectedTab)
+    url.q <- paste0("?tab=", isolate(input$datatabs))
     ss <- outer(c("datasets", "chr", "selected", "window"), 1:2, FUN = jth_ref)
     for (s in ss) {
       x <- isolate(input[[s]])
@@ -1381,21 +1432,19 @@ isolate({
         url.q <- paste0(url.q, "&", s, "=", x)
       }
     }
-    # optional: selected traits
-    if (selectedTab %in% c("WhGen", "Chrom")) {
-      traits <- ""
-      for (j in 1:2) {
-        trj <- jth_ref("traits", j)
-        for (i in input[[jth_ref("traitColumns", j)]]) {
-          x <- input[[jth_ref(i, j)]]
-          if (!is.null(x)) traits <- paste0(x, collapse=";")
-        }
-        if (traits != "") url.q <- paste0(url.q, "&", trj, "=", traits)
+    # selected traits
+    traits <- ""
+    for (j in 1:2) {
+      for (i in input[[jth_ref("traitColumns", j)]]) {
+        x <- input[[jth_ref(i, j)]]
+        if (!is.null(x)) traits <- paste0(x, collapse=";")
       }
+      trj <- jth_ref("traits", j)
+      if (traits != "") url.q <- paste0(url.q, "&", trj, "=", traits)
     }
     # optional: genomic linkage information
     if (isolate(input$boolGenomicLinkage)) {
-      url.q <- paste0(url.q, "&boolGenomicLinkage=true")
+      url.q <- paste0(url.q, "&genomicLinkage=true")
       ss.gl <- c("neighbors", "matched", "intermediate")
       for (s in ss.gl) {
         x <- isolate(input[[s]])
@@ -1403,71 +1452,53 @@ isolate({
           url.q <- paste0(url.q, "&", s, "=", x)
         }
       }
+      # optional: selected gene and related region
+      if (!is.null(values$glSelectedGene)) {
+        url.q <- paste0(url.q, "&selectedGene=", values$glSelectedGene)
+      }
+      if (!is.null(isolate(input$relatedRegions))) {
+        url.q <- paste0(url.q, "&relatedRegion=", isolate(input$relatedRegions))
+      }
     }
     updateQueryString(url.q)
     # updateQueryString(url.q, mode = "push") # to save history
-    # runjs(paste0("document.title = 'ZBrowse ", rbinom(1, 16, 0.5), "';"))
   }
   observeEvent(
-    eventExpr = list(
-      input$datatabs, input$datasets, input$datasets2,
-      input$chr, input$chr2, input$selected, input$selected2, input$window, input$window2,
-      input$boolGenomicLinkage, input$neighbors, input$matched, input$intermediate,
-      sapply(input$traitColumns, function(i) input[[i]]),
+    eventExpr = {
+      # any input that can trigger the handlerExpr
+      input$datasets
+      input$datasets2
+      sapply(input$traitColumns, function(i) input[[jth_ref(i, 1)]])
       sapply(input$traitColumns2, function(i) input[[jth_ref(i, 2)]])
-    ),
+      input$chr
+      input$selected
+      input$window
+      input$chr2
+      input$selected2
+      input$window2
+      input$boolGenomicLinkage
+      input$neighbors
+      input$matched
+      input$intermediate
+      values$glSelectedGene
+      input$relatedRegions
+      input$datatabs
+    },
     handlerExpr = updateURL(), ignoreInit = TRUE)
 
-  # Input values specified in the URL: set once on initialization
-  observeEvent(input$chr, {
-    tabsetNames <- c("datatabs")
-    selectInputNames <- outer(c("chr"), 1:2, FUN = jth_ref)
-    numericInputNames <- outer(c("selected"), 1:2, FUN = jth_ref)
-    numericInputNames <- c(numericInputNames, "neighbors", "matched", "intermediate")
-    sliderInputNames <- outer(c("window"), 1:2, FUN = jth_ref)
-    checkboxInputNames <- c("boolGenomicLinkage")
-
-    pqs <- parseQueryString(session$clientData$url_search)
-    names.pqs <- names(pqs)
-    for (x in intersect(names.pqs, tabsetNames)) {
-      updateTabsetPanel(session, x, selected = pqs[[x]])
-    }
-    for (x in intersect(names.pqs, selectInputNames)) {
-      updateSelectInput(session, x, selected = pqs[[x]])
-    }
-    for (x in intersect(names.pqs, numericInputNames)) {
-      updateNumericInput(session, x, value = as.integer(pqs[[x]]))
-    }
-    for (x in intersect(names.pqs, sliderInputNames)) {
-      updateSliderInput(session, x, value = as.integer(pqs[[x]]))
-    }
-    for (x in intersect(names.pqs, checkboxInputNames)) {
-      updateCheckboxInput(session, x, value = (tolower(pqs[[x]]) == "true"))
-    }
-  }, once = TRUE)
-  # Handle datasets inputs separately to prevent them from resetting the chromosomes
-  observeEvent(input$datasets, {
-    selectInputNames <- outer(c("datasets"), 1:2, FUN = jth_ref)
-
-    pqs <- parseQueryString(session$clientData$url_search)
-    names.pqs <- names(pqs)
-    for (x in intersect(names.pqs, selectInputNames)) {
-      updateSelectInput(session, x, selected = pqs[[x]])
-    }
-  }, once = TRUE)
-  # (finally,) update traits
+  # Get genomic linkages for the selected gene specified in the URL (if any)
   observeEvent(input$datatabs, {
-    if (input$datatabs %in% c("WhGen", "Chrom")) {
-      pqs <- parseQueryString(session$clientData$url_search)
-      names.pqs <- names(pqs)
-      for (j in 1:2) {
-        trj <- jth_ref("traits", j)
-        if (trj %in% names.pqs) {
-          stj <- pqs[[trj]]
-          values[[trj]] <- strsplit(stj, split = ";")[[1]]
-        }
-      }
-    }
-  })
+    if (input$datatabs != "Chrom") return()
+
+    glOn <- values$urlFields$genomicLinkage
+    if (is.null(glOn) || tolower(glOn) != "true") return()
+    if (is.null(values$urlFields$selectedGene)) return()
+
+    # Query the Genome Context Viewer for genomic linkages
+    runjs(getGeneToQueryTrack(org.gcvUrlBase[values$organism], org.gcvUrlBase[values$organism2],
+      getMicroSyntenySearch(), values$urlFields$selectedGene))
+
+    values$urlFields$selectedGene <- NULL # to reset it
+  }, ignoreInit = TRUE)
 
 })#end server

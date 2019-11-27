@@ -22,31 +22,38 @@ getMicroSyntenySearch <- function() {
   )
 }
 
-getGeneToQueryTrack <- function(url1, url2, microSyntenySearch) {
+getGeneToQueryTrack <- function(url1, url2, microSyntenySearch, selectedGene = NULL) {
+  if (is.null(selectedGene)) {
+    gene.js <- paste(
+      "var geneString = '';",
+      "mt0 = this.url.search('medtr');",
+      "cc0 = this.url.search('cajca');",
+      "gm0 = this.url.search('glyma');",
+      "vu0 = this.url.search('vigun');",
+      "js1 = this.url.search('/json');",
+      "if (mt0 >= 0) {",
+        "geneString = this.url.substring(mt0, js1);",
+      "} else if (gm0 >= 0) {",
+        "geneString = this.url.substring(gm0, js1);",
+      "} else if (vu0 >= 0) {",
+        "geneString = this.url.substring(vu0, js1);",
+      "} else if (cc0 >= 0) {",
+        "geneString = this.url.substring(cc0, js1);",
+      "} else if (this.url.search('arabidopsis.org') >= 0) {",
+        "at0 = this.url.search('name=');",
+        "geneString = 'arath.Col.' + this.url.substring(at0 + 5);",
+      "} else {",
+        "return;",
+      "}"
+    )
+  } else {
+    gene.js <- sprintf("var geneString = '%s';", selectedGene)
+  }
   paste(
     # Query the Genome Context Viewer for genomic linkages
     sprintf("url1 = '%s';", url1),
     sprintf("url2 = '%s';", url2),
-    "var geneString = '';",
-    "mt0 = this.url.search('medtr');",
-    "cc0 = this.url.search('cajca');",
-    "gm0 = this.url.search('glyma');",
-    "vu0 = this.url.search('vigun');",
-    "js1 = this.url.search('/json');",
-    "if (mt0 >= 0) {",
-      "geneString = this.url.substring(mt0, js1);",
-    "} else if (gm0 >= 0) {",
-      "geneString = this.url.substring(gm0, js1);",
-    "} else if (vu0 >= 0) {",
-      "geneString = this.url.substring(vu0, js1);",
-    "} else if (cc0 >= 0) {",
-      "geneString = this.url.substring(cc0, js1);",
-    "} else if (this.url.search('arabidopsis.org') >= 0) {",
-      "at0 = this.url.search('name=');",
-      "geneString = 'arath.Col.' + this.url.substring(at0 + 5);",
-    "} else {",
-      "return;",
-    "}",
+    gene.js,
     "$.ajax({",
       "url: 'https://' + url1 + '/services/v1/gene-to-query-track/',",
       "dataType: 'json',",
