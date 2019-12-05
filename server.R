@@ -1433,11 +1433,18 @@ isolate({
       }
     }
     # selected traits
-    traits <- ""
     for (j in 1:2) {
+      numTraits <- 0
+      allTraits <- isolate(input[[jth_ref("datasets", j)]])
+      traits <- ""
       for (i in input[[jth_ref("traitColumns", j)]]) {
+        try({
+          numTraits <- length(unique(values[[allTraits]][,i]))
+        }, silent = TRUE)
         x <- input[[jth_ref(i, j)]]
-        if (!is.null(x)) traits <- paste0(x, collapse=";")
+        if (!(is.null(x) || length(x) == 0 || length(x) == numTraits)) {
+          traits <- paste0(x, collapse=";")
+        }
       }
       trj <- jth_ref("traits", j)
       if (traits != "") url.q <- paste0(url.q, "&", trj, "=", traits)
