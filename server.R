@@ -45,7 +45,15 @@ shinyServer(function(input, output, session) {
     # Uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
     trait.choices <- gwas.traits[[values[[jth_ref("organism", j)]]]]
     if (is.null(trait.choices)) trait.choices <- character(0)
-    updateSelectizeInput(session, jth_ref("gwasTraits", j), choices = trait.choices, selected = NULL)
+    # Initialize remote GWAS trait files specified in the URL (if any)
+    gwj <- jth_ref("gwasTraits", j)
+    selectedGwasTraits <- isolate(values$urlFields[[gwj]])
+    if (!is.null(selectedGwasTraits)) {
+      selectedGwasTraits <- strsplit(selectedGwasTraits, split = ";")[[1]]
+    }
+    updateSelectizeInput(session, gwj, choices = trait.choices, selected = selectedGwasTraits)
+    # this update will trigger a call to remoteTraitsSelected(j) (below), which loads the remote data
+
     # As there is no updateFileInput() method,
     # send a custom message (to clear the progress bar) and clear values$needsToUploadFiles
     session$sendCustomMessage(type = "resetFileInputHandler", jth_ref("uploadfile", j))
@@ -59,6 +67,22 @@ shinyServer(function(input, output, session) {
   observe(datasetChanged(1))
   # This should be the first code block to detect a change in input$datasets2
   observe(datasetChanged(2))
+
+  # Load remote GWAS trait files specified in the URL (if any)
+  remoteTraitsSelected <- function(j) {
+    gwj <- jth_ref("gwasTraits", j)
+    if (is.null(values$urlFields[[gwj]])) return()
+
+    selectedGwasTraits <- isolate(input[[gwj]])
+    organism <- jth_ref("organism", j)
+    for (trait in selectedGwasTraits) {
+      trait.url <- gwas.filenames[[values[[organism]]]][which(gwas.traits[[values[[organism]]]] == trait)]
+      loadRemoteData(trait, trait.url, j)
+    }
+    values$urlFields[[gwj]] <- NULL # to reset it
+  }
+  observeEvent(input$gwasTraits, remoteTraitsSelected(1))
+  observeEvent(input$gwasTraits2, remoteTraitsSelected(2))
 
   # The user selected one or more local GWAS files (not yet loaded)
   gwasFilesSelected <- function(j) {
@@ -316,12 +340,9 @@ shinyServer(function(input, output, session) {
     
     # Load any requested GWAS files
     isolate({
-      values[[jth_ref("uploadFiles", j)]] <- input[[jth_ref("uploadfile", j)]]
-      values[[jth_ref("gwasTraits", j)]] <- input[[jth_ref("gwasTraits", j)]]
-      
       # Local GWAS files
       inFile <- NULL
-      if (values[[jth_ref("needsToUploadFiles", j)]]) inFile <- values[[jth_ref("uploadFiles", j)]]
+      if (values[[jth_ref("needsToUploadFiles", j)]]) inFile <- input[[jth_ref("uploadfile", j)]]
       if (!is.null(inFile)) {
         # iterating through the files to upload
         for (i in 1:(dim(inFile)[1])) {
@@ -330,7 +351,7 @@ shinyServer(function(input, output, session) {
         values[[jth_ref("needsToUploadFiles", j)]] <- FALSE # since we just loaded them
       }
       # Remote GWAS files
-      inTraits <- values[[jth_ref("gwasTraits", j)]]
+      inTraits <- input[[jth_ref("gwasTraits", j)]]
       if (!is.null(inTraits)) {
         for (trait in inTraits) {
           trait.url <- gwas.filenames[[values[[jth_ref("organism", j)]]]][which(gwas.traits[[values[[jth_ref("organism", j)]]]] == trait)]
@@ -1432,6 +1453,14 @@ isolate({
         url.q <- paste0(url.q, "&", s, "=", x)
       }
     }
+    # remote GWAS traits to load
+    for (j in 1:2) {
+      gwasTraits <- ""
+      gwj <- jth_ref("gwasTraits", j)
+      input.gwj <- isolate(input[[gwj]])
+      if (!is.null(input.gwj)) gwasTraits <- paste0(input.gwj, collapse=";")
+      if (gwasTraits != "") url.q <- paste0(url.q, "&", gwj, "=", gwasTraits)
+    }
     # selected traits
     for (j in 1:2) {
       numTraits <- 0
@@ -1475,6 +1504,8 @@ isolate({
       # any input that can trigger the handlerExpr
       input$datasets
       input$datasets2
+      input$gwasTraits
+      input$gwasTraits2
       sapply(input$traitColumns, function(i) input[[jth_ref(i, 1)]])
       sapply(input$traitColumns2, function(i) input[[jth_ref(i, 2)]])
       input$chr
