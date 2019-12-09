@@ -958,9 +958,10 @@ shinyServer(function(input, output, session) {
     }
 
     if (appendSNPs) {
-      values[[input[[jth_ref("datasets", j)]]]]$totalBP <- NULL
-      names(loaded.values) <- names(values[[input[[jth_ref("datasets", j)]]]])
-      values[[input[[jth_ref("datasets", j)]]]] <- rbind(values[[input[[jth_ref("datasets", j)]]]], loaded.values)
+      dsj <- jth_ref("datasets", j)
+      values[[input[[dsj]]]]$totalBP <- NULL
+      names(loaded.values) <- names(values[[input[[dsj]]]])
+      values[[input[[dsj]]]] <- unique(rbind(values[[input[[dsj]]]], loaded.values))
     } else {
       values[[objname]] <- loaded.values
     }
@@ -985,9 +986,10 @@ shinyServer(function(input, output, session) {
     loaded.values <- load.gwas.remote(values[[jth_ref("organism", j)]], traitUrl, trait)
 
     if (appendSNPs) {
-      values[[input[[jth_ref("datasets", j)]]]]$totalBP <- NULL
-      names(loaded.values) <- names(values[[input[[jth_ref("datasets", j)]]]])
-      values[[input[[jth_ref("datasets", j)]]]] <- rbind(values[[input[[jth_ref("datasets", j)]]]], loaded.values)
+      dsj <- jth_ref("datasets", j)
+      values[[input[[dsj]]]]$totalBP <- NULL
+      names(loaded.values) <- names(values[[input[[dsj]]]])
+      values[[input[[dsj]]]] <- unique(rbind(values[[input[[dsj]]]], loaded.values))
     } else {
       values[[objname]] <- loaded.values
     }
