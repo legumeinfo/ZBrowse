@@ -59,6 +59,8 @@ shinyServer(function(input, output, session) {
     session$sendCustomMessage(type = "resetFileInputHandler", jth_ref("uploadfile", j))
     values[[jth_ref("needsToUploadFiles", j)]] <- FALSE
     updateCheckboxInput(session, jth_ref("appendSNPs", j), value = TRUE)
+    # Clear loaded remote GWAS traits if the jth organism changes
+    values[[jth_ref("gwasTraits", j)]] <- NULL
     # Clear all genomic linkages if either organism changes
     values$glSelectedGene <- NULL
     values$glGenes <- values$glGenes2 <- values$glColors <- NULL
@@ -989,6 +991,11 @@ shinyServer(function(input, output, session) {
     } else {
       values[[objname]] <- loaded.values
     }
+
+    # Keep track of which remote GWAS traits are loaded, for use in the URL
+    # (do not use unique(values[[input[[dsj]]]]$Trait) which may include local traits)
+    gwj <- jth_ref("gwasTraits", j)
+    values[[gwj]] <- union(values[[gwj]], trait)
   }
 
   #this function makes the chromsomeview chart  
@@ -1455,11 +1462,10 @@ isolate({
     }
     # remote GWAS traits to load
     for (j in 1:2) {
-      gwasTraits <- ""
       gwj <- jth_ref("gwasTraits", j)
-      input.gwj <- isolate(input[[gwj]])
-      if (!is.null(input.gwj)) gwasTraits <- paste0(input.gwj, collapse=";")
-      if (gwasTraits != "") url.q <- paste0(url.q, "&", gwj, "=", gwasTraits)
+      if (!is.null(values[[gwj]])) {
+        url.q <- paste0(url.q, "&", gwj, "=", paste(values[[gwj]], collapse = ";"))
+      }
     }
     # selected traits
     for (j in 1:2) {
@@ -1504,8 +1510,8 @@ isolate({
       # any input that can trigger the handlerExpr
       input$datasets
       input$datasets2
-      input$gwasTraits
-      input$gwasTraits2
+      values$gwasTraits
+      values$gwasTraits2
       sapply(input$traitColumns, function(i) input[[jth_ref(i, 1)]])
       sapply(input$traitColumns2, function(i) input[[jth_ref(i, 2)]])
       input$chr
