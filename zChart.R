@@ -3,7 +3,11 @@ source("servicesAPI.R")
 
 create_zChart <- function(j, input, values) {
   if (is.null(input[[jth_ref("selected", j)]])) return()
-  
+
+  nid <- jth_ref("notify.create_zChart", j)
+  showNotification(paste0("Creating Annotation chart for ", values[[jth_ref("organism", j)]], ". Please wait."),
+    duration = NULL, id = nid, type = "message")
+
   centerBP <- as.numeric(input[[jth_ref("selected", j)]][[1]])
   winHigh <- centerBP + input[[jth_ref("window", j)]][1]
   winLow <- centerBP - input[[jth_ref("window", j)]][1]
@@ -551,7 +555,9 @@ create_zChart <- function(j, input, values) {
       states = list(hover = list(enabled=FALSE))
     )
   )
-  
+
+  removeNotification(nid)
+
   #it seems almost impossible to get the tooltip to hover along the chart with this version of highcharts (4.0.1), perhaps a question to stackoverflow could solve it.
   #see an example of the problem here: http://jsfiddle.net/N5ymb/
   #one hack/fix would be to add dummy points to the middle of the line that show up when moused over

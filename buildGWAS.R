@@ -95,6 +95,9 @@ load.gwas.remote <- function(organism, filename, trait) {
 
   t0 <- proc.time()[3]
   cat(paste("Loading", trait, "data ... "))
+  nid <- paste0("load.remote.", stri_replace_all(trait, "_", regex = " "))
+  showNotification(paste0("Loading remote trait ", trait, ". Please wait."),
+    duration = NULL, id = nid, type = "message")
 
   filenames <- gwas.filenames[[organism]]
   traits <- gwas.traits[[organism]]
@@ -116,6 +119,7 @@ load.gwas.remote <- function(organism, filename, trait) {
   }
 
   cat(sprintf("Done. (%2.1f seconds)\n", proc.time()[3] - t0))
+  removeNotification(nid)
   df.gwas
 }
 
