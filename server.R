@@ -31,7 +31,10 @@ shinyServer(function(input, output, session) {
   # what to do when the user changes the jth dataset selection
   datasetChanged <- function(j) {
     if (is.null(input[[jth_ref("datasets", j)]])) return()
-    
+    nid <- jth_ref("datasets", j)
+    showNotification(paste0("Loading dataset ", input[[jth_ref("datasets", j)]], ". Please wait."),
+      duration = NULL, id = nid, type = "message")
+
     # Make sure the organism corresponds to the selected dataset
     # (invoke values$organism first to force a single reaction)
     if (is.null(values[[jth_ref("organism", j)]])) {
@@ -64,6 +67,8 @@ shinyServer(function(input, output, session) {
     # Clear all genomic linkages if either organism changes
     values$glSelectedGene <- NULL
     values$glGenes <- values$glGenes2 <- values$glColors <- NULL
+
+    removeNotification(nid)
   }
   # This should be the first code block to detect a change in input$datasets
   observe(datasetChanged(1))

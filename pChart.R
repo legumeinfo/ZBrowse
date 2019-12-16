@@ -1,6 +1,10 @@
 source("common.R")
 
 create_pChart <- function(j, input, values) {
+  nid <- jth_ref("notify.create_pChart", j)
+  showNotification(paste0("Creating Chromosome chart for ", values[[jth_ref("organism", j)]], ". Please wait."),
+    duration = NULL, id = nid, type = "message")
+
   #this function makes the chromsomeview chart  
   #subset whole chart based on selection
   chromChart <- values[[input[[jth_ref("datasets", j)]]]]
@@ -179,6 +183,9 @@ create_pChart <- function(j, input, values) {
       cursor = "pointer"
     )
   )
+
+  removeNotification(nid)
+
   a$exporting(enabled=TRUE,filename='chromChart',sourceWidth=2000)
   a$set(dom = jth_ref('pChart', j))
   return(a)

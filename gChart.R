@@ -2,6 +2,10 @@ source("common.R")
 
 #Genome wide chart
 create_gChart <- function(j, input, values) {
+  nid <- jth_ref("notify.create_gChart", j)
+  showNotification(paste0("Creating Whole Genome chart for ", values[[jth_ref("organism", j)]], ". Please wait."),
+    duration = NULL, id = nid, type = "message")
+
   calculateTotalBP(j, input, values)
   
   #subset whole chart based on selection
@@ -221,7 +225,9 @@ create_gChart <- function(j, input, values) {
   if(!is.null(input[[jth_ref("legend", j)]]) & input[[jth_ref("legend", j)]] == TRUE){
     c$legend(enabled=FALSE)
   }
-  
+
+  removeNotification(nid)
+
   c$credits(enabled=TRUE)
   c$set(dom = jth_ref('gChart', j))
   return(c)
