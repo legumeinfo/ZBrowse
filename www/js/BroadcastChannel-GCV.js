@@ -14,7 +14,7 @@
 $(document).on('shiny:connected', function(e) {
 //$(document).on('shiny:sessioninitialized', function(e) {
   try {
-    bc = new BroadcastChannel('GCV');
+    bc = new BroadcastChannel('lis');
 
     bc.onmessage = function(e) {
       Shiny.onInputChange("bc_gcv", e.data);
