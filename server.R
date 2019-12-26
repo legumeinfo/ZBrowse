@@ -195,17 +195,20 @@ shinyServer(function(input, output, session) {
     } else {
       glOn <- (tolower(glOn) == "true")
     }
+    val.bcName <- isolate(values$urlFields$bcName)
+    if (is.null(val.bcName)) val.bcName <- private$bcName
     val.n <- isolate(values$urlFields$neighbors)
-    if (is.null(val.n)) val.n = 20
-    val.m = isolate(values$urlFields$matched)
-    if (is.null(val.m)) val.m = 4
-    val.i = isolate(values$urlFields$intermediate)
-    if (is.null(val.i)) val.i = 5
+    if (is.null(val.n)) val.n <- private$neighbors
+    val.m <- isolate(values$urlFields$matched)
+    if (is.null(val.m)) val.m <- private$matched
+    val.i <- isolate(values$urlFields$intermediate)
+    if (is.null(val.i)) val.i <- private$intermediate
     tags$div(id = "tour-genLink", wellPanel(
       h5("Genomic Linkage options:"),
       checkboxInput('boolGenomicLinkage', 'ON', glOn),
       conditionalPanel("input.boolGenomicLinkage == true",
         h5("Broadcast Channel options:"),
+        textInput("bcName", "Name:", value = val.bcName),
         checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
         checkboxInput('boolListenToBC', 'Listen', TRUE),
         tags$div(id = "tour-genLink-1", wellPanel(
@@ -1111,6 +1114,26 @@ shinyServer(function(input, output, session) {
       centerBP <- as.integer(1.0e6*mean(as.numeric(ss2)))
       updateSelectInput(session, "chr2", selected = chr)
       updateNumericInput(session, "selected2", value = centerBP)
+    }
+  })
+
+  observe({
+    # Change the Broadcast Channel name
+    if (!is.null(input$bcName)) {
+      runjs(paste(
+        # Close any existing channel
+        "try {",
+          "bc.close();",
+          # "console.log('Closed GCV broadcast channel \"' + bc.name + '\"');",
+        "} catch (ex) {}",
+        # Open the new one
+        "try {",
+          sprintf("bc = new BroadcastChannel('%s');", input$bcName),
+          # "console.log('Opened GCV broadcast channel \"' + bc.name + '\"');",
+        "} catch (ex) {",
+          # "console.log('Could not open GCV broadcast channel \"' + bc.name + '\"');",
+        "}"
+      ))
     }
   })
 
