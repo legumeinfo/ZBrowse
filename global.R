@@ -185,3 +185,6 @@ allColors <- c(moreColors,colors)
 
 # background colors for comparing two organisms
 bgColors <- c("lightblue", "lightsalmon")
+
+# locally configurable global variables
+source("private.R")
