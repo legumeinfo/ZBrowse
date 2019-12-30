@@ -1129,6 +1129,10 @@ shinyServer(function(input, output, session) {
         # Open the new one
         "try {",
           sprintf("bc = new BroadcastChannel('%s');", input$bcName),
+          "bc.onmessage = function(e) {",
+            "Shiny.onInputChange('bc_gcv', e.data);",
+            # "console.log(e.data);",
+          "};",
           # "console.log('Opened GCV broadcast channel \"' + bc.name + '\"');",
         "} catch (ex) {",
           # "console.log('Could not open GCV broadcast channel \"' + bc.name + '\"');",
