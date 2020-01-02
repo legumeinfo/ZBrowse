@@ -106,28 +106,3 @@ getProvideMultipleURLs <- function() {
     "});"
   )
 }
-
-getGlobalPlot <- function(chromosome, families) {
-  paste(
-    sprintf("chr = '%s';", chromosome),
-    sprintf("families = %s;", families),
-    "$.ajax({",
-      "url: 'https://v1.legumefederation.org/gcv_lis_phytozome/services/v1/global-plots/',",
-      "dataType: 'json',",
-      "data: JSON.stringify({",
-        "chromosome: chr,",
-        "query: families",
-      "}),",
-      "type: 'POST',",
-      "success: function(response) {",
-        "obj = response;",
-        # Send information about genes back to the chart
-        "Shiny.onInputChange('genesGlobalPlot', {",
-          "chromosome: chr,",
-          "genes: obj",
-        "});",
-      "},",
-      "error: function(errmsg) { alert('FAIL: ' + errmsg.responseText); }",
-    "});"
-  )
-}
