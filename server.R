@@ -67,6 +67,7 @@ shinyServer(function(input, output, session) {
     # Clear all genomic linkages if either organism changes
     values$glSelectedGene <- NULL
     values$glGenes <- values$glGenes2 <- values$glColors <- NULL
+    values$highlightGenes <- NULL
 
     removeNotification(nid)
   }
@@ -1143,7 +1144,7 @@ shinyServer(function(input, output, session) {
 
   clearGenomicLinkages <- function() {
     values$glGenes <- values$glGenes2 <- values$glColors <- NULL
-    values$glGenesGlobalPlot <- NULL
+    values$highlightGenes <- NULL
     updateSelectInput(session, "relatedRegions", choices = character(0))
   }
 
@@ -1167,7 +1168,7 @@ isolate({
     glGenes <- data.frame(matrix(unlist(results1$genes), nrow = length(results1$genes), byrow = TRUE),
       stringsAsFactors = FALSE)
     names(glGenes) <- names(results1$genes[[1]])
-    glGenes <- glGenes[, c("family", "fmin", "fmax", "strand")]
+    glGenes <- glGenes[, c("name", "family", "fmin", "fmax", "strand")]
     glGenes$chr <- trailingInteger(results1$chromosome_name)
     glGenes <- glGenes[nchar(glGenes$family) > 0, ]
     if (nrow(glGenes) == 0) {
@@ -1191,7 +1192,7 @@ isolate({
         gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
           stringsAsFactors = FALSE)
         names(gr.genes) <- names(gr$genes[[1]])
-        gr.genes <- gr.genes[, c("family", "fmin", "fmax", "strand")]
+        gr.genes <- gr.genes[, c("name", "family", "fmin", "fmax", "strand")]
         gr.genes$chr <- gr.chr
         gr.genes$id <- gr$id
         gr.genes <- gr.genes[nchar(gr.genes$family) > 0, ]
@@ -1252,43 +1253,6 @@ isolate({
 })
   })
 
-  observe({
-    if (is.null(input$genesGlobalPlot)) return()
-    if (!(input$boolGenomicLinkage && input$boolListenToBC)) return()
-isolate({
-    clearGenomicLinkages()
-
-    # Parse the genes
-    glGenes <- input$genesGlobalPlot$genes
-    if (length(glGenes) == 0) return()
-    nn <- names(glGenes[[1]]) # the column names
-    glGenes <- data.frame(matrix(unlist(glGenes), nrow = length(glGenes), byrow = TRUE),
-      stringsAsFactors = FALSE)
-    names(glGenes) <- nn
-    glGenes <- glGenes[, c("family", "fmin", "fmax", "strand")]
-    glGenes$chr <- trailingInteger(input$genesGlobalPlot$chromosome)
-    centerBP <- as.numeric(input$selected[[1]])
-    winHigh <- centerBP + input$window[1]
-    winLow <- centerBP - input$window[1]
-    glGenes <- glGenes[as.integer(glGenes$fmax) >= winLow & as.integer(glGenes$fmin) <= winHigh, ]
-    glGenes <- glGenes[order(as.integer(glGenes$fmin)), ] # sort as they may not be in order
-    # assign colors
-    ff <- unique(glGenes$family)
-    nf <- length(ff)
-    fc <- getRainbowColors(nf)
-    familyColors <- list()
-    lapply(1:nf, FUN = function(i) {
-      if (i <= nf) familyColors[[ff[i]]] <<- stri_sub(fc[i], 1, 7)
-    })
-    glGenes$color <- familyColors[glGenes$family]
-
-    if (nrow(glGenes) > 0) {
-      values$glGenes <- glGenes
-      values$glColors <- familyColors
-    }
-})
-  })
-
   # Handle Broadcast Channel messages from the Genome Context Viewer
   # (move to a separate file?...)
   observeEvent(input$bc_gcv, {
@@ -1311,6 +1275,7 @@ isolate({
       isMicroSyntenyRow <- (flags == 23)
       isMicroSyntenyGene <- isMicroSyntenyFamily <- FALSE
       if (flags == 12) {
+        # note that input$bc_gcv$targets$genes is a list
         isMicroSyntenyGene <- (length(input$bc_gcv$targets$genes) == 1)
         isMicroSyntenyFamily <- !isMicroSyntenyGene
       }
@@ -1320,16 +1285,19 @@ isolate({
       # isMacroSyntenyCircosInnerBlock <- isMacroSyntenyRow # they have the same fields
       # isMacroSyntenyCircosOuterBlock <- (flags == 32)
 
-      # Do something
-      if (isMacroSyntenyRow) {
-        j <- 0
-        org <- input$bc_gcv$targets$organism
-        # Note - the following tests only work for "Genus species" organism names
-        if (org == values$organism) {
+      # Determine the selected organism and its index
+      j <- 0
+      if (!is.null(input$bc_gcv$targets$organism)) {
+        org <- input$bc_gcv$targets$organism # always in "Genus species" format
+        if (org == org.Genus_species[values$organism]) {
           j <- 1
-        } else if (org == values$organism2) {
+        } else if (org == org.Genus_species[values$organism2]) {
           j <- 2
         }
+      }
+
+      # Do something
+      if (isMacroSyntenyRow) {
         if (j > 0) {
           # Extract the chromosome number
           chr <- trailingInteger(input$bc_gcv$targets$chromosome)
@@ -1348,69 +1316,38 @@ isolate({
         # TODO: ...
 
       } else if (isMicroSyntenyRow) {
-        if (input$bc_gcv$targets$organism == values$organism) {
+        if (j > 0) {
           # Extract the chromosome number
           chr <- trailingInteger(input$bc_gcv$targets$chromosome)
           # Range of base pairs
           bpMin <- input$bc_gcv$targets$extent[[1]]
           bpMax <- input$bc_gcv$targets$extent[[2]]
           centerBP <- (bpMax + bpMin) %/% 2
-          widthBP <- (bpMax - bpMin) %/% 2 + 1000 # give it 1000 BPs on either side to ensure visibility
+          widthBP <- (bpMax - bpMin) %/% 2 + 50000 # give it 50k BPs on either side to ensure visibility
           # Adjust the Chromosome window to match the selection
-          updateTabsetPanel(session, "datatabs", selected = "Chrom")
-          updateSelectInput(session, "chr", selected = chr)
-          updateNumericInput(session, "selected", value = centerBP)
-          updateSliderInput(session, "window", value = widthBP)
+          updateTabsetPanel(session, jth_ref("datatabs", j), selected = "Chrom")
+          updateSelectInput(session, jth_ref("chr", j), selected = chr)
+          updateNumericInput(session, jth_ref("selected", j), value = centerBP)
+          updateSliderInput(session, jth_ref("window", j), value = widthBP)
 
           # TODO: Do something with the genes?
           # genes <- input$bc_gcv$targets$genes
         }
 
       } else if (isMicroSyntenyGene) {
-        gene <- input$bc_gcv$targets$genes[[1]]
+        # Highlight the selected gene
+        values$highlightGenes <- input$bc_gcv$targets$genes[[1]]
         fam <- input$bc_gcv$targets$family
-# print(gene)
-# print(fam)
-# print("-----------------")
-        # TODO: (possibilities)
-        # Center the gene in its organism's window
-        # Highlight the gene
-        # Highlight other genes in the same family (in a different color?)
 
       } else if (isMicroSyntenyFamily) {
+        # Highlight the selected genes
+        values$highlightGenes <- unlist(input$bc_gcv$targets$genes)
         # Check for singleton and orphan genes
-        genes <- input$bc_gcv$targets$genes
         fam <- input$bc_gcv$targets$family
         isSingletons <- startsWith(fam, "singleton")
+        # Parse "singleton,phytozome_10_2.xxxxxxxx,phytozome_10_2.yyyyyyyy,..."
+        if (isSingletons) fam <- strsplit(fam, split = ",")[[1]][-1]
         isOrphans <- (fam == "")
-
-        if (isSingletons) {
-          # Highlight all singleton genes, for both organisms
-          chr <- organismToChromosomeName(values$organism, as.integer(input$chr))
-          # genes <- genes[-1] # ?
-          # Parse "singleton,phytozome_10_2.xxxxxxxx,phytozome_10_2.yyyyyyyy,..."
-          fam <- strsplit(fam, split = ",")[[1]][-1]
-          fam <- paste0("'", fam, "'", collapse = ",")
-          fam <- sprintf("[%s]", fam)
-          query <- getGlobalPlot(chr, fam)
-          runjs(query)
-
-        } else if (isOrphans) {
-          # Highlight all genes with no family, for both organisms
-          chr <- organismToChromosomeName(values$organism, as.integer(input$chr))
-          fam <- sprintf("['%s']", fam)
-          # TODO: (can the GCV return genes with no family?)
-          query <- getGlobalPlot(chr, fam)
-          runjs(query)
-
-        } else {
-          # Highlight all genes in the selected family, for both organisms
-          chr <- organismToChromosomeName(values$organism, as.integer(input$chr))
-          fam <- sprintf("['%s']", fam)
-          query <- getGlobalPlot(chr, fam)
-          runjs(query)
-          # TODO: organism 2
-        }
       }
     }
   })

@@ -218,6 +218,7 @@ create_zChart <- function(j, input, values) {
                               x$transcript_strand,
                               x$V2
                  ),
+                 gene = x$translation_id,
                  marker=c(NA,"Arrow",NA),
                  stringsAsFactors=FALSE
       )
@@ -232,43 +233,12 @@ create_zChart <- function(j, input, values) {
                               x$transcript_strand,
                               x$V2
                  ),
+                 gene = x$translation_id,
                  marker=c("Arrow",NA,NA),
                  stringsAsFactors=FALSE
       )
     })
-    
-    # } else if(values[[jth_ref("organism", j)]] == "Soybean") { #strand is '+' or '-'
-    # annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
-    #   data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
-    #     name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
-    #       x$name,
-    #       prettyNum(x$transcript_start, big.mark = ","),
-    #       prettyNum(x$transcript_end, big.mark = ","),
-    #       x$Protein.Length,
-    #       x$chromosome,                                                                           
-    #       x$strand,
-    #       x$TopTAIRHitDescription,
-    #       x$TopUniref100DescriptionExtraSmall
-    #     ),
-    #     stringsAsFactors=FALSE
-    #   )
-    # })
-    # annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {
-    #   data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
-    #     name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s, Protein Length: %4$s<br>Chromosome: %5$s, Strand: %6$s<br>Top TAIR Hit Desc.: %7$s<br>Top Uniref Hit Desc.: %8$s</td></tr></table>",
-    #       x$name,
-    #       prettyNum(x$transcript_start, big.mark = ","),
-    #       prettyNum(x$transcript_end, big.mark = ","),
-    #       x$Protein.Length,
-    #       x$chromosome,                                                                           
-    #       x$strand,
-    #       x$TopTAIRHitDescription,
-    #       x$TopUniref100DescriptionExtraSmall
-    #     ),
-    #     stringsAsFactors=FALSE
-    #   )
-    # })
-    
+
   } else if(values[[jth_ref("organism", j)]] %in% c("Arabidopsis", "Arabidopsis thaliana")) { #strand is '+' or '-'
     annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
       data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(araburlBase,x$Locus),
@@ -281,6 +251,7 @@ create_zChart <- function(j, input, values) {
                               x$short_description
                               # x$Curator_summary
                  ),
+                 gene = x$name,
                  stringsAsFactors=FALSE
       )
     })
@@ -295,6 +266,7 @@ create_zChart <- function(j, input, values) {
                               x$short_description
                               # x$Curator_summary
                  ),
+                 gene = x$name,
                  stringsAsFactors=FALSE
       )
     })
@@ -310,6 +282,7 @@ create_zChart <- function(j, input, values) {
                               x$strand,
                               x$description
                  ),
+                 gene = x$name,
                  stringsAsFactors=FALSE
       )
     })
@@ -323,6 +296,7 @@ create_zChart <- function(j, input, values) {
                               x$strand,
                               x$description
                  ),
+                 gene = x$name,
                  stringsAsFactors=FALSE
       )
     })
@@ -338,6 +312,7 @@ create_zChart <- function(j, input, values) {
                               x$strand,
                               x$attributes
                  ),
+                 gene = x$name,
                  stringsAsFactors=FALSE
       )
     })
@@ -351,6 +326,7 @@ create_zChart <- function(j, input, values) {
                               x$strand,
                               x$attributes
                  ),
+                 gene = x$name,
                  stringsAsFactors=FALSE
       )
     })
@@ -370,6 +346,7 @@ create_zChart <- function(j, input, values) {
                               x$bestRiceHitDefline
                               # x$Curator_summary
                  ),
+                 gene = x$name,
                  stringsAsFactors=FALSE
       )
     })
@@ -387,23 +364,36 @@ create_zChart <- function(j, input, values) {
                               x$bestRiceHitDefline
                               # x$Curator_summary
                  ),
+                 gene = x$name,
                  stringsAsFactors=FALSE
       )
     })
   }
   #annotTable <- annotTable[,c("x","y","name","url","marker")]
-  
+  highlight <- (annotTable$gene %in% values$highlightGenes)
+  hasHighlightsForward <- (sum(highlight) > 0)
   annotTable <- annotTable[,c("x","y","name","url")]
+  if (hasHighlightsForward) {
+    annotTableH <- annotTable[highlight, ]
+    annotTable <- annotTable[!highlight, ]
+  }
   #annotTable <- annotTable[order(annotTable$x),]
   
   #annotTableReverse <- annotTableReverse[,c("x","y","name","url","marker")]
   if(nrow(annotTableReverse)==0){
-    annotTableReverse <- data.frame(x=character(0),y=character(0),name=character(0),url=character(0),stringsAsFactors = FALSE)
+    annotTableReverse <- data.frame(x=character(0),y=character(0),name=character(0),url=character(0),gene=character(0),stringsAsFactors = FALSE)
   }
+  highlight <- (annotTableReverse$gene %in% values$highlightGenes)
+  hasHighlightsReverse <- (sum(highlight) > 0)
   annotTableReverse <- annotTableReverse[,c("x","y","name","url")]
+  if (hasHighlightsReverse) {
+    annotTableReverseH <- annotTableReverse[highlight, ]
+    annotTableReverse <- annotTableReverse[!highlight, ]
+  }
   #annotTableReverse <- annotTableReverse[order(annotTableReverse$x),]
   
   annotArray <- toJSONArray2(annotTable, json = F, names = T)
+  if (hasHighlightsForward) annotArrayH <- toJSONArray2(annotTableH, json = F, names = T)
   #     for(i in 1:length(annotArray)){ #use this to add a symbol before or after the gene track
   #       if(is.na(annotArray[[i]]$marker)){
   #         annotArray[[i]]$marker <- NULL
@@ -414,6 +404,7 @@ create_zChart <- function(j, input, values) {
   #     }
   
   annotArrayReverse <- toJSONArray2(annotTableReverse, json = F, names = T)
+  if (hasHighlightsReverse) annotArrayReverseH <- toJSONArray2(annotTableReverseH, json = F, names = T)
   #     for(i in 1:length(annotArrayReverse)){
   #       if(is.na(annotArrayReverse[[i]]$marker)){
   #         annotArrayReverse[[i]]$marker <- NULL
@@ -506,7 +497,9 @@ create_zChart <- function(j, input, values) {
   if(zoomChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
     invisible(sapply(zoomSeries, function(x) {if(length(x)==0){return()};b$series(data = x, type = "scatter", showInLegend = FALSE, color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = paste0(x[[1]]$trait))}))
   }
-  
+
+  geneColor <- "#53377A"
+  geneColorH <- "#C00080" # between magenta and red, should not conflict with rainbow colors from red to magenta
   b$series(
     data = annotArray,
     type = "line",
@@ -514,11 +507,24 @@ create_zChart <- function(j, input, values) {
     name = "Forward Genes",
     id = "forward-genes",
     zIndex = 1,
-    color = "#53377A",
+    color = geneColor,
     marker = list(symbol = "circle", enabled = FALSE),
     yAxis = 1
-  )    
-  
+  )
+  if (hasHighlightsForward) {
+    b$series(
+      data = annotArrayH,
+      type = "line",
+      showInLegend = FALSE,
+      name = "Forward Genes H",
+      id = "forward-genes-H",
+      zIndex = 1,
+      color = geneColorH,
+      marker = list(symbol = "circle", enabled = FALSE),
+      yAxis = 1
+    )
+  }
+
   b$series(
     data = annotArrayReverse,
     type = "line",
@@ -526,11 +532,24 @@ create_zChart <- function(j, input, values) {
     name = "Reverse Genes",
     id = "reverse-genes",
     zIndex = 1,
-    color = "#53377A",
+    color = geneColor,
     marker = list(symbol = "circle", enabled = FALSE),
     yAxis = 1
-  )      
-  
+  )
+  if (hasHighlightsReverse) {
+    b$series(
+      data = annotArrayReverseH,
+      type = "line",
+      showInLegend = FALSE,
+      name = "Reverse Genes H",
+      id = "reverse-genes-H",
+      zIndex = 1,
+      color = geneColorH,
+      marker = list(symbol = "circle", enabled = FALSE),
+      yAxis = 1
+    )
+  }
+
   if (!is.null(values[[jth_ref("glGenes", j)]])) {
     apply(values[[jth_ref("glGenes", j)]], 1, FUN = function(g) {
       g.strand <- as.integer(g$strand)
