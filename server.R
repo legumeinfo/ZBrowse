@@ -1389,7 +1389,7 @@ isolate({
   # (this does not involve Broadcast Channel)
   observeEvent(input$viewInGCV, {
     if (!is.null(values$glSelectedGene)) {
-      gcvQuery <- sprintf("window.open('/gcv/legfed_v1_0/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
+      gcvQuery <- sprintf("window.open('/gcv/phytozome_10_2/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
         values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
       runjs(gcvQuery)
     }
