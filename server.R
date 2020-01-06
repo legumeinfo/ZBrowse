@@ -1307,9 +1307,33 @@ isolate({
         }
 
       } else if (isMacroSyntenyBlock) {
-        org <- input$bc_gcv$targets$organism
+        # org <- input$bc_gcv$targets$organism
         blk <- input$bc_gcv$targets$block
-        # TODO: ...
+        ref <- blk$reference
+        srx <- blk$source
+        genspRef <- stri_trans_totitle(substr(ref$chromosome, 1, 5))
+        genspSrc <- stri_trans_totitle(substr(srx$chromosome, 1, 5))
+        if (genspRef == org.Gensp[values$organism] && genspSrc == org.Gensp[values$organism2]) {
+          updateTabsetPanel(session, "datatabs", selected = "Chrom")
+          # Adjust the organism 1 Chromosome window to match the block reference
+          chrRef <- trailingInteger(ref$chromosome)
+          bpStartRef <- ref$locus[[1]]
+          bpEndRef <- ref$locus[[2]]
+          bpCenterRef <- (bpStartRef + bpEndRef) %/% 2
+          bpWidthRef <- (bpEndRef - bpStartRef) %/% 2 + 50000 # give it 50k BPs on either side to ensure visibility
+          updateSelectInput(session, "chr", selected = chrRef)
+          updateNumericInput(session, "selected", value = bpCenterRef)
+          updateSliderInput(session, "window", value = bpWidthRef)
+          # Adjust the organism 2 Chromosome window to match the block source
+          chrSrc <- trailingInteger(srx$chromosome)
+          bpStartSrc <- srx$locus[[1]]
+          bpEndSrc <- srx$locus[[2]]
+          bpCenterSrc <- (bpStartSrc + bpEndSrc) %/% 2
+          bpWidthSrc <- (bpEndSrc - bpStartSrc) %/% 2 + 50000 # give it 50k BPs on either side to ensure visibility
+          updateSelectInput(session, "chr2", selected = chrSrc)
+          updateNumericInput(session, "selected2", value = bpCenterSrc)
+          updateSliderInput(session, "window2", value = bpWidthSrc)
+        }
 
       } else if (isMacroSyntenyOrganism) {
         org <- input$bc_gcv$targets$organism
