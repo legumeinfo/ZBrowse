@@ -248,7 +248,7 @@ create_zChart <- function(j, input, values) {
                               prettyNum(x$transcript_end, big.mark = ","),
                               x$chromosome,                                                                           
                               x$strand,
-                              x$short_description
+                              brAt(x$short_description)
                               # x$Curator_summary
                  ),
                  gene = x$name,
@@ -263,7 +263,7 @@ create_zChart <- function(j, input, values) {
                               prettyNum(x$transcript_end, big.mark = ","),
                               x$chromosome,                                                                           
                               x$strand,
-                              x$short_description
+                              brAt(x$short_description)
                               # x$Curator_summary
                  ),
                  gene = x$name,
@@ -280,7 +280,7 @@ create_zChart <- function(j, input, values) {
                               prettyNum(x$transcript_end, big.mark = ","),
                               x$chromosome,
                               x$strand,
-                              x$description
+                              brAt(x$description)
                  ),
                  gene = x$name,
                  stringsAsFactors=FALSE
@@ -294,7 +294,7 @@ create_zChart <- function(j, input, values) {
                               prettyNum(x$transcript_end, big.mark = ","),
                               x$chromosome,
                               x$strand,
-                              x$description
+                              brAt(x$description)
                  ),
                  gene = x$name,
                  stringsAsFactors=FALSE
@@ -310,7 +310,7 @@ create_zChart <- function(j, input, values) {
                               prettyNum(x$transcript_end, big.mark = ","),
                               x$chromosome,
                               x$strand,
-                              x$attributes
+                              brAt(x$attributes)
                  ),
                  gene = x$name,
                  stringsAsFactors=FALSE
@@ -324,7 +324,7 @@ create_zChart <- function(j, input, values) {
                               prettyNum(x$transcript_end, big.mark = ","),
                               x$chromosome,
                               x$strand,
-                              x$attributes
+                              brAt(x$attributes)
                  ),
                  gene = x$name,
                  stringsAsFactors=FALSE

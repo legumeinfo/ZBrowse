@@ -131,3 +131,9 @@ getRainbowColors <- function(n) {
   # TODO: a more clearly distinguishable set of colors
   rainbow(n, end = 5/6)
 }
+
+# Break the string s into lines at most n characters long,
+# replacing the breaks (last whitespace in each line) by <br>
+brAt <- function(s, n = 90) {
+  gsub(sprintf('(.{1,%d})(\\s|$)', n), '\\1<br>', s)
+}
