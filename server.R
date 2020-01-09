@@ -1303,6 +1303,7 @@ isolate({
           chr <- trailingInteger(input$bc_gcv$targets$chromosome)
           # Adjust the Chromosome window to match the selection
           updateTabsetPanel(session, "datatabs", selected = "Chrom")
+          clearGenomicLinkages()
           updateSelectInput(session, jth_ref("chr", j), selected = chr)
         }
 
@@ -1315,6 +1316,7 @@ isolate({
         genspSrc <- stri_trans_totitle(substr(srx$chromosome, 1, 5))
         if (genspRef == org.Gensp[values$organism] && genspSrc == org.Gensp[values$organism2]) {
           updateTabsetPanel(session, "datatabs", selected = "Chrom")
+          clearGenomicLinkages()
           # Adjust the organism 1 Chromosome window to match the block reference
           chrRef <- trailingInteger(ref$chromosome)
           bpStartRef <- ref$locus[[1]]
@@ -1350,6 +1352,7 @@ isolate({
           widthBP <- (bpMax - bpMin) %/% 2 + 50000 # give it 50k BPs on either side to ensure visibility
           # Adjust the Chromosome window to match the selection
           updateTabsetPanel(session, jth_ref("datatabs", j), selected = "Chrom")
+          clearGenomicLinkages()
           updateSelectInput(session, jth_ref("chr", j), selected = chr)
           updateNumericInput(session, jth_ref("selected", j), value = centerBP)
           updateSliderInput(session, jth_ref("window", j), value = widthBP)
