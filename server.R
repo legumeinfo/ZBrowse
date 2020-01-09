@@ -1325,7 +1325,12 @@ isolate({
           bpWidthRef <- (bpEndRef - bpStartRef) %/% 2 + 50000 # give it 50k BPs on either side to ensure visibility
           updateSelectInput(session, "chr", selected = chrRef)
           updateNumericInput(session, "selected", value = bpCenterRef)
-          updateSliderInput(session, "window", value = bpWidthRef)
+          # updateSliderInput(session, "window", value = bpWidthRef)
+          runjs(paste(
+            sprintf("$('#pChart').highcharts().xAxis[0].setExtremes(%d, %d);",
+              bpCenterRef - bpWidthRef, bpCenterRef + bpWidthRef),
+            "$('#pChart').highcharts().showResetZoom();"
+          ))
           # Adjust the organism 2 Chromosome window to match the block source
           chrSrc <- trailingInteger(srx$chromosome)
           bpStartSrc <- srx$locus[[1]]
@@ -1334,7 +1339,12 @@ isolate({
           bpWidthSrc <- (bpEndSrc - bpStartSrc) %/% 2 + 50000 # give it 50k BPs on either side to ensure visibility
           updateSelectInput(session, "chr2", selected = chrSrc)
           updateNumericInput(session, "selected2", value = bpCenterSrc)
-          updateSliderInput(session, "window2", value = bpWidthSrc)
+          # updateSliderInput(session, "window2", value = bpWidthSrc)
+          runjs(paste(
+            sprintf("$('#pChart2').highcharts().xAxis[0].setExtremes(%d, %d);",
+              bpCenterSrc - bpWidthSrc, bpCenterSrc + bpWidthSrc),
+            "$('#pChart2').highcharts().showResetZoom();"
+          ))
         }
 
       } else if (isMacroSyntenyOrganism) {
