@@ -159,6 +159,7 @@ shinyServer(function(input, output, session) {
   createTraitsSidebar <- function(j) {
     wellPanel(
       style = paste0("background-color: ", bgColors[j], ";"),
+      uiOutput(jth_ref("traitFilter", j)),
       uiOutput(jth_ref("traitColBoxes", j)),
       uiOutput(jth_ref("legend", j)),
       uiOutput(jth_ref("overlaps", j)),
@@ -803,6 +804,13 @@ shinyServer(function(input, output, session) {
   output$SIaxisLim <- renderUI(createSIaxisLim(1))
   output$SIaxisLim2 <- renderUI(createSIaxisLim(2))
 
+  # Text input that filters traits if their name matches
+  createTraitFilter <- function(j) {
+    textInput(inputId = jth_ref("traitFilter", j), label = "Filter traits:", placeholder = "e.g. Seed")
+  }
+  output$traitFilter <- renderUI(createTraitFilter(1))
+  output$traitFilter2 <- renderUI(createTraitFilter(2))
+
   #builds list of multiple selection boxes for traits that have multiple columns in dataset
   createTraitColBoxes <- function(j) {
     if(is.null(input[[jth_ref("datasets", j)]])){return()}
@@ -1030,7 +1038,26 @@ shinyServer(function(input, output, session) {
     h1$set(dom = 'testChart')
     return(h1)     
   })
-  
+
+  handleTraitFilter <- function(j) {
+    if (is.null(input[[jth_ref("traitFilter", j)]])) return()
+    isolate({
+      tc <- input[[jth_ref("traitColumns", j)]]
+      tc.id <- jth_ref(tc, j)
+      all.choices <- sort(unique(values[[input[[jth_ref("datasets", j)]]]][, tc]))
+      tf <- input[[jth_ref("traitFilter", j)]]
+      if (nchar(tf) == 0) {
+        filtered.choices <- "Select All"
+      } else {
+        filtered.choices <- all.choices[grep(tf, all.choices, ignore.case = TRUE)]
+      }
+      all.choices <- c("Select All", "Deselect All", all.choices)
+      updateSelectizeInput(session, tc.id, choices = all.choices, selected = filtered.choices)
+    })
+  }
+  observe(handleTraitFilter(1))
+  observe(handleTraitFilter(2))
+
   handleSubmitColsButton <- function(j) {
     if(is.null(input[[jth_ref("SubmitColsButton", j)]]) || input[[jth_ref("SubmitColsButton", j)]] == 0){return()}
     isolate({
