@@ -88,6 +88,7 @@ init.gwas <- function(o.gwas) {
 }
 
 load.gwas.remote <- function(organism, filename, trait) {
+  filename <- gsub(" ", "%20", filename)
   if (!gwas.sources["CyVerse", "status"]) {
     print(paste("No connection to", filename))
     return()
