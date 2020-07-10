@@ -116,6 +116,7 @@ load.gwas.remote <- function(organism, filename, trait) {
 
   } else if (organism == "Arabidopsis thaliana") {
     df.gwas <- read.table(file = url(filename, method = "libcurl"), header = TRUE, sep = ",", quote = "\"", stringsAsFactors = FALSE)[, cols]
+    df.gwas$Chromosome <- as.character(df.gwas$Chromosome)
     df.gwas$Trait <- trait
   }
 

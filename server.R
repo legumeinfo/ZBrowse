@@ -15,10 +15,17 @@ shinyServer(function(input, output, session) {
   dataFiles <- c(dataFiles, legumeInfo.gwas)
   for(i in dataFiles){
     if (i %in% legumeInfo.gwas) {
-      values[[i]] <- init.gwas(i)
+      df.gwas <- init.gwas(i)
     } else {
-      values[[i]] <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)
+      df.gwas <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)
     }
+    # Force the chromosome column to be a string
+    # (Note: there must be exactly one column whose name starts with "chr", case-insensitive)
+    cols <- tolower(names(df.gwas))
+    k <- which(startsWith(cols, "chr"))
+    df.gwas[, k] <- as.character(df.gwas[, k])
+
+    values[[i]] <- df.gwas
   }  
   values$datasetlist <- dataFiles
   values$datasetToOrganism <- NULL # map each dataset to an organism
@@ -939,7 +946,7 @@ shinyServer(function(input, output, session) {
     gsub("ordered","factor", cls)
   }
 
-  # Function to handle loading of data from a file or rObject, for the jth dataset
+  # Function to handle loading of GWAS data from a file or rObject, for the jth dataset
   loadUserData <- function(filename, uFile, j) {
     ext <- file_ext(filename)
     objname <- sub(paste(".", ext, sep = ""), "", basename(filename))
@@ -973,6 +980,11 @@ shinyServer(function(input, output, session) {
     } else {
       loaded.values <- read.csv(uFile, header = input[[jth_ref("header", j)]], sep = input[[jth_ref("sep", j)]], stringsAsFactors = FALSE)
     }
+    # Force the chromosome column to be a string
+    # (Note: there must be exactly one column whose name starts with "chr", case-insensitive)
+    cols <- tolower(names(loaded.values))
+    k <- which(startsWith(cols, "chr"))
+    loaded.values[, k] <- as.character(loaded.values[, k])
 
     if (appendSNPs) {
       dsj <- jth_ref("datasets", j)
@@ -984,7 +996,7 @@ shinyServer(function(input, output, session) {
     }
   }
   
-  # Load data from .csv files at a remote URL, for the jth dataset
+  # Load GWAS data from .csv files at a remote URL, for the jth dataset
   loadRemoteData <- function(trait, traitUrl, j) {
     ext <- file_ext(traitUrl)
     objname <- sub(paste(".", ext, sep = ""), "", basename(traitUrl))
@@ -1000,6 +1012,7 @@ shinyServer(function(input, output, session) {
       values[['datasetlist']] <- unique(c(objname, values[['datasetlist']]))
     }
 
+    # Note: there must be exactly one column whose name starts with "chr", case-insensitive
     loaded.values <- load.gwas.remote(values[[jth_ref("organism", j)]], traitUrl, trait)
 
     if (appendSNPs) {
@@ -1137,7 +1150,7 @@ shinyServer(function(input, output, session) {
     } else {
       # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
       ss <- strsplit(input$relatedRegions, split = " ")[[1]]
-      chr <- as.integer(stri_sub(ss[1], 4))
+      chr <- stri_sub(ss[1], 4)
       ss2 <- strsplit(ss[2], split = "-")[[1]]
       centerBP <- as.integer(1.0e6*mean(as.numeric(ss2)))
       updateSelectInput(session, "chr2", selected = chr)
@@ -1197,6 +1210,7 @@ isolate({
     names(glGenes) <- names(results1$genes[[1]])
     glGenes <- glGenes[, c("name", "family", "fmin", "fmax", "strand")]
     glGenes$chr <- trailingInteger(results1$chromosome_name)
+    glGenes$chr <- as.character(glGenes$chr)
     glGenes <- glGenes[nchar(glGenes$family) > 0, ]
     if (nrow(glGenes) == 0) {
       # could reach here if none of the (2*neighbors + 1) genes has a family id
@@ -1215,6 +1229,7 @@ isolate({
     }
     glGenes2 <- do.call(rbind, lapply(results2$groups, FUN = function(gr) {
       gr.chr <- trailingInteger(gr$chromosome_name)
+      gr.chr <- as.character(gr.chr)
       if (paste(substr(gr$genus,1,1),gr$species,sep=".") == org.G.species[values$organism2] && !is.na(gr.chr)) {
         gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
           stringsAsFactors = FALSE)
@@ -1251,9 +1266,11 @@ isolate({
     glRelatedRegions <- do.call(rbind.data.frame, compact(lapply(results2$groups, FUN = function(gr) {
       if (gr$id %in% glGroupIds) {
         gr.chr <- trailingInteger(gr$chromosome_name)
+        chrd <- sprintf("chr%d", gr.chr)
+        gr.chr <- as.character(gr.chr)
         gr.minBP <- gr$genes[[1]]$fmin
         gr.maxBP <- gr$genes[[length(gr$genes)]]$fmax
-        list(region = sprintf("chr%d %3.2f-%3.2f Mbp", gr.chr, gr.minBP*1.0e-6, gr.maxBP*1.0e-6),
+        list(region = sprintf("%s %3.2f-%3.2f Mbp", chrd, gr.minBP*1.0e-6, gr.maxBP*1.0e-6),
           chr = gr.chr, minBP = gr.minBP, maxBP = gr.maxBP)
       }
     })))
@@ -1328,6 +1345,7 @@ isolate({
         if (j > 0) {
           # Extract the chromosome number
           chr <- trailingInteger(input$bc_gcv$targets$chromosome)
+          chr <- as.character(chr)
           # Adjust the Chromosome window to match the selection
           updateTabsetPanel(session, "datatabs", selected = "Chrom")
           clearGenomicLinkages()
@@ -1346,6 +1364,7 @@ isolate({
           clearGenomicLinkages()
           # Adjust the organism 1 Chromosome window to match the block reference
           chrRef <- trailingInteger(ref$chromosome)
+          chrRef <- as.character(chrRef)
           bpStartRef <- ref$locus[[1]]
           bpEndRef <- ref$locus[[2]]
           bpCenterRef <- (bpStartRef + bpEndRef) %/% 2
@@ -1360,6 +1379,7 @@ isolate({
           ))
           # Adjust the organism 2 Chromosome window to match the block source
           chrSrc <- trailingInteger(srx$chromosome)
+          chrSrc <- as.character(chrSrc)
           bpStartSrc <- srx$locus[[1]]
           bpEndSrc <- srx$locus[[2]]
           bpCenterSrc <- (bpStartSrc + bpEndSrc) %/% 2
@@ -1382,6 +1402,7 @@ isolate({
         if (j > 0) {
           # Extract the chromosome number
           chr <- trailingInteger(input$bc_gcv$targets$chromosome)
+          chr <- as.character(chr)
           # Range of base pairs
           bpMin <- input$bc_gcv$targets$extent[[1]]
           bpMax <- input$bc_gcv$targets$extent[[2]]

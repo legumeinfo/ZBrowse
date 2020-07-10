@@ -27,12 +27,12 @@ calculateTotalBP <- function(j, input, values) {
     cumBP<-c(0,cumsum(as.numeric(chrSize[values[[jth_ref("organism", j)]]][[1]])))
     #to order by desired chromosome add factor levels in the desired order to the chrColumn, any chr names that differ in gwas file compared
     #to organism file will turn into NA
-    values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]] <- factor(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],levels=chrName[values[[jth_ref("organism", j)]]][[1]])
-    values[[input[[jth_ref("datasets", j)]]]] <- values[[input[[jth_ref("datasets", j)]]]][order(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("bpColumn", j)]]]),]
-    numeachchr<-aggregate(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("bpColumn", j)]]],list(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]]),length)
+    ff <- factor(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],levels=chrName[values[[jth_ref("organism", j)]]][[1]])
+    values[[input[[jth_ref("datasets", j)]]]] <- values[[input[[jth_ref("datasets", j)]]]][order(ff,values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("bpColumn", j)]]]),]
+    numeachchr<-aggregate(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("bpColumn", j)]]],list(ff),length)
     #      adjust<-rep(cumBP[1],numeachchr$x[numeachchr$Group.1==1])            
     adjust <- numeric()
-    for (i in 1:(length(cumBP)-1)){#max(unique(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]]))){
+    for (i in 1:(length(cumBP)-1)){#max(unique(ff))){
       if(length(numeachchr$x[numeachchr$Group.1==chrName[values[[jth_ref("organism", j)]]][[1]][i]])==0){next;}
       adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[values[[jth_ref("organism", j)]]][[1]][i]]))
     }
@@ -47,11 +47,11 @@ calculateTotalBP <- function(j, input, values) {
     }else{
       
       cumBP<-c(0,cumsum(as.numeric(chrSize[values[[jth_ref("organism", j)]]][[1]])))
-      values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]] <- factor(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],levels=chrName[values[[jth_ref("organism", j)]]][[1]])
-      values[[input[[jth_ref("datasets", j)]]]] <- values[[input[[jth_ref("datasets", j)]]]][order(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("SIbpStart", j)]]]),]
-      numeachchr<-aggregate(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("SIbpStart", j)]]],list(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]]),length)
+      ff <- factor(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],levels=chrName[values[[jth_ref("organism", j)]]][[1]])
+      values[[input[[jth_ref("datasets", j)]]]] <- values[[input[[jth_ref("datasets", j)]]]][order(ff,values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("SIbpStart", j)]]]),]
+      numeachchr<-aggregate(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("SIbpStart", j)]]],list(ff),length)
       adjust <- numeric()
-      for (i in 1:(length(cumBP)-1)){#max(unique(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]]))){
+      for (i in 1:(length(cumBP)-1)){#max(unique(ff))){
         if(length(numeachchr$x[numeachchr$Group.1==chrName[values[[jth_ref("organism", j)]]][[1]][i]])==0){next;}
         adjust<-c(adjust,rep(cumBP[i],numeachchr$x[numeachchr$Group.1==chrName[values[[jth_ref("organism", j)]]][[1]][i]]))
       }
@@ -63,9 +63,9 @@ calculateTotalBP <- function(j, input, values) {
     }else{
       
       cumBP<-c(0,cumsum(as.numeric(chrSize[values[[jth_ref("organism", j)]]][[1]])))
-      values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]] <- factor(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],levels=chrName[values[[jth_ref("organism", j)]]][[1]])
-      values[[input[[jth_ref("datasets", j)]]]] <- values[[input[[jth_ref("datasets", j)]]]][order(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("SIbpEnd", j)]]]),]
-      numeachchr<-aggregate(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("SIbpEnd", j)]]],list(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]]),length)
+      ff <- factor(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]],levels=chrName[values[[jth_ref("organism", j)]]][[1]])
+      values[[input[[jth_ref("datasets", j)]]]] <- values[[input[[jth_ref("datasets", j)]]]][order(ff,values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("SIbpEnd", j)]]]),]
+      numeachchr<-aggregate(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("SIbpEnd", j)]]],list(ff),length)
       adjust <- numeric()
       for (i in 1:(length(cumBP)-1)){#max(unique(values[[input[[jth_ref("datasets", j)]]]][,input[[jth_ref("chrColumn", j)]]]))){
         if(length(numeachchr$x[numeachchr$Group.1==chrName[values[[jth_ref("organism", j)]]][[1]][i]])==0){next;}
