@@ -539,7 +539,11 @@ create_zChart <- function(j, input, values) {
     glGenes2 <- values$glGenes2
     # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
     ss <- strsplit(input$relatedRegions, split = " ")[[1]]
-    chr <- as.integer(stri_sub(ss[1], 4))
+    if (startsWith(ss[1], "Gm")) {
+      chr <- ss[1]
+    } else {
+      chr <- stri_sub(ss[1], 4)
+    }
     glFamilies <- intersect(glFamilies, glGenes2$family[glGenes2$chr == chr])
   }
   doClickOnColumn <- paste(

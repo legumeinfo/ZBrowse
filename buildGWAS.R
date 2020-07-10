@@ -7,11 +7,123 @@ library(stringi)
 library(RCurl)
 
 # --------------------------------------------------------------
+# LIS Data Store methods
+
+# TODO: add column names
+read.gz.url <- function(fin, skip = 0, header = FALSE) {
+  zz <- gzcon(url(fin, "r"))
+  xx <- read.csv(textConnection(readLines(zz)), header = header, sep = '\t', as.is = TRUE, skip = skip)
+  close(zz)
+  xx
+}
+
+# returns the number of lines before the first line starting with ch
+determine.skip <- function(fin, ch = "#", nmax = 16) {
+  zz <- gzcon(url(fin, "r"))
+  xx <- readLines(zz, n = nmax)
+  close(zz)
+  bb <- startsWith(xx, ch)
+  if (!any(bb)) return(NA)
+  which(bb)[1] - 1
+}
+
+scrub.gff <- function(gff) {
+  # gff is the GFF data frame downloaded from the data store: V1-V9
+  v1 <- gff[, 1]
+  position <- gff[, 4] # start position (note v5 is end position which may be different)
+  v9 <- gff[, 9]
+  # TODO: keep other columns?
+
+  # Extract chromosome and marker
+  # Note: for other species the format (and thus the parsing) may be different.
+  chromosome <- sapply(v1, function(s) {
+    # stri_match_first(s, regex = "\\d+$")[1]
+    # as.integer(stri_sub(s, nchar(s) - 1))
+    stri_match_first(s, regex = "glyma.Wm82.gnm2.(Gm\\d+)")[2]
+  })
+  marker <- sapply(v9, function(s) {
+    stri_match_first(s, regex = "ID=glyma.Wm82.gnm2.(\\S[^;]+);?")[2]
+  })
+
+  # output
+  df.out <- data.frame(marker, chromosome, position, row.names = NULL)
+  df.out[!is.na(df.out$chromosome), ]
+}
+
+merge.gwas <- function(df.gwas, df.gff) {
+  # df.gwas is the GWAS data frame downloaded from the data store:
+  #   X.identifier,phenotype,marker,pvalue
+  # TODO: keep other columns?
+  # df.gff is the processed GFF file:
+  #   marker,chromosome,position
+
+  # Merge on marker to convert to chromosome,phenotype(=trait),position,p_value
+  df.merged <- merge(df.gwas, df.gff, by = "marker", sort = FALSE)
+
+  # Clean up column order and names
+  df.merged <- df.merged[, c(1, 5, 6, 3, 4)]
+  names(df.merged) <- c("marker", "chromosome", "position", "phenotype", "p_value")
+  df.merged
+}
+
+build.gwas.from.lis.datastore <- function(gwasDir, gffFile) {
+  nid <- "load.gwas"
+  showNotification("Loading Soybean GWAS data. Please wait.", duration = NULL, id = nid, type = "message")
+
+  df.gff <- read.gz.url(gffFile, skip = 2)
+  df.gff <- scrub.gff(df.gff)
+
+  # TODO: equivalent of list.files, or discover from DSCensor
+  #gwasFiles <- list.files(gwasDir, pattern = "gwas.tsv.gz$")
+  gwasFiles <- paste("https://legumeinfo.org/data/public/Glycine_max/mixed.gwas.1W14", c(
+    "glyma.mixed.gwas.1W14.KGK20170707-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20170711-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20170714-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20170803-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20170808-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20170814-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20170908-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20170915-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20171006-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20171018-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.KGK20171027-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.LBC20180516-2.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.LBC20180516-3.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.LBC20180521-1.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.LBC20180521-5.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.LBC20180601-3.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.LBC20180625-2.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.LBC20180625-3.gwas.tsv.gz",
+    "glyma.mixed.gwas.1W14.SST20180209-1.gwas.tsv.gz"
+  ), sep = "/")
+
+  # Read the GWAS files, merge with the GFF data, and append the results
+  df.gwas <- NULL
+  for (f in gwasFiles) {
+    nskip <- determine.skip(f)
+    df.f <- read.gz.url(f, skip = nskip, header = TRUE)
+    df.f2 <- merge.gwas(df.f, df.gff)
+    if (is.null(df.gwas)) {
+      df.gwas <- df.f2
+    } else {
+      df.gwas <- rbind(df.gwas, df.f2)
+    }
+  }
+  removeNotification(nid)
+
+  # sort and deduplicate the output
+  df.gwas <- df.gwas[order(df.gwas$chromosome, df.gwas$position), ]
+  unique(df.gwas)
+}
+
+# --------------------------------------------------------------
 
 gwas.sources <- data.frame(
-  name = c("CyVerse", "DSCensor"),
+  name = c("CyVerse", "DSCensor", "LIS Data Store"),
   # use more basic URLs
-  url = c("http://de.cyverse.org/dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas", "http://dev.lis.ncgr.org:50020"),
+  url = c("http://de.cyverse.org/dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas",
+          "http://dev.lis.ncgr.org:50020",
+          "https://legumeinfo.org/data/public/Glycine_max/mixed.gwas.1W14/glyma.mixed.gwas.1W14.KGK20170707-1.gwas.tsv.gz"),
   status = FALSE,
   stringsAsFactors = FALSE
 )
@@ -88,6 +200,7 @@ init.gwas <- function(o.gwas) {
 }
 
 load.gwas.remote <- function(organism, filename, trait) {
+  filename <- gsub(" ", "%20", filename)
   if (!gwas.sources["CyVerse", "status"]) {
     print(paste("No connection to", filename))
     return()
@@ -115,6 +228,7 @@ load.gwas.remote <- function(organism, filename, trait) {
 
   } else if (organism == "Arabidopsis thaliana") {
     df.gwas <- read.table(file = url(filename, method = "libcurl"), header = TRUE, sep = ",", quote = "\"", stringsAsFactors = FALSE)[, cols]
+    df.gwas$Chromosome <- as.character(df.gwas$Chromosome)
     df.gwas$Trait <- trait
   }
 

@@ -62,7 +62,11 @@ build.annotations <- function(key, filename, chrLengths, chrPrefix) {
   df.annot <- as.data.frame(do.call(rbind, df.annot), stringsAsFactors = FALSE)
   df.annot <- df.annot[df.annot[, 2] == "gene", -2] # filter and then remove the type column
   names(df.annot) <- c("chromosome", "transcript_start", "transcript_end", "strand", "attributes")
-  df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) as.integer(stri_sub(chr, nchar(chrPrefix) + 1)))
+  if (key == "Soybean") {
+    df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) stri_sub(chr, nchar(chrPrefix) - 1))
+  } else {
+    df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) stri_sub(chr, nchar(chrPrefix) + 1))
+  }
   df.annot$transcript_start <- as.integer(df.annot$transcript_start)
   df.annot$transcript_end <- as.integer(df.annot$transcript_end)
   df.annot$id <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "ID"))

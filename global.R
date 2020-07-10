@@ -85,7 +85,7 @@ for(i in 1:length(files)){
       name <- namesOrdered$V1
     }else{
       value<-unlist(c(lapply(strsplit(data[2], ","), as.numeric)))
-      name <- c(1:length(value))
+      name <- as.character(1:length(value))
     }    
     chrSize[key]<-list(value)
     chrName[key]<-list(name)
@@ -97,11 +97,13 @@ for(i in 1:length(files)){
     annotFilename <- data[4]
     org.annotChrPrefix[key] <- data[5]
     if (stri_endswith_fixed(annotFilename, "gff3.gz")) {
-      chromosome.lengths <- as.integer(stri_split_fixed(data[2], ",")[[1]])
+      chromosome.lengths <- chrSize[key][[1]]
       locValue <- build.annotations(key, annotFilename, chromosome.lengths, org.annotChrPrefix[key])
     } else {
       locValue<-read.table(annotFilename,sep=",",head=TRUE,stringsAsFactors = FALSE,quote = c("\""))
     }
+    chr2i <- suppressWarnings(as.integer(locValue$chromosome))
+    if (!any(is.na(chr2i))) locValue$chromosome <- as.character(chr2i)
     org.annotGeneLoc[key]<-list(locValue)
     org.gcvUrlBase[key] <- data[6]
     org.gcvChrFormat[key] <- data[7]
