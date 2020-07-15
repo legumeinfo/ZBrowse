@@ -7,6 +7,19 @@ library(stringi)
 library(RCurl)
 
 # --------------------------------------------------------------
+# LIS Data Store information
+lis.data.store.info <- list()
+lis.data.store.info[["Cowpea GWAS"]] <- list(
+  mrkFilter = "vigna:unguiculata",
+  chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)",
+  mrkRegex = "ID=vigun.IT97K-499-35.gnm1.(\\S[^;]+);?"
+)
+lis.data.store.info[["Soybean GWAS"]] <- list(
+  mrkFilter = "glycine:max",
+  chrRegex = "glyma.Wm82.gnm2.(Gm\\d+)",
+  mrkRegex = "ID=glyma.Wm82.gnm2.(\\S[^;]+);?"
+)
+
 # LIS Data Store methods
 
 # TODO: add column names
@@ -27,7 +40,7 @@ determine.skip <- function(fin, ch = "#", nmax = 16) {
   which(bb)[1] - 1
 }
 
-scrub.gff <- function(gff) {
+scrub.gff <- function(gff, what) {
   # gff is the GFF data frame downloaded from the data store: V1-V9
   v1 <- gff[, 1]
   position <- gff[, 4] # start position (note v5 is end position which may be different)
@@ -35,14 +48,11 @@ scrub.gff <- function(gff) {
   # TODO: keep other columns?
 
   # Extract chromosome and marker
-  # Note: for other species the format (and thus the parsing) may be different.
   chromosome <- sapply(v1, function(s) {
-    # stri_match_first(s, regex = "\\d+$")[1]
-    # as.integer(stri_sub(s, nchar(s) - 1))
-    stri_match_first(s, regex = "glyma.Wm82.gnm2.(Gm\\d+)")[2]
+    stri_match_first(s, regex = what$chrRegex)[2]
   })
   marker <- sapply(v9, function(s) {
-    stri_match_first(s, regex = "ID=glyma.Wm82.gnm2.(\\S[^;]+);?")[2]
+    stri_match_first(s, regex = what$mrkRegex)[2]
   })
 
   # output
@@ -66,52 +76,42 @@ merge.gwas <- function(df.gwas, df.gff) {
   df.merged
 }
 
-build.gwas.from.lis.datastore <- function(gwasDir, gffFile) {
-  nid <- "load.gwas"
-  showNotification("Loading Soybean GWAS data. Please wait.", duration = NULL, id = nid, type = "message")
+build.gwas.from.lis.datastore <- function(key) {
+  nid <- paste0("load.", gsub(" ", ".", key))
+  showNotification(paste("Loading", key, "data. Please wait."), duration = NULL, id = nid, type = "message")
 
-  df.gff <- read.gz.url(gffFile, skip = 2)
-  df.gff <- scrub.gff(df.gff)
-
-  # TODO: equivalent of list.files, or discover from DSCensor
-  #gwasFiles <- list.files(gwasDir, pattern = "gwas.tsv.gz$")
-  gwasFiles <- paste("https://legumeinfo.org/data/public/Glycine_max/mixed.gwas.1W14", c(
-    "glyma.mixed.gwas.1W14.KGK20170707-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20170711-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20170714-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20170803-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20170808-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20170814-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20170908-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20170915-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20171006-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20171018-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.KGK20171027-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.LBC20180516-2.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.LBC20180516-3.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.LBC20180521-1.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.LBC20180521-5.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.LBC20180601-3.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.LBC20180625-2.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.LBC20180625-3.gwas.tsv.gz",
-    "glyma.mixed.gwas.1W14.SST20180209-1.gwas.tsv.gz"
-  ), sep = "/")
-
-  # Read the GWAS files, merge with the GFF data, and append the results
+  # Discover GFF and GWAS files from DSCensor
   df.gwas <- NULL
-  for (f in gwasFiles) {
-    nskip <- determine.skip(f)
-    df.f <- read.gz.url(f, skip = nskip, header = TRUE)
-    df.f2 <- merge.gwas(df.f, df.gff)
-    if (is.null(df.gwas)) {
-      df.gwas <- df.f2
-    } else {
-      df.gwas <- rbind(df.gwas, df.f2)
+  gwasBaseUrl <- "http://dev.lis.ncgr.org:50020/api/v1/nodes/labels/"
+
+  # GFF (marker) files
+  query.mrk <- fromJSON(paste0(gwasBaseUrl, "mrk:", lis.data.store.info[[key]]$mrkFilter))
+  if (length(query.mrk$data) == 0) return()
+  df.mrk <- query.mrk$data[endsWith(query.mrk$data$url, ".gff3.gz"), ]
+  if (nrow(df.mrk) > 0) for (i in 1:nrow(df.mrk)) {
+    df.gff <- read.gz.url(df.mrk[i, "url"], skip = 2)
+    df.gff <- scrub.gff(df.gff, lis.data.store.info[[key]])
+
+    # Associated GWAS files
+    query.gwas <- fromJSON(paste0(gwasBaseUrl, "gwas:", lis.data.store.info[[key]]$mrkFilter))
+    if (length(query.gwas$data) == 0) next
+    gwasFiles <- query.gwas$data$url[endsWith(query.gwas$data$url, ".tsv.gz")]
+
+    # Read the GWAS files, merge with the GFF data, and append the results
+    for (f in gwasFiles) {
+      nskip <- determine.skip(f)
+      df.f <- read.gz.url(f, skip = nskip, header = TRUE)
+      df.f2 <- merge.gwas(df.f, df.gff)
+      if (is.null(df.gwas)) {
+        df.gwas <- df.f2
+      } else {
+        df.gwas <- rbind(df.gwas, df.f2)
+      }
     }
   }
   removeNotification(nid)
 
-  # sort and deduplicate the output
+  # Sort and deduplicate the output
   df.gwas <- df.gwas[order(df.gwas$chromosome, df.gwas$position), ]
   unique(df.gwas)
 }

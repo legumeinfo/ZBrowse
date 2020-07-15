@@ -10,7 +10,8 @@ shinyServer(function(input, output, session) {
   # Append names of any data we will create on the fly:
   # Add your organism to legumeInfo.gwas if its GWAS files live on a server instead of locally.
   legumeInfo.gwas <- c("Arabidopsis thaliana GWAS", "Medicago truncatula GWAS")
-  lis.datastore.gwas <- c("Soybean GWAS")
+  # Add your organism to lis.datastore.gwas if its GWAS files live in the LIS data store.
+  lis.datastore.gwas <- c("Cowpea GWAS", "Soybean GWAS")
   # TODO: Do we really need legumeInfo.organisms?
   legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea", "Pigeonpea")
   dataFiles <- c(dataFiles, legumeInfo.gwas, lis.datastore.gwas)
@@ -18,11 +19,7 @@ shinyServer(function(input, output, session) {
     if (i %in% legumeInfo.gwas) {
       df.gwas <- init.gwas(i)
     } else if (i %in% lis.datastore.gwas) {
-      # only "Soybean GWAS" for now
-      df.gwas <- build.gwas.from.lis.datastore(
-        "https://legumeinfo.org/data/public/Glycine_max/mixed.gwas.1W14",
-        "https://legumeinfo.org/data/public/Glycine_max/Wm82.gnm2.mrk.XJP2/glyma.Wm82.gnm2.mrk.XJP2.SoyBase.gff3.gz"
-      )
+      df.gwas <- build.gwas.from.lis.datastore(i)
     } else {
       df.gwas <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)
     }
@@ -1157,7 +1154,7 @@ shinyServer(function(input, output, session) {
     } else {
       # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
       ss <- strsplit(input$relatedRegions, split = " ")[[1]]
-      if (startsWith(ss[1], "Gm")) {
+      if (startsWith(ss[1], "Gm") || startsWith(ss[1], "Vu")) {
         chr <- ss[1]
       } else {
         chr <- stri_sub(ss[1], 4)
@@ -1223,6 +1220,8 @@ isolate({
     glGenes$chr <- trailingInteger(results1$chromosome_name)
     if (values$organism == "Soybean") {
       glGenes$chr <- sprintf("Gm%02d", glGenes$chr)
+    } else if (values$organism == "Cowpea") {
+      glGenes$chr <- sprintf("Vu%02d", glGenes$chr)
     } else {
       glGenes$chr <- as.character(glGenes$chr)
     }
@@ -1246,6 +1245,8 @@ isolate({
       gr.chr <- trailingInteger(gr$chromosome_name)
       if (values$organism2 == "Soybean") {
         gr.chr <- sprintf("Gm%02d", gr.chr)
+      } else if (values$organism2 == "Cowpea") {
+        gr.chr <- sprintf("Vu%02d", gr.chr)
       } else {
         gr.chr <- as.character(gr.chr)
       }
@@ -1287,6 +1288,8 @@ isolate({
         gr.chr <- trailingInteger(gr$chromosome_name)
         if (values$organism2 == "Soybean") {
           chrd <- gr.chr <- sprintf("Gm%02d", gr.chr)
+        } else if (values$organism2 == "Cowpea") {
+          chrd <- gr.chr <- sprintf("Vu%02d", gr.chr)
         } else {
           chrd <- sprintf("chr%d", gr.chr)
           gr.chr <- as.character(gr.chr)
@@ -1370,6 +1373,8 @@ isolate({
           chr <- trailingInteger(input$bc_gcv$targets$chromosome)
           if (values[[jth_ref("organism", j)]] == "Soybean") {
             chr <- sprintf("Gm%02d", chr)
+          } else if (values[[jth_ref("organism", j)]] == "Cowpea") {
+            chr <- sprintf("Vu%02d", chr)
           } else {
             chr <- as.character(chr)
           }
@@ -1393,6 +1398,8 @@ isolate({
           chrRef <- trailingInteger(ref$chromosome)
           if (values$organism == "Soybean") {
             chrRef <- sprintf("Gm%02d", chrRef)
+          } else if (values$organism == "Cowpea") {
+            chrRef <- sprintf("Vu%02d", chrRef)
           } else {
             chrRef <- as.character(chrRef)
           }
@@ -1410,8 +1417,10 @@ isolate({
           ))
           # Adjust the organism 2 Chromosome window to match the block source
           chrSrc <- trailingInteger(srx$chromosome)
-          if (values[[jth_ref("organism2", j)]] == "Soybean") {
+          if (values$organism2 == "Soybean") {
             chrSrc <- sprintf("Gm%02d", chrSrc)
+          } else if (values$organism2 == "Cowpea") {
+            chrSrc <- sprintf("Vu%02d", chrSrc)
           } else {
             chrSrc <- as.character(chrSrc)
           }
@@ -1439,6 +1448,8 @@ isolate({
           chr <- trailingInteger(input$bc_gcv$targets$chromosome)
           if (values[[jth_ref("organism", j)]] == "Soybean") {
             chr <- sprintf("Gm%02d", chr)
+          } else if (values[[jth_ref("organism", j)]] == "Cowpea") {
+            chr <- sprintf("Vu%02d", chr)
           } else {
             chr <- as.character(chr)
           }

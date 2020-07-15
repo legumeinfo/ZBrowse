@@ -612,7 +612,7 @@ create_zChart <- function(j, input, values) {
     glGenes2 <- values$glGenes2
     # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
     ss <- strsplit(input$relatedRegions, split = " ")[[1]]
-    if (startsWith(ss[1], "Gm")) {
+    if (startsWith(ss[1], "Gm") || startsWith(ss[1], "Vu")) {
       chr <- ss[1]
     } else {
       chr <- stri_sub(ss[1], 4)

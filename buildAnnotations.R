@@ -38,7 +38,8 @@ build.annotations <- function(key, filename, chrLengths, chrPrefix) {
   cat(paste("Constructing", key, "annotations ... "))
 
   # We expect that the number part of the chromosome name will have enough leading zeros to allow alphabetic sorting.
-  # This is only necessary for this parsing step, afterward we will refer to chromosomes by number (1-N).
+  # This is only necessary for this parsing step, afterward we will refer to chromosomes by number
+  # unless otherwise specified in the organism file (as for cowpea and soybean).
   num.chromosomes <- length(chrLengths)
   num.digits <- 1 + floor(log10(num.chromosomes))
   chrs <- sprintf(sprintf("%s%%0%dd", chrPrefix, num.digits), 1:num.chromosomes)
@@ -62,7 +63,8 @@ build.annotations <- function(key, filename, chrLengths, chrPrefix) {
   df.annot <- as.data.frame(do.call(rbind, df.annot), stringsAsFactors = FALSE)
   df.annot <- df.annot[df.annot[, 2] == "gene", -2] # filter and then remove the type column
   names(df.annot) <- c("chromosome", "transcript_start", "transcript_end", "strand", "attributes")
-  if (key == "Soybean") {
+  if (key %in% c("Cowpea", "Soybean")) {
+    # "Vu01" or "Gm01" instead of "1", so start two characters back
     df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) stri_sub(chr, nchar(chrPrefix) - 1))
   } else {
     df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) stri_sub(chr, nchar(chrPrefix) + 1))
