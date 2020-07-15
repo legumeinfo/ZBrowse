@@ -1,6 +1,6 @@
 "dataset","chrColumn","bpColumn","traitCol","yAxisColumn","logP","axisLim","axisMin","axisMax","organism","plotAll","supportInterval","SIyAxisColumn","SIbpStart","SIbpEnd","SIaxisLimBool","SIaxisMin","SIaxisMax"
 "Arabidopsis thaliana GWAS","Chromosome {character}","Position {integer}","Trait {character}","P.Value {numeric}",TRUE,FALSE,0,1,"Arabidopsis thaliana",FALSE,FALSE,"Chromosome","Position","Position",FALSE,0,1
 "Pigeonpea GWAS","Chromosome {character}","Position {integer}","Trait {character}","p_value {numeric}",FALSE,FALSE,0,1,"Pigeonpea",FALSE,FALSE,"Chromosome","Position","Position",FALSE,0,1
-"Soybean GWAS","chromosome {character}","position {integer}","phenotype {character}","p_value {numeric}",TRUE,FALSE,0,1,"Soybean",FALSE,FALSE,"Chromosome","Position","Position",FALSE,0,1
+"Soybean GWAS","chromosome {character}","position {integer}","phenotype {character}","p_value {numeric}",TRUE,FALSE,0,1,"Soybean",FALSE,FALSE,"chromosome","position","position",FALSE,0,1
 "Medicago truncatula GWAS","Chromosome {character}","pos {integer}","Trait {character}","P.value {numeric}",TRUE,FALSE,0,1,"Medicago truncatula",FALSE,FALSE,"Chromosome","pos","pos",FALSE,0,1
-"Cowpea GWAS","Chromosome {character}","Position {integer}","Trait {character}","p_value {numeric}",FALSE,FALSE,0,1,"Cowpea",FALSE,FALSE,"Chromosome","Position","Position",FALSE,0,1
+"Cowpea GWAS","chromosome {character}","position {integer}","phenotype {character}","p_value {numeric}",TRUE,FALSE,0,1,"Cowpea",FALSE,FALSE,"chromosome","position","position",FALSE,0,1
