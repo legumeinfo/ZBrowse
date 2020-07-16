@@ -12,8 +12,6 @@ shinyServer(function(input, output, session) {
   legumeInfo.gwas <- c("Arabidopsis thaliana GWAS", "Medicago truncatula GWAS")
   # Add your organism to lis.datastore.gwas if its GWAS files live in the LIS data store.
   lis.datastore.gwas <- c("Cowpea GWAS", "Soybean GWAS")
-  # TODO: Do we really need legumeInfo.organisms?
-  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea", "Pigeonpea")
   dataFiles <- c(dataFiles, legumeInfo.gwas, lis.datastore.gwas)
   for(i in dataFiles){
     if (i %in% legumeInfo.gwas) {
@@ -33,6 +31,8 @@ shinyServer(function(input, output, session) {
   }  
   values$datasetlist <- dataFiles
   values$datasetToOrganism <- NULL # map each dataset to an organism
+  # TODO: Do we really need legumeInfo.organisms?
+  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea", "Pigeonpea")
 
   # Extract initial values specified in the URL
   isolate({
@@ -426,8 +426,9 @@ shinyServer(function(input, output, session) {
     if(is.null(dat) || nrow(dat) == 0) return()
 
     # Show only the first 10 rows
+    # (and hide the publication column, which is an HTML link)
     nr <- min(10,nrow(dat))
-    dat <- data.frame(dat[1:nr,, drop = FALSE])
+    dat <- data.frame(dat[1:nr, names(dat) != "publication", drop = FALSE])
 
     #dat <- date2character_dat(dat) #may be needed to print table if there is a data column
 
