@@ -12,14 +12,22 @@ shinyServer(function(input, output, session) {
   legumeInfo.gwas <- c("Arabidopsis thaliana GWAS", "Medicago truncatula GWAS")
   # Add your organism to lis.datastore.gwas if its GWAS files live in the LIS data store.
   lis.datastore.gwas <- c("Cowpea GWAS", "Soybean GWAS")
-  dataFiles <- c(dataFiles, legumeInfo.gwas, lis.datastore.gwas)
+  # unique() removes duplicates from lis.datastore.gwas, if already cached
+  dataFiles <- unique(c(dataFiles, legumeInfo.gwas, lis.datastore.gwas))
   for(i in dataFiles){
+    dataFile.i <- paste0(dataPath, i)
     if (i %in% legumeInfo.gwas) {
       df.gwas <- init.gwas(i)
     } else if (i %in% lis.datastore.gwas) {
-      df.gwas <- build.gwas.from.lis.datastore(i)
+      if (file.exists(dataFile.i)) {
+        df.gwas <- read.csv(dataFile.i, header = TRUE, stringsAsFactors = FALSE)
+      } else {
+        # assemble and cache it
+        df.gwas <- build.gwas.from.lis.datastore(i)
+        write.csv(df.gwas, file = dataFile.i, row.names = FALSE)
+      }
     } else {
-      df.gwas <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)
+      df.gwas <- read.table(dataFile.i,sep=",",stringsAsFactors=FALSE,head=TRUE)
     }
     # Force the chromosome column to be a string
     # (Note: there must be exactly one column whose name starts with "chr", case-insensitive)
