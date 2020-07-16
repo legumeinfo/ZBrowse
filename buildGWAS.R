@@ -8,43 +8,34 @@ library(RCurl)
 
 # --------------------------------------------------------------
 # LIS Data Store information
-lis.data.store.info <- list()
-lis.data.store.info[["Cowpea GWAS"]] <- list(
+lis.datastore.info <- list()
+lis.datastore.info[["Cowpea GWAS"]] <- list(
   mrkFilter = "vigna:unguiculata",
   chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)",
   mrkRegex = "ID=vigun.IT97K-499-35.gnm1.(\\S[^;]+);?"
 )
-lis.data.store.info[["Soybean GWAS"]] <- list(
+lis.datastore.info[["Soybean GWAS"]] <- list(
   mrkFilter = "glycine:max",
   chrRegex = "glyma.Wm82.gnm2.(Gm\\d+)",
   mrkRegex = "ID=glyma.Wm82.gnm2.(\\S[^;]+);?"
 )
 
 # LIS Data Store methods
-
-# TODO: add column names
-read.gz.url <- function(fin, skip = 0, header = FALSE) {
+read.gff3.lis.datastore <- function(fin) {
   zz <- gzcon(url(fin, "r"))
-  xx <- read.csv(textConnection(readLines(zz)), header = header, sep = '\t', as.is = TRUE, skip = skip)
+  ll <- readLines(zz)
   close(zz)
-  xx
+  # remove header lines with leading "##"
+  ll <- ll[!startsWith(ll, "#")]
+  df.gff <- read.csv(textConnection(ll), header = FALSE, sep = '\t', as.is = TRUE)
+  df.gff
 }
 
-# returns the number of lines before the first line starting with ch
-determine.skip <- function(fin, ch = "#", nmax = 16) {
-  zz <- gzcon(url(fin, "r"))
-  xx <- readLines(zz, n = nmax)
-  close(zz)
-  bb <- startsWith(xx, ch)
-  if (!any(bb)) return(NA)
-  which(bb)[1] - 1
-}
-
-scrub.gff <- function(gff, what) {
-  # gff is the GFF data frame downloaded from the data store: V1-V9
-  v1 <- gff[, 1]
-  position <- gff[, 4] # start position (note v5 is end position which may be different)
-  v9 <- gff[, 9]
+scrub.gff <- function(df.gff.in, what) {
+  # df.gff.in is the GFF data frame downloaded from the data store: V1-V9
+  v1 <- df.gff.in[, 1]
+  position <- df.gff.in[, 4] # start position (note v5 is end position which may be different)
+  v9 <- df.gff.in[, 9]
   # TODO: keep other columns?
 
   # Extract chromosome and marker
@@ -56,8 +47,28 @@ scrub.gff <- function(gff, what) {
   })
 
   # output
-  df.out <- data.frame(marker, chromosome, position, row.names = NULL)
-  df.out[!is.na(df.out$chromosome), ]
+  df.gff <- data.frame(marker, chromosome, position, row.names = NULL)
+  df.gff[!is.na(df.gff$chromosome), ]
+}
+
+read.gwas.lis.datastore <- function(fin) {
+  zz <- gzcon(url(fin, "r"))
+  ll <- readLines(zz)
+  close(zz)
+  # read metadata before line beginning "#identifier"
+  src.name <- src.url <- ""
+  i <- 1
+  while (!startsWith(ll[i], "#")) {
+    ss <- strsplit(ll[i], split = "\t")[[1]]
+    if (ss[1] == "Name") src.name <- ss[2]
+    else if (ss[1] == "DOI") src.url <- paste0("https://doi.org/", ss[2])
+    else if (ss[1] == "PMID") src.url <- paste0("https://pubmed.ncbi.nlm.nih.gov/", ss[2], "/")
+    i <- i + 1
+  }
+  # read the rest
+  df.gwas <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', as.is = TRUE)
+  df.gwas$publication <- paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>")
+  df.gwas
 }
 
 merge.gwas <- function(df.gwas, df.gff) {
@@ -71,8 +82,9 @@ merge.gwas <- function(df.gwas, df.gff) {
   df.merged <- merge(df.gwas, df.gff, by = "marker", sort = FALSE)
 
   # Clean up column order and names
-  df.merged <- df.merged[, c(1, 5, 6, 3, 4)]
-  names(df.merged) <- c("marker", "chromosome", "position", "phenotype", "p_value")
+  # Ordering by column index should be correct, sometimes the names differ (like "phenotype" v. "trait")
+  df.merged <- df.merged[, c(1, 6, 7, 3, 4, 5)]
+  names(df.merged) <- c("marker", "chromosome", "position", "phenotype", "p_value", "publication")
   df.merged
 }
 
@@ -81,38 +93,38 @@ build.gwas.from.lis.datastore <- function(key) {
   showNotification(paste("Loading", key, "data. Please wait."), duration = NULL, id = nid, type = "message")
 
   # Discover GFF and GWAS files from DSCensor
-  df.gwas <- NULL
+  df.gwas <- init.gwas(key)
   gwasBaseUrl <- "http://dev.lis.ncgr.org:50020/api/v1/nodes/labels/"
 
   # GFF (marker) files
-  query.mrk <- fromJSON(paste0(gwasBaseUrl, "mrk:", lis.data.store.info[[key]]$mrkFilter))
-  if (length(query.mrk$data) == 0) return()
-  df.mrk <- query.mrk$data[endsWith(query.mrk$data$url, ".gff3.gz"), ]
-  if (nrow(df.mrk) > 0) for (i in 1:nrow(df.mrk)) {
-    df.gff <- read.gz.url(df.mrk[i, "url"], skip = 2)
-    df.gff <- scrub.gff(df.gff, lis.data.store.info[[key]])
+  query.mrk <- fromJSON(paste0(gwasBaseUrl, "mrk:", lis.datastore.info[[key]]$mrkFilter))
+  if (length(query.mrk$data) > 0) {
+    df.mrk <- query.mrk$data[endsWith(query.mrk$data$url, ".gff3.gz"), ]
+    if (nrow(df.mrk) > 0) {
+      for (i in 1:nrow(df.mrk)) {
+        df.gff <- read.gff3.lis.datastore(df.mrk[i, "url"])
+        df.gff <- scrub.gff(df.gff, lis.datastore.info[[key]])
 
-    # Associated GWAS files
-    query.gwas <- fromJSON(paste0(gwasBaseUrl, "gwas:", lis.data.store.info[[key]]$mrkFilter))
-    if (length(query.gwas$data) == 0) next
-    gwasFiles <- query.gwas$data$url[endsWith(query.gwas$data$url, ".tsv.gz")]
+        # Associated GWAS files
+        query.gwas <- fromJSON(paste0(gwasBaseUrl, "gwas:", lis.datastore.info[[key]]$mrkFilter))
+        if (length(query.gwas$data) == 0) next
+        gwasFiles <- query.gwas$data$url[endsWith(query.gwas$data$url, ".tsv.gz")]
 
-    # Read the GWAS files, merge with the GFF data, and append the results
-    for (f in gwasFiles) {
-      nskip <- determine.skip(f)
-      df.f <- read.gz.url(f, skip = nskip, header = TRUE)
-      df.f2 <- merge.gwas(df.f, df.gff)
-      if (is.null(df.gwas)) {
-        df.gwas <- df.f2
-      } else {
-        df.gwas <- rbind(df.gwas, df.f2)
+        # Read the GWAS files, merge with the GFF data, and append the results
+        for (f in gwasFiles) {
+          df.f <- read.gwas.lis.datastore(f)
+          df.f2 <- merge.gwas(df.f, df.gff)
+          if (nrow(df.gwas) == 0) {
+            df.gwas <- df.f2
+          } else {
+            df.gwas <- rbind(df.gwas, df.f2)
+          }
+        }
       }
     }
   }
   removeNotification(nid)
-
-  # Sort and deduplicate the output
-  df.gwas <- df.gwas[order(df.gwas$chromosome, df.gwas$position), ]
+  # deduplicate the results
   unique(df.gwas)
 }
 
@@ -194,6 +206,8 @@ init.gwas <- function(o.gwas) {
     df.gwas <- data.frame(Chromosome = "1", pos = 1L, Trait = "-", P.value = 0.1, stringsAsFactors = FALSE)
   } else if (organism == "Arabidopsis thaliana") {
     df.gwas <- data.frame(Chromosome = "1", Position = 1L, Trait = "-", P.Value = 0.1, negLogP = 1.0, MAF = 0.01, stringsAsFactors = FALSE)
+  } else {
+    df.gwas <- data.frame(chromosome = "1", position = 1L, phenotype = "-", p_value = 0.1, stringsAsFactors = FALSE)
   }
   df.gwas <- df.gwas[-1, ]
   df.gwas

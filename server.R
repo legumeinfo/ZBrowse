@@ -12,16 +12,22 @@ shinyServer(function(input, output, session) {
   legumeInfo.gwas <- c("Arabidopsis thaliana GWAS", "Medicago truncatula GWAS")
   # Add your organism to lis.datastore.gwas if its GWAS files live in the LIS data store.
   lis.datastore.gwas <- c("Cowpea GWAS", "Soybean GWAS")
-  # TODO: Do we really need legumeInfo.organisms?
-  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea", "Pigeonpea")
-  dataFiles <- c(dataFiles, legumeInfo.gwas, lis.datastore.gwas)
+  # unique() removes duplicates from lis.datastore.gwas, if already cached
+  dataFiles <- unique(c(dataFiles, legumeInfo.gwas, lis.datastore.gwas))
   for(i in dataFiles){
+    dataFile.i <- paste0(dataPath, i)
     if (i %in% legumeInfo.gwas) {
       df.gwas <- init.gwas(i)
     } else if (i %in% lis.datastore.gwas) {
-      df.gwas <- build.gwas.from.lis.datastore(i)
+      if (file.exists(dataFile.i)) {
+        df.gwas <- read.csv(dataFile.i, header = TRUE, stringsAsFactors = FALSE)
+      } else {
+        # assemble and cache it
+        df.gwas <- build.gwas.from.lis.datastore(i)
+        write.csv(df.gwas, file = dataFile.i, row.names = FALSE)
+      }
     } else {
-      df.gwas <- read.table(paste0(dataPath,i),sep=",",stringsAsFactors=FALSE,head=TRUE)
+      df.gwas <- read.table(dataFile.i,sep=",",stringsAsFactors=FALSE,head=TRUE)
     }
     # Force the chromosome column to be a string
     # (Note: there must be exactly one column whose name starts with "chr", case-insensitive)
@@ -33,6 +39,8 @@ shinyServer(function(input, output, session) {
   }  
   values$datasetlist <- dataFiles
   values$datasetToOrganism <- NULL # map each dataset to an organism
+  # TODO: Do we really need legumeInfo.organisms?
+  legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea", "Pigeonpea")
 
   # Extract initial values specified in the URL
   isolate({
@@ -293,10 +301,10 @@ shinyServer(function(input, output, session) {
         });"),
         helpModal('Manage','manage', includeMarkdown("tools/manage.md")),
         HTML(paste('<p style="font-size:10px;">Powered by',
-          '<a href="http://www.rstudio.com/shiny/">Shiny</a>,',
-          '<a href="http://rcharts.io/">rCharts</a>,',
-          '<a href="http://www.highcharts.com">Highcharts</a>,',
-          'and <a href="https://github.com/carlganz/rintrojs">rintrojs</a>',
+          '<a href="http://www.rstudio.com/shiny/" target=_blank>Shiny</a>,',
+          '<a href="https://ramnathv.github.io/rCharts/" target=_blank>rCharts</a>,',
+          '<a href="http://www.highcharts.com" target=_blank>Highcharts</a>,',
+          'and <a href="https://github.com/carlganz/rintrojs" target=_blank>rintrojs</a>',
           '</p>'))
       ),#end conditional Manage
 
@@ -428,8 +436,9 @@ shinyServer(function(input, output, session) {
     if(is.null(dat) || nrow(dat) == 0) return()
 
     # Show only the first 10 rows
+    # (and hide the publication column, which is an HTML link)
     nr <- min(10,nrow(dat))
-    dat <- data.frame(dat[1:nr,, drop = FALSE])
+    dat <- data.frame(dat[1:nr, names(dat) != "publication", drop = FALSE])
 
     #dat <- date2character_dat(dat) #may be needed to print table if there is a data column
 
