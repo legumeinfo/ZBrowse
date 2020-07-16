@@ -291,10 +291,10 @@ shinyServer(function(input, output, session) {
         });"),
         helpModal('Manage','manage', includeMarkdown("tools/manage.md")),
         HTML(paste('<p style="font-size:10px;">Powered by',
-          '<a href="http://www.rstudio.com/shiny/">Shiny</a>,',
-          '<a href="http://rcharts.io/">rCharts</a>,',
-          '<a href="http://www.highcharts.com">Highcharts</a>,',
-          'and <a href="https://github.com/carlganz/rintrojs">rintrojs</a>',
+          '<a href="http://www.rstudio.com/shiny/" target=_blank>Shiny</a>,',
+          '<a href="https://ramnathv.github.io/rCharts/" target=_blank>rCharts</a>,',
+          '<a href="http://www.highcharts.com" target=_blank>Highcharts</a>,',
+          'and <a href="https://github.com/carlganz/rintrojs" target=_blank>rintrojs</a>',
           '</p>'))
       ),#end conditional Manage
 
