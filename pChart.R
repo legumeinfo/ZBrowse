@@ -115,7 +115,7 @@ create_pChart <- function(j, input, values) {
   if(input[[jth_ref("axisLimBool", j)]] == TRUE){
     a$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),min=input[[jth_ref("axisMin", j)]],max=input[[jth_ref("axisMax", j)]],startOnTick=FALSE)
   }else{
-    a$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),startOnTick=FALSE)      
+    a$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),min=0,startOnTick=FALSE)
   }    
   
   if(input[[jth_ref("supportInterval", j)]]==TRUE){
