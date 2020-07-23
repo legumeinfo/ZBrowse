@@ -360,7 +360,7 @@ create_zChart <- function(j, input, values) {
     #create a hidden axis to put the gene track on, all the options are setting to hide everything from the axis 
     b$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
   }else{      
-    b$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),startOnTick=FALSE) 
+    b$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),min=0,startOnTick=FALSE)
     #create a hidden axis to put the gene track on, all the options are setting to hide everything from the axis
     b$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
   }

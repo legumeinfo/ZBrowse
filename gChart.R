@@ -133,7 +133,7 @@ create_gChart <- function(j, input, values) {
   if(input[[jth_ref("axisLimBool", j)]] == TRUE){       
     c$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),min=input[[jth_ref("axisMin", j)]],max=input[[jth_ref("axisMax", j)]],startOnTick=FALSE)
   }else{
-    c$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),startOnTick=FALSE)      
+    c$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),min=0,startOnTick=FALSE)
   }
   
   if(input[[jth_ref("supportInterval", j)]]==TRUE){

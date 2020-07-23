@@ -81,11 +81,15 @@ calculateTotalBP <- function(j, input, values) {
 getColorTable <- function(j, input) {
   traitVals <- list()
   if(input[[jth_ref("plotAll", j)]] == FALSE){
-    for(i in input[[jth_ref("traitColumns", j)]]){
-      traitVals[[i]] <- input[[jth_ref(i, j)]]
+    # Consider traits from both datasets,
+    # so as to assign any common ones the same color in both charts
+    for (jk in 1:2) {
+      for (i in input[[jth_ref("traitColumns", jk)]]) {
+        traitVals[[i]] <- c(traitVals[[i]], input[[jth_ref(i, jk)]])
+      }
     }
     
-    traits <- do.call(paste,c(expand.grid(traitVals),sep="_"))     
+    traits <- unique(do.call(paste,c(expand.grid(traitVals),sep="_")))
     if(length(traits)==0){return(NULL)}
     
     colorTable <- data.frame(trait=traits,color=rep(allColors,ceiling(length(traits)/30))[1:length(traits)])
