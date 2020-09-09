@@ -89,7 +89,7 @@ getColorTable <- function(j, input) {
       }
     }
     
-    traits <- unique(do.call(paste,c(expand.grid(traitVals),sep="_")))
+    traits <- unique(unlist(traitVals))
     if(length(traits)==0){return(NULL)}
     
     colorTable <- data.frame(trait=traits,color=rep(allColors,ceiling(length(traits)/30))[1:length(traits)])
