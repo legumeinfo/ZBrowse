@@ -5,3 +5,4 @@ https://legumeinfo.org/data/public/Glycine_max/Wm82.gnm2.ann1.RVB6/glyma.Wm82.gn
 glyma.Wm82.gnm2.Gm
 v1.legumefederation.org/gcv_lis_phytozome
 glyma.Chr%02d
+strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

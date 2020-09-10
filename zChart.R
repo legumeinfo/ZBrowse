@@ -194,108 +194,47 @@ create_zChart <- function(j, input, values) {
     # Extract the short description from the annotation
     thisAnnot$attributes <- sapply(thisAnnot$attributes, FUN = function(a) replace.special.characters(extract.gff.attribute(a, "Note")))
   }
-  
-  soyurlBase <- 'http://www.soybase.org/sbt/search/search_results.php?category=FeatureName&search_term='
-  #TAIR subscription limit exceeded- changing to araport
-  #araburlBase <- 'http://arabidopsis.org/servlets/TairObject?type=locus&name='
-  araburlBase <- 'http://www.araport.org/locus/'
-  legumeInfo_urlBase <- 'https://legumeinfo.org/gene_links/'
-  
+
   annotYvalReverse <- 0.02
   #if(input[[jth_ref("axisLimBool", j)]] == TRUE){annotYvalReverse <- input[[jth_ref("axisMin", j)]] + 0.01}
   annotYvalForward <- annotYvalReverse + 0.04
-  if (values[[jth_ref("organism", j)]] == "Arabidopsis thaliana") { #strand is '+' or '-'
-    annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(araburlBase,x$Locus),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Short Desc.: %6$s</td></tr></table>",
-                              x$name,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,                                                                           
-                              x$strand,
-                              brAt(x$short_description)
-                              # x$Curator_summary
-                 ),
-                 gene = x$name,
-                 stringsAsFactors=FALSE
-      )
-    })
-    annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(araburlBase,x$Locus),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Short Desc.: %6$s</td></tr></table>",
-                              x$name,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,                                                                           
-                              x$strand,
-                              brAt(x$short_description)
-                              # x$Curator_summary
-                 ),
-                 gene = x$name,
-                 stringsAsFactors=FALSE
-      )
-    })
-    
-  } else if (values[[jth_ref("organism", j)]] %in% c("Medicago truncatula", "Soybean", "Cowpea")) { # strand is '+' or '-'
-    annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
-                              x$name,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,
-                              x$strand,
-                              brAt(x$description)
-                 ),
-                 gene = x$name,
-                 stringsAsFactors=FALSE
-      )
-    })
-    annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
-                              x$name,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,
-                              x$strand,
-                              brAt(x$description)
-                 ),
-                 gene = x$name,
-                 stringsAsFactors=FALSE
-      )
-    })
-    
-  } else if (values[[jth_ref("organism", j)]] == "Pigeonpea") { # strand is '+' or '-'
-    annotTable <- adply(thisAnnot[thisAnnot$strand=="+",],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalForward,annotYvalForward,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
-                              x$name,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,
-                              x$strand,
-                              brAt(x$attributes)
-                 ),
-                 gene = x$name,
-                 stringsAsFactors=FALSE
-      )
-    })
-    annotTableReverse <- adply(thisAnnot[thisAnnot$strand=="-",],1,function(x) {
-      data.frame(x=c(x$transcript_start,x$transcript_end,x$transcript_end),y=c(annotYvalReverse,annotYvalReverse,NA),url=paste0(legumeInfo_urlBase, x$name, "/json"),
-                 name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>Desc: %6$s</td></tr></table>",
-                              x$name,
-                              prettyNum(x$transcript_start, big.mark = ","),
-                              prettyNum(x$transcript_end, big.mark = ","),
-                              x$chromosome,
-                              x$strand,
-                              brAt(x$attributes)
-                 ),
-                 gene = x$name,
-                 stringsAsFactors=FALSE
-      )
-    })
-  }
+  org.j <- values[[jth_ref("organism", j)]]
+  annotTable <- adply(thisAnnot[thisAnnot[[org.tag_strand[[org.j]]]] == org.strand_fwd[[org.j]], ], 1, function(x) {
+    data.frame(
+      x = c(x[[org.tag_start[[org.j]]]], x[[org.tag_end[[org.j]]]], x[[org.tag_end[[org.j]]]]),
+      y = c(annotYvalForward, annotYvalForward, NA),
+      url = sprintf(org.urlFormat[[org.j]], x[[org.tag_url[[org.j]]]]),
+      name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
+        x[[org.tag_name[[org.j]]]],
+        prettyNum(x[[org.tag_start[[org.j]]]], big.mark = ","),
+        prettyNum(x[[org.tag_end[[org.j]]]], big.mark = ","),
+        x[[org.tag_chr[[org.j]]]],
+        x[[org.tag_strand[[org.j]]]],
+        x[[org.tag_desc[[org.j]]]]
+      ),
+      gene = x[[org.tag_name[[org.j]]]],
+      marker = c(NA, "Arrow", NA),
+      stringsAsFactors = FALSE
+    )
+  })
+  annotTableReverse <- adply(thisAnnot[thisAnnot[[org.tag_strand[[org.j]]]] == org.strand_rev[[org.j]], ], 1, function(x) {
+    data.frame(
+      x = c(x[[org.tag_start[[org.j]]]], x[[org.tag_end[[org.j]]]], x[[org.tag_end[[org.j]]]]),
+      y = c(annotYvalReverse, annotYvalReverse, NA),
+      url = sprintf(org.urlFormat[[org.j]], x[[org.tag_url[[org.j]]]]),
+      name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
+        x[[org.tag_name[[org.j]]]],
+        prettyNum(x[[org.tag_start[[org.j]]]], big.mark = ","),
+        prettyNum(x[[org.tag_end[[org.j]]]], big.mark = ","),
+        x[[org.tag_chr[[org.j]]]],
+        x[[org.tag_strand[[org.j]]]],
+        x[[org.tag_desc[[org.j]]]]
+      ),
+      gene = x[[org.tag_name[[org.j]]]],
+      marker = c(NA, "Arrow", NA),
+      stringsAsFactors = FALSE
+    )
+  })
   #annotTable <- annotTable[,c("x","y","name","url","marker")]
   highlight <- (annotTable$gene %in% values$highlightGenes)
   hasHighlightsForward <- (sum(highlight) > 0)

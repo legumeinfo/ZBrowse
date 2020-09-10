@@ -5,3 +5,4 @@ Arabidopsis thaliana,A.thaliana,Arath
 NA
 v1.legumefederation.org/lis_context_server
 arath.Col.Chr%d
+strand,+,-,transcript_start,transcript_end,https://bar.utoronto.ca/thalemine/gene:%s,Locus,name,chromosome,short_description
