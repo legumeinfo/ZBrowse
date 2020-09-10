@@ -5,3 +5,4 @@ https://v1.legumefederation.org/data/public/Medicago_truncatula/A17_HM341.gnm4.a
 medtr.A17_HM341.gnm4.chr
 v1.legumefederation.org/gcv_lis_phytozome
 medtr.chr%d
+strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

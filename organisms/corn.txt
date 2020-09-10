@@ -5,3 +5,4 @@ Zea mays,Z.mays,Zeama
 Chr
 NA
 Chr%d
+transcript_strand,1,-1,transcript_start,transcript_end,http://maizegdb.org/cgi-bin/displaygenemodelrecord.cgi?id=%s,transcript_id,translation_id,chromosome,V2

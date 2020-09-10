@@ -58,6 +58,18 @@ org.gcvUrlBase <- list()
 # Chromosome name format, for sending chromosome-based queries to the Genome Context Viewer
 org.gcvChrFormat <- list()
 
+# For constructing gene mouseover text (annotTable, annotTableReverse) in zChart
+org.tag_strand <- list()
+org.strand_fwd <- list()
+org.strand_rev <- list()
+org.tag_start <- list()
+org.tag_end <- list()
+org.urlFormat <- list()
+org.tag_url <- list()
+org.tag_name <- list()
+org.tag_chr <- list()
+org.tag_desc <- list()
+
 files<-list.files(path="./organisms/")
 for(i in 1:length(files)){
   if(tools::file_ext(files[i]) == "txt"){
@@ -107,6 +119,18 @@ for(i in 1:length(files)){
     org.annotGeneLoc[key]<-list(locValue)
     org.gcvUrlBase[key] <- data[6]
     org.gcvChrFormat[key] <- data[7]
+
+    ss.org.annot <- strsplit(data[8], split = ",")[[1]]
+    org.tag_strand[key] <- ss.org.annot[1]
+    org.strand_fwd[key] <- ss.org.annot[2]
+    org.strand_rev[key] <- ss.org.annot[3]
+    org.tag_start[key] <- ss.org.annot[4]
+    org.tag_end[key] <- ss.org.annot[5]
+    org.urlFormat[key] <- ss.org.annot[6]
+    org.tag_url[key] <- ss.org.annot[7]
+    org.tag_name[key] <- ss.org.annot[8]
+    org.tag_chr[key] <- ss.org.annot[9]
+    org.tag_desc[key] <- ss.org.annot[10]
 
     close(conn)
   }

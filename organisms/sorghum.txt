@@ -5,3 +5,4 @@ Sorghum bicolor,S.bicolor,Sorbi
 Chr
 NA
 Chr%d
+strand,+,-,transcript_start,transcript_end,http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:%s,ID,name,chromosome,defLine,bestArabHitDefline,bestRiceHitDefline
