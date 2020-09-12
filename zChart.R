@@ -238,7 +238,7 @@ create_zChart <- function(j, input, values) {
   #annotTable <- annotTable[,c("x","y","name","url","marker")]
   highlight <- (annotTable$gene %in% values$highlightGenes)
   hasHighlightsForward <- (sum(highlight) > 0)
-  annotTable <- annotTable[,c("x","y","name","url")]
+  annotTable <- annotTable[,c("x","y","name","url","gene")]
   if (hasHighlightsForward) {
     annotTableH <- annotTable[highlight, ]
     annotTable <- annotTable[!highlight, ]
@@ -251,7 +251,7 @@ create_zChart <- function(j, input, values) {
   }
   highlight <- (annotTableReverse$gene %in% values$highlightGenes)
   hasHighlightsReverse <- (sum(highlight) > 0)
-  annotTableReverse <- annotTableReverse[,c("x","y","name","url")]
+  annotTableReverse <- annotTableReverse[,c("x","y","name","url","gene")]
   if (hasHighlightsReverse) {
     annotTableReverseH <- annotTableReverse[highlight, ]
     annotTableReverse <- annotTableReverse[!highlight, ]

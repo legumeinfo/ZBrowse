@@ -26,22 +26,12 @@ getGeneToQueryTrack <- function(url1, url2, microSyntenySearch, selectedGene = N
   if (is.null(selectedGene)) {
     gene.js <- paste(
       "var geneString = '';",
-      "mt0 = this.url.search('medtr');",
-      "cc0 = this.url.search('cajca');",
-      "gm0 = this.url.search('glyma');",
-      "vu0 = this.url.search('vigun');",
-      "js1 = this.url.search('/json');",
-      "if (mt0 >= 0) {",
-        "geneString = this.url.substring(mt0, js1);",
-      "} else if (gm0 >= 0) {",
-        "geneString = this.url.substring(gm0, js1);",
-      "} else if (vu0 >= 0) {",
-        "geneString = this.url.substring(vu0, js1);",
-      "} else if (cc0 >= 0) {",
-        "geneString = this.url.substring(cc0, js1);",
-      "} else if (this.url.search('arabidopsis.org') >= 0) {",
-        "at0 = this.url.search('name=');",
+      "if (this.gene.search('AT') >= 0) {",
+        # workaround for A. thaliana
+        "at0 = this.url.search('gene:');",
         "geneString = 'arath.Col.' + this.url.substring(at0 + 5);",
+      "} else if (typeof this.gene != undefined) {",
+        "geneString = this.gene;",
       "} else {",
         "return;",
       "}"
