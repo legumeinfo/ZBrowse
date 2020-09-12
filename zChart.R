@@ -203,7 +203,7 @@ create_zChart <- function(j, input, values) {
     data.frame(
       x = c(x[[org.tag_start[[org.j]]]], x[[org.tag_end[[org.j]]]], x[[org.tag_end[[org.j]]]]),
       y = c(annotYvalForward, annotYvalForward, NA),
-      url = sprintf(org.urlFormat[[org.j]], x[[org.tag_url[[org.j]]]]),
+      url = sprintf(org.urlFormat[[org.j]], x[[org.tag_id[[org.j]]]]),
       name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
         x[[org.tag_name[[org.j]]]],
         prettyNum(x[[org.tag_start[[org.j]]]], big.mark = ","),
@@ -221,7 +221,7 @@ create_zChart <- function(j, input, values) {
     data.frame(
       x = c(x[[org.tag_start[[org.j]]]], x[[org.tag_end[[org.j]]]], x[[org.tag_end[[org.j]]]]),
       y = c(annotYvalReverse, annotYvalReverse, NA),
-      url = sprintf(org.urlFormat[[org.j]], x[[org.tag_url[[org.j]]]]),
+      url = sprintf(org.urlFormat[[org.j]], x[[org.tag_id[[org.j]]]]),
       name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
         x[[org.tag_name[[org.j]]]],
         prettyNum(x[[org.tag_start[[org.j]]]], big.mark = ","),

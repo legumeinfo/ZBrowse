@@ -65,7 +65,7 @@ org.strand_rev <- list()
 org.tag_start <- list()
 org.tag_end <- list()
 org.urlFormat <- list()
-org.tag_url <- list()
+org.tag_id <- list()
 org.tag_name <- list()
 org.tag_chr <- list()
 org.tag_desc <- list()
@@ -120,17 +120,19 @@ for(i in 1:length(files)){
     org.gcvUrlBase[key] <- data[6]
     org.gcvChrFormat[key] <- data[7]
 
+    # Annotations table may have different column names (etc) for different species,
+    # so define them in the organism file
     ss.org.annot <- strsplit(data[8], split = ",")[[1]]
-    org.tag_strand[key] <- ss.org.annot[1]
-    org.strand_fwd[key] <- ss.org.annot[2]
-    org.strand_rev[key] <- ss.org.annot[3]
-    org.tag_start[key] <- ss.org.annot[4]
-    org.tag_end[key] <- ss.org.annot[5]
-    org.urlFormat[key] <- ss.org.annot[6]
-    org.tag_url[key] <- ss.org.annot[7]
-    org.tag_name[key] <- ss.org.annot[8]
-    org.tag_chr[key] <- ss.org.annot[9]
-    org.tag_desc[key] <- ss.org.annot[10]
+    org.tag_strand[key] <- ss.org.annot[1] # strand column name
+    org.strand_fwd[key] <- ss.org.annot[2] # code for forward strand
+    org.strand_rev[key] <- ss.org.annot[3] # code for reverse strand
+    org.tag_start[key] <- ss.org.annot[4] # start position column name
+    org.tag_end[key] <- ss.org.annot[5] # end position column name
+    org.urlFormat[key] <- ss.org.annot[6] # URL format in which to insert gene id
+    org.tag_id[key] <- ss.org.annot[7] # gene id column name
+    org.tag_name[key] <- ss.org.annot[8] # gene name column name
+    org.tag_chr[key] <- ss.org.annot[9] # chromosome column name
+    org.tag_desc[key] <- ss.org.annot[10] # gene description column name
 
     close(conn)
   }
