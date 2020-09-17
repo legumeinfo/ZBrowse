@@ -109,7 +109,8 @@ create_pChart <- function(j, input, values) {
   
   a <- rCharts::Highcharts$new()
   a$LIB$url <- 'highcharts/' #use the local copy of highcharts, not the one installed by rCharts
-  a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[values[[jth_ref("organism", j)]]][[1]][input[[jth_ref("chr", j)]]],endOnTick=FALSE,
+  chrNumber <- trailingInteger(input[[jth_ref("chr", j)]])
+  a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[values[[jth_ref("organism", j)]]][[1]][chrNumber],endOnTick=FALSE,
           plotBands = list(list(from=pbWin$winLow,to=pbWin$winHigh,color='rgba(68, 170, 213, 0.4)')))
   
   if(input[[jth_ref("axisLimBool", j)]] == TRUE){
