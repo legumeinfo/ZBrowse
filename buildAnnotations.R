@@ -89,24 +89,4 @@ build.annotations <- function(key, filename, chrLengths, chrPrefix) {
   df.annot
 }
 
-# Tests
-# mt.chromosome.lengths <- c(52991155, 45729672, 55515152, 56582383, 43630510, 35275713, 49172423, 45569985)
-# mt.df.annot <- build.annotations(
-#   "Medicago truncatula",
-#   "http://data.comparative-legumes.org/genomes/medtr/Mt4.0v1_genes_20130731_1800.just_genes.gff3.gz",
-#   mt.chromosome.lengths
-# )
-# write.csv(mt.df.annot, file = "Medicago_truncatula_annotations.csv", quote = 7, row.names = FALSE)
-
-# gm.chromosome.lengths <- c(
-#   55915595, 51656713, 47781076, 49243852, 41936504, 50722821, 44683157, 46995532, 46843750, 50969635,
-#   39172790, 40113140, 44408971, 49711204, 50939160, 37397385, 41906774, 62308140, 50589441, 46773167
-# )
-# gm.df.annot <- build.annotations(
-#   "Soybean",
-#   "https://legumeinfo.org/data/public/Glycine_max/Wm82.gnm2.ann1.RVB6/glyma.Wm82.gnm2.ann1.RVB6.gene_models_main.gff3.gz",
-#   gm.chromosome.lengths
-# )
-# write.csv(gm.df.annot, file = "Soybean_annotations.csv", quote = 7, row.names = FALSE)
-
 # --------------------------------------------------------------
