@@ -917,7 +917,7 @@ shinyServer(function(input, output, session) {
     selected <- jth_ref("selected", j)
     # Select the center position specified in the URL (if any)
     initialCenter <- isolate(values$urlFields[[selected]])
-    if (is.null(initialCenter)) { initialCenter <- 100000 }
+    if (is.null(initialCenter)) { initialCenter <- defaultCenter }
     numericInput(selected, "", value = initialCenter)
   }
   output$selectedOut <- renderUI(createSelectedOut(1))
@@ -929,7 +929,7 @@ shinyServer(function(input, output, session) {
     window <- jth_ref("window", j)
     # Select the window size (half-width) specified in the URL (if any)
     initialWindowSize <- isolate(values$urlFields[[window]])
-    if (is.null(initialWindowSize)) { initialWindowSize <- 250000 }
+    if (is.null(initialWindowSize)) { initialWindowSize <- defaultWindowSize }
     sliderInput(inputId = window, label="Window size around selected point:",
       min = 1000, max = 500000, value = initialWindowSize)
   }

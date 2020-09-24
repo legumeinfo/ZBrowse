@@ -214,5 +214,9 @@ allColors <- c(moreColors,colors)
 # background colors for comparing two organisms
 bgColors <- c("lightblue", "lightsalmon")
 
+# default window center and half-width
+defaultCenter <- 100000
+defaultWindowSize <- 250000
+
 # locally configurable global variables
 source("private.R")
