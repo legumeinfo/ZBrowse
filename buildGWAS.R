@@ -251,12 +251,4 @@ load.gwas.remote <- function(organism, filename, trait) {
   df.gwas
 }
 
-# load.gwas.local <- function(organism, filename, trait) {
-#   # TODO ...
-# }
-
-# Tests
-# df.gwas <- load.gwas.local("Medicago truncatula", ..., "floweringdate")
-# write.csv(df.gwas, file = "Medicago_truncatula_GWAS.csv", quote = FALSE, row.names = FALSE)
-
 # --------------------------------------------------------------

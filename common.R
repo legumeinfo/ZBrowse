@@ -118,8 +118,9 @@ findGWASOverlaps <- function(genomeChart, j, input) {
   return(gwasDataOverlapDiffPheno)    
 }
 
-organismToChromosomeName <- function(organism, chromosomeNumber) {
-  sprintf(org.gcvChrFormat[[organism]], chromosomeNumber)
+# Test whether chromosome name is just its number
+hasNumericChromosomeNames <- function(organism) {
+  is.na(org.chrFormat[organism])
 }
 
 # Return the trailing integer value of a string like "phavu.Chr02",
@@ -128,6 +129,22 @@ trailingInteger <- function(s) {
   n <- as.integer(regmatches(s, regexpr("\\d+$", s)))
   if (length(n) == 0) return(NA)
   n
+}
+
+# Test whether chromosome name returned from GCV matches organism's expected format
+isValidChromosomeName <- function(chrName, organism) {
+  chrFormat <- paste0("^", org.gcvChrFormat[organism], "$")
+  grepl(chrFormat, chrName)
+}
+
+# Return the trailing part ("Chr02") of a chromosome name like "phavu.Chr02"
+trailingChromosomeName <- function(s, organism) {
+  if (hasNumericChromosomeNames(organism)) {
+    chrName <- as.character(trailingInteger(s))
+  } else {
+    chrName <- stri_match(s, regex = ".+\\.(\\S+)\\s*.*$")[, 2]
+  }
+  chrName
 }
 
 getRainbowColors <- function(n) {
