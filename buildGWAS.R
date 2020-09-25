@@ -9,6 +9,11 @@ library(RCurl)
 # --------------------------------------------------------------
 # LIS Data Store information
 lis.datastore.info <- list()
+lis.datastore.info[["Common Bean GWAS"]] <- list(
+  mrkFilter = "phaseolus:vulgaris",
+  chrRegex = "phavu.G19833.gnm1.(Chr\\d+)",
+  mrkRegex = "ID=phavu.G19833.gnm1.Chr\\d+_(\\S[^;]+);?"
+)
 lis.datastore.info[["Cowpea GWAS"]] <- list(
   mrkFilter = "vigna:unguiculata",
   chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)",
