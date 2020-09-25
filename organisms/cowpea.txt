@@ -2,7 +2,6 @@ Cowpea
 Vu01:42129361,Vu02:33908088,Vu03:65292630,Vu04:42731077,Vu05:48746289,Vu06:34463471,Vu07:40876636,Vu08:38363498,Vu09:43933251,Vu10:41327797,Vu11:41684185
 Vigna unguiculata,V.unguiculata,Vigun
 https://v1.legumefederation.org/data/public/Vigna_unguiculata/IT97K-499-35.gnm1.ann1.zb5D/vigun.IT97K-499-35.gnm1.ann1.zb5D.gene_models_main.gff3.gz
-vigun.IT97K-499-35.gnm1.Vu
-v1.legumefederation.org/gcv_lis_phytozome
-vigun.Chr%02d
+Vu%02d,vigun.IT97K-499-35.gnm1.Vu%02d,vigun.Vu\d+
+gcv-services.lis.ncgr.org/gcv2_phytozome_10_2_lis
 strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

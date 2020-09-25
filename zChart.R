@@ -190,10 +190,6 @@ create_zChart <- function(j, input, values) {
     thisAnnot <- thisChrAnnot[1:100,]
   }
   thisAnnot <- thisAnnot[order(thisAnnot$transcript_start),]
-  if (values[[jth_ref("organism", j)]] == "Pigeonpea") {
-    # Extract the short description from the annotation
-    thisAnnot$attributes <- sapply(thisAnnot$attributes, FUN = function(a) replace.special.characters(extract.gff.attribute(a, "Note")))
-  }
 
   annotYvalReverse <- 0.02
   #if(input[[jth_ref("axisLimBool", j)]] == TRUE){annotYvalReverse <- input[[jth_ref("axisMin", j)]] + 0.01}

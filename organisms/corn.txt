@@ -2,7 +2,6 @@ Corn
 301354135,237068873,232140174,241473504,217872852,169174353,176764762,175793759,156750706,150189435
 Zea mays,Z.mays,Zeama
 ./annotations/ZmB73_Canonical_Gene_func_annotations.csv
-Chr
+NA,NA,NA
 NA
-Chr%d
 transcript_strand,1,-1,transcript_start,transcript_end,http://maizegdb.org/cgi-bin/displaygenemodelrecord.cgi?id=%s,transcript_id,translation_id,chromosome,V2

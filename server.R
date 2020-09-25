@@ -85,8 +85,12 @@ shinyServer(function(input, output, session) {
     values[[jth_ref("gwasTraits", j)]] <- NULL
     # Clear all genomic linkages if either organism changes
     values$glSelectedGene <- NULL
-    values$glGenes <- values$glGenes2 <- values$glColors <- NULL
-    values$highlightGenes <- NULL
+    clearGenomicLinkages()
+    # Reset chromosome view for the jth organism
+    chr1 <- chrName[values[[jth_ref("organism", j)]]][[1]][1]
+    updateSelectInput(session, jth_ref("chr", j), selected = chr1)
+    updateNumericInput(session, jth_ref("selected", j), value = defaultCenter)
+    updateSliderInput(session, jth_ref("window", j), value = defaultWindowSize)
 
     removeNotification(nid)
   }
@@ -1161,13 +1165,10 @@ shinyServer(function(input, output, session) {
     if (is.null(input$relatedRegions) || length(input$relatedRegions) == 0) {
       updateNumericInput(session, "selected2", value = input$selected2)
     } else {
-      # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
+      # parse from the format "[Chr] [minBP]-[maxBP] Mbp"
+      # (or "chr[Chr]" if [Chr] is a number)
       ss <- strsplit(input$relatedRegions, split = " ")[[1]]
-      if (startsWith(ss[1], "Gm") || startsWith(ss[1], "Vu")) {
-        chr <- ss[1]
-      } else {
-        chr <- stri_sub(ss[1], 4)
-      }
+      chr <- ifelse(hasNumericChromosomeNames(values$organism2), stri_sub(ss[1], 4), ss[1])
       ss2 <- strsplit(ss[2], split = "-")[[1]]
       centerBP <- as.integer(1.0e6*mean(as.numeric(ss2)))
       updateSelectInput(session, "chr2", selected = chr)
@@ -1226,14 +1227,7 @@ isolate({
       stringsAsFactors = FALSE)
     names(glGenes) <- names(results1$genes[[1]])
     glGenes <- glGenes[, c("name", "family", "fmin", "fmax", "strand")]
-    glGenes$chr <- trailingInteger(results1$chromosome_name)
-    if (values$organism == "Soybean") {
-      glGenes$chr <- sprintf("Gm%02d", glGenes$chr)
-    } else if (values$organism == "Cowpea") {
-      glGenes$chr <- sprintf("Vu%02d", glGenes$chr)
-    } else {
-      glGenes$chr <- as.character(glGenes$chr)
-    }
+    glGenes$chr <- trailingChromosomeName(results1$chromosome_name, values$organism)
     glGenes <- glGenes[nchar(glGenes$family) > 0, ]
     if (nrow(glGenes) == 0) {
       # could reach here if none of the (2*neighbors + 1) genes has a family id
@@ -1251,15 +1245,8 @@ isolate({
       results2$groups[[i]]$id <- i
     }
     glGenes2 <- do.call(rbind, lapply(results2$groups, FUN = function(gr) {
-      gr.chr <- trailingInteger(gr$chromosome_name)
-      if (values$organism2 == "Soybean") {
-        gr.chr <- sprintf("Gm%02d", gr.chr)
-      } else if (values$organism2 == "Cowpea") {
-        gr.chr <- sprintf("Vu%02d", gr.chr)
-      } else {
-        gr.chr <- as.character(gr.chr)
-      }
-      if (paste(substr(gr$genus,1,1),gr$species,sep=".") == org.G.species[values$organism2] && !is.na(gr.chr)) {
+      gr.chr <- trailingChromosomeName(gr$chromosome_name, values$organism2)
+      if (paste(substr(gr$genus, 1, 1), gr$species, sep = ".") == org.G.species[values$organism2]) {
         gr.genes <- data.frame(matrix(unlist(gr$genes), nrow = length(gr$genes), byrow = TRUE),
           stringsAsFactors = FALSE)
         names(gr.genes) <- names(gr$genes[[1]])
@@ -1293,16 +1280,10 @@ isolate({
     # Construct the related regions (each corresponds to a group from results2$groups)
     glGroupIds <- unique(glGenes2$id)
     glRelatedRegions <- do.call(rbind.data.frame, compact(lapply(results2$groups, FUN = function(gr) {
-      if (gr$id %in% glGroupIds) {
-        gr.chr <- trailingInteger(gr$chromosome_name)
-        if (values$organism2 == "Soybean") {
-          chrd <- gr.chr <- sprintf("Gm%02d", gr.chr)
-        } else if (values$organism2 == "Cowpea") {
-          chrd <- gr.chr <- sprintf("Vu%02d", gr.chr)
-        } else {
-          chrd <- sprintf("chr%d", gr.chr)
-          gr.chr <- as.character(gr.chr)
-        }
+      if (gr$id %in% glGroupIds && isValidChromosomeName(gr$chromosome_name, values$organism2)) {
+        gr.chr <- trailingChromosomeName(gr$chromosome_name, values$organism2)
+        # Prepend "chr" if chromosome name is a number
+        chrd <- ifelse(hasNumericChromosomeNames(values$organism2), paste0("chr", gr.chr), gr.chr)
         gr.minBP <- gr$genes[[1]]$fmin
         gr.maxBP <- gr$genes[[length(gr$genes)]]$fmax
         list(region = sprintf("%s %3.2f-%3.2f Mbp", chrd, gr.minBP*1.0e-6, gr.maxBP*1.0e-6),
@@ -1378,15 +1359,7 @@ isolate({
       # Do something
       if (isMacroSyntenyRow) {
         if (j > 0) {
-          # Extract the chromosome number
-          chr <- trailingInteger(input$bc_gcv$targets$chromosome)
-          if (values[[jth_ref("organism", j)]] == "Soybean") {
-            chr <- sprintf("Gm%02d", chr)
-          } else if (values[[jth_ref("organism", j)]] == "Cowpea") {
-            chr <- sprintf("Vu%02d", chr)
-          } else {
-            chr <- as.character(chr)
-          }
+          chr <- trailingChromosomeName(input$bc_gcv$targets$chromosome, values[[jth_ref("organism", j)]])
           # Adjust the Chromosome window to match the selection
           updateTabsetPanel(session, "datatabs", selected = "Chrom")
           clearGenomicLinkages()
@@ -1404,14 +1377,7 @@ isolate({
           updateTabsetPanel(session, "datatabs", selected = "Chrom")
           clearGenomicLinkages()
           # Adjust the organism 1 Chromosome window to match the block reference
-          chrRef <- trailingInteger(ref$chromosome)
-          if (values$organism == "Soybean") {
-            chrRef <- sprintf("Gm%02d", chrRef)
-          } else if (values$organism == "Cowpea") {
-            chrRef <- sprintf("Vu%02d", chrRef)
-          } else {
-            chrRef <- as.character(chrRef)
-          }
+          chrRef <- trailingChromosomeName(ref$chromosome, values$organism)
           bpStartRef <- ref$locus[[1]]
           bpEndRef <- ref$locus[[2]]
           bpCenterRef <- (bpStartRef + bpEndRef) %/% 2
@@ -1425,14 +1391,7 @@ isolate({
             "$('#pChart').highcharts().showResetZoom();"
           ))
           # Adjust the organism 2 Chromosome window to match the block source
-          chrSrc <- trailingInteger(srx$chromosome)
-          if (values$organism2 == "Soybean") {
-            chrSrc <- sprintf("Gm%02d", chrSrc)
-          } else if (values$organism2 == "Cowpea") {
-            chrSrc <- sprintf("Vu%02d", chrSrc)
-          } else {
-            chrSrc <- as.character(chrSrc)
-          }
+          chrSrc <- trailingChromosomeName(srx$chromosome, values$organism2)
           bpStartSrc <- srx$locus[[1]]
           bpEndSrc <- srx$locus[[2]]
           bpCenterSrc <- (bpStartSrc + bpEndSrc) %/% 2
@@ -1453,15 +1412,7 @@ isolate({
 
       } else if (isMicroSyntenyRow) {
         if (j > 0) {
-          # Extract the chromosome number
-          chr <- trailingInteger(input$bc_gcv$targets$chromosome)
-          if (values[[jth_ref("organism", j)]] == "Soybean") {
-            chr <- sprintf("Gm%02d", chr)
-          } else if (values[[jth_ref("organism", j)]] == "Cowpea") {
-            chr <- sprintf("Vu%02d", chr)
-          } else {
-            chr <- as.character(chr)
-          }
+          chr <- trailingChromosomeName(input$bc_gcv$targets$chromosome, values[[jth_ref("organism", j)]])
           # Range of base pairs
           bpMin <- input$bc_gcv$targets$extent[[1]]
           bpMax <- input$bc_gcv$targets$extent[[2]]

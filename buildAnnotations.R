@@ -4,6 +4,7 @@
 
 library(Rsamtools)
 library(stringi)
+source("common.R")
 
 # --------------------------------------------------------------
 
@@ -33,22 +34,17 @@ replace.special.characters <- function(text) {
 # GFF column indices for ("chromosome", "type", "transcript_start", "transcript_end", "strand", "attributes")
 gff.cols <- c(1, 3, 4, 5, 7, 9)
 
-build.annotations <- function(key, filename, chrLengths, chrPrefix) {
+build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
   t0 <- proc.time()[3]
   cat(paste("Constructing", key, "annotations ... "))
 
-  # We expect that the number part of the chromosome name will have enough leading zeros to allow alphabetic sorting.
-  # This is only necessary for this parsing step, afterward we will refer to chromosomes by number
-  # unless otherwise specified in the organism file (as for cowpea and soybean).
-  num.chromosomes <- length(chrLengths)
-  num.digits <- 1 + floor(log10(num.chromosomes))
-  chrs <- sprintf(sprintf("%s%%0%dd", chrPrefix, num.digits), 1:num.chromosomes)
+  chrs <- sprintf(annotChrFormat, 1:length(chrLengths))
   pp <- GRanges(seqnames = chrs, ranges = IRanges(start = 1, end = chrLengths))
 
   if (startsWith(filename, "https:")) {
     # since R cannot handle https directly
-    annotations.dir <- "./annotations/"
-    gff <- paste0(annotations.dir, chrPrefix, ".gz")
+    gff <- stri_match(annotChrFormat, regex = "(.+)\\.")[, 2]
+    gff <- paste0("./annotations/", gff, ".gff.gz")
     #allow this to be cached
     if (! file.exists(gff)) { 
         download.file(filename, gff, method = "wget", quiet = TRUE)
@@ -63,12 +59,7 @@ build.annotations <- function(key, filename, chrLengths, chrPrefix) {
   df.annot <- as.data.frame(do.call(rbind, df.annot), stringsAsFactors = FALSE)
   df.annot <- df.annot[df.annot[, 2] == "gene", -2] # filter and then remove the type column
   names(df.annot) <- c("chromosome", "transcript_start", "transcript_end", "strand", "attributes")
-  if (key %in% c("Cowpea", "Soybean")) {
-    # "Vu01" or "Gm01" instead of "1", so start two characters back
-    df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) stri_sub(chr, nchar(chrPrefix) - 1))
-  } else {
-    df.annot$chromosome <- sapply(df.annot$chromosome, FUN = function(chr) stri_sub(chr, nchar(chrPrefix) + 1))
-  }
+  df.annot$chromosome <- trailingChromosomeName(df.annot$chromosome, organism = key)
   df.annot$transcript_start <- as.integer(df.annot$transcript_start)
   df.annot$transcript_end <- as.integer(df.annot$transcript_end)
   df.annot$id <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "ID"))

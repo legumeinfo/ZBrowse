@@ -65,8 +65,8 @@ getGeneToQueryTrack <- function(url1, url2, microSyntenySearch, selectedGene = N
 getProvideMultipleURLs <- function() {
   paste(
     # From the JSON at this.url, extract the URLs related to this gene.
-    # Note that this.url = legumeInfo_urlBase + geneString + '/json'
-    #  legumeInfo_urlBase currently has 34 characters (defined in zChart.R)
+    # Note that this.url = 'https://legumeinfo.org/gene_links/' + geneString + '/json'
+    #  (the first part of which has 34 characters)
     #  and geneString = <5-character species abbreviation>.geneName
     # And for now, add the gene family phylogram URL by hand.
     "$.getJSON(this.url, function(data) {",

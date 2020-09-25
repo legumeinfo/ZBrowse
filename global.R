@@ -51,12 +51,14 @@ org.G.species <- list()
 org.Gensp <- list()
 # Annotations file
 org.annotGeneLoc<-list()
-# Chromosome prefix for annotations
-org.annotChrPrefix <- list()
+# Chromosome name format - must match between organism and annotations files
+org.chrFormat <- list()
+# Full chromosome name format in annotations file
+org.annotChrFormat <- list()
+# Chromosome name format from Genome Context Viewer, for validation
+org.gcvChrFormat <- list()
 # Base URL for Services API genomic linkage queries
 org.gcvUrlBase <- list()
-# Chromosome name format, for sending chromosome-based queries to the Genome Context Viewer
-org.gcvChrFormat <- list()
 
 # For constructing gene mouseover text (annotTable, annotTableReverse) in zChart
 org.tag_strand <- list()
@@ -107,28 +109,34 @@ for(i in 1:length(files)){
     org.G.species[key] <- ss.org.names[2]
     org.Gensp[key] <- ss.org.names[3]
     annotFilename <- data[4]
-    org.annotChrPrefix[key] <- data[5]
+
+    # chromosome name formats
+    chr.formats <- strsplit(data[5], split = ",")[[1]]
+    chr.formats <- sapply(chr.formats, function(chrfmt) ifelse(chrfmt == "NA", NA, chrfmt))
+    org.chrFormat[key] <- chr.formats[1]
+    org.annotChrFormat[key] <- chr.formats[2]
+    org.gcvChrFormat[key] <- chr.formats[3]
     if (stri_endswith_fixed(annotFilename, "gff3.gz")) {
       chromosome.lengths <- chrSize[key][[1]]
-      locValue <- build.annotations(key, annotFilename, chromosome.lengths, org.annotChrPrefix[key])
+      locValue <- build.annotations(key, annotFilename, chromosome.lengths, org.annotChrFormat[key][[1]])
     } else {
       locValue<-read.table(annotFilename,sep=",",head=TRUE,stringsAsFactors = FALSE,quote = c("\""))
     }
     chr2i <- suppressWarnings(as.integer(locValue$chromosome))
     if (!any(is.na(chr2i))) locValue$chromosome <- as.character(chr2i)
     org.annotGeneLoc[key]<-list(locValue)
+
     org.gcvUrlBase[key] <- data[6]
-    org.gcvChrFormat[key] <- data[7]
 
     # Annotations table may have different column names (etc) for different species,
     # so define them in the organism file
-    ss.org.annot <- strsplit(data[8], split = ",")[[1]]
+    ss.org.annot <- strsplit(data[7], split = ",")[[1]]
     org.tag_strand[key] <- ss.org.annot[1] # strand column name
     org.strand_fwd[key] <- ss.org.annot[2] # code for forward strand
     org.strand_rev[key] <- ss.org.annot[3] # code for reverse strand
     org.tag_start[key] <- ss.org.annot[4] # start position column name
     org.tag_end[key] <- ss.org.annot[5] # end position column name
-    org.urlFormat[key] <- ss.org.annot[6] # URL format in which to insert gene id
+    org.urlFormat[key] <- ss.org.annot[6] # URL format in which to insert gene id, for obtaining gene links
     org.tag_id[key] <- ss.org.annot[7] # gene id column name
     org.tag_name[key] <- ss.org.annot[8] # gene name column name
     org.tag_chr[key] <- ss.org.annot[9] # chromosome column name

@@ -2,7 +2,6 @@ Sorghum
 73933847,78027413,74539055,68108026,62428788,62294152,64407977,55559831,59722314,61076732
 Sorghum bicolor,S.bicolor,Sorbi
 ./annotations/SorghumV1.4.with2.1annotations.mergedPhytozomeFiles.csv
-Chr
+NA,NA,NA
 NA
-Chr%d
 strand,+,-,transcript_start,transcript_end,http://phytozome.jgi.doe.gov/pz/portal.html#!gene?search=1&detail=1&searchText=transcriptid:%s,ID,name,chromosome,defLine,bestArabHitDefline,bestRiceHitDefline
