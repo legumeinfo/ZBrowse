@@ -241,8 +241,7 @@ load.gwas.remote <- function(organism, filename, trait) {
     df.gwas <- read.table(file = url(filename, method = "libcurl"), header = TRUE, sep = "\t", quote = "\"", stringsAsFactors = FALSE)[, cols]
     df.gwas$Trait <- trait
 
-    # Clean up: change Chromosome format from "chr1" to "1", and move Trait to the third column
-    df.gwas$Chromosome <- sapply(df.gwas$Chromosome, FUN = function(chr) stri_sub(chr, 4))
+    # Clean up: move Trait to the third column
     df.gwas <- df.gwas[, c("Chromosome", "pos", "Trait", "P.value")]
 
   } else if (organism == "Arabidopsis thaliana") {
