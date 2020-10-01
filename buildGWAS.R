@@ -12,17 +12,18 @@ lis.datastore.info <- list()
 lis.datastore.info[["Common Bean GWAS"]] <- list(
   mrkFilter = "phaseolus:vulgaris",
   chrRegex = "phavu.G19833.gnm1.(Chr\\d+)",
-  mrkRegex = "ID=phavu.G19833.gnm1.Chr\\d+_(\\S[^;]+);?"
+  mrkRegex = "ID=phavu.G19833.gnm1.Chr\\d+_(\\w[^;]+);?"
 )
 lis.datastore.info[["Cowpea GWAS"]] <- list(
   mrkFilter = "vigna:unguiculata",
   chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)",
-  mrkRegex = "ID=vigun.IT97K-499-35.gnm1.(\\S[^;]+);?"
+  mrkRegex = "ID=vigun.IT97K-499-35.gnm1.(\\w[^;]+);?"
 )
 lis.datastore.info[["Soybean GWAS"]] <- list(
   mrkFilter = "glycine:max",
   chrRegex = "glyma.Wm82.gnm2.(Gm\\d+)",
-  mrkRegex = "ID=glyma.Wm82.gnm2.(\\S[^;]+);?"
+  # strip leading Gm<nn>_ from markers like Gm06_AX-90336800 (as in the Kim et al. paper)
+  mrkRegex = "ID=glyma.Wm82.gnm2.((?=Gm\\d+_AX-)(?:Gm\\d+_)(\\w[^;]+)|\\w[^;]+);?"
 )
 
 # LIS Data Store methods
@@ -45,10 +46,14 @@ scrub.gff <- function(df.gff.in, what) {
 
   # Extract chromosome and marker
   chromosome <- sapply(v1, function(s) {
-    stri_match_first(s, regex = what$chrRegex)[2]
+    s <- stri_match_first(s, regex = what$chrRegex)
+    s[length(s)]
   })
   marker <- sapply(v9, function(s) {
-    stri_match_first(s, regex = what$mrkRegex)[2]
+    s <- stri_match_first(s, regex = what$mrkRegex)
+    # use the last valid capture
+    s <- s[!is.na(s)]
+    s[length(s)]
   })
 
   # output
