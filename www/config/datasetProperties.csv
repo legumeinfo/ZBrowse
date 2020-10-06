@@ -5,3 +5,4 @@
 "Medicago truncatula GWAS","Chromosome {character}","pos {integer}","Trait {character}","P.value {numeric}",TRUE,FALSE,0,1,"Medicago truncatula",FALSE,FALSE,"Chromosome","pos","pos",FALSE,0,1
 "Cowpea GWAS","chromosome {character}","position {integer}","phenotype {character}","p_value {numeric}",TRUE,FALSE,0,1,"Cowpea",FALSE,FALSE,"chromosome","position","position",FALSE,0,1
 "Common Bean GWAS","chromosome {character}","position {integer}","phenotype {character}","p_value {numeric}",TRUE,FALSE,0,1,"Common Bean",FALSE,FALSE,"chromosome","position","position",FALSE,0,1
+"Cowpea QTL","chromosome {character}","start_pos {integer}","trait {character}","val {numeric}",FALSE,FALSE,0,1,"Cowpea",FALSE,TRUE,"val","start_pos","end_pos",FALSE,0,1
