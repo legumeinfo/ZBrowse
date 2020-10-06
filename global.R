@@ -149,6 +149,9 @@ for(i in 1:length(files)){
 # For constructing the GWAS data frame on the fly
 # (must go after creating organism-specific properties, as it uses org.Genus_species)
 source("./buildGWAS.R")
+# For constructing the QTL data frame on the fly
+# (must go after creating GWAS data, as it uses the same GFF reading methods)
+source("./buildQTL.R")
 
 helpPopup <- function(title, content, placement=c('right', 'top', 'left', 'bottom'),
                       trigger=c('click', 'hover', 'focus', 'manual')) {  

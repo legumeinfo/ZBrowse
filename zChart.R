@@ -135,7 +135,6 @@ create_zChart <- function(j, input, values) {
       }                      
     }     
     SIchart$loc_el <- SIchart$trait
-    SIchart$trait <- paste(SIchart$trait,"Int",sep="_")
     SIchart <- SIchart[order(SIchart[[input[[jth_ref("SIbpStart", j)]]]]),]
     jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x[[input[[jth_ref("SIbpStart", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]]),y=c(x[[input[[jth_ref("SIyAxisColumn", j)]]]],x[[input[[jth_ref("SIyAxisColumn", j)]]]],NA),trait=x$trait,
                                                        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
@@ -307,9 +306,9 @@ create_zChart <- function(j, input, values) {
   
   if(input[[jth_ref("supportInterval", j)]]==TRUE){
     if(input[[jth_ref("SIaxisLimBool", j)]] == TRUE){
-      b$yAxis(title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=input[[jth_ref("SIaxisMin", j)]],max=input[[jth_ref("SIaxisMax", j)]],gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+      b$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=input[[jth_ref("SIaxisMin", j)]],max=input[[jth_ref("SIaxisMax", j)]],gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }else{
-      b$yAxis(title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)   
+      b$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }
     
     if(SIchart[1,input[[jth_ref("SIyAxisColumn", j)]]] != -1){
