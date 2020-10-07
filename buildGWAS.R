@@ -33,7 +33,7 @@ read.gff3.lis.datastore <- function(fin) {
   close(zz)
   # remove header lines with leading "##"
   ll <- ll[!startsWith(ll, "#")]
-  df.gff <- read.csv(textConnection(ll), header = FALSE, sep = '\t', as.is = TRUE)
+  df.gff <- read.csv(textConnection(ll), header = FALSE, sep = '\t', stringsAsFactors = FALSE)
   df.gff
 }
 
@@ -57,7 +57,7 @@ scrub.gff <- function(df.gff.in, what) {
   })
 
   # output
-  df.gff <- data.frame(marker, chromosome, position, row.names = NULL)
+  df.gff <- data.frame(marker, chromosome, position, row.names = NULL, stringsAsFactors = FALSE)
   df.gff[!is.na(df.gff$chromosome), ]
 }
 
@@ -76,7 +76,7 @@ read.gwas.lis.datastore <- function(fin) {
     i <- i + 1
   }
   # read the rest
-  df.gwas <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', as.is = TRUE)
+  df.gwas <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
   df.gwas$publication <- paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>")
   df.gwas
 }
