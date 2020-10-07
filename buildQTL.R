@@ -21,7 +21,7 @@ read.qtl.lis.datastore <- function(fin.expt, fin.marker) {
     i <- i + 1
   }
   # read the rest
-  df.expt <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', as.is = TRUE)
+  df.expt <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
   names(df.expt) <- c("identifier", "trait")
   df.expt$publication <- paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>")
 
@@ -29,7 +29,7 @@ read.qtl.lis.datastore <- function(fin.expt, fin.marker) {
   zz <- gzcon(url(fin.marker, "r"))
   ll <- readLines(zz)
   close(zz)
-  df.marker <- read.csv(textConnection(ll), header = TRUE, sep = "\t", as.is = TRUE)
+  df.marker <- read.csv(textConnection(ll), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
   df.marker <- df.marker[, 1:2]
   names(df.marker) <- c("identifier", "marker")
 
@@ -49,7 +49,8 @@ merge.qtl <- function(df.qtl, df.gff) {
   # Determine start and end position for each QTL identifier
   df.2 <- df.1[, c("identifier", "position")]
   f3 <- function(r) c(min(r), max(r))
-  df.3 <- do.call(data.frame, aggregate(position ~ identifier, data = df.2, FUN = f3))
+  df.3 <- do.call(function(...) data.frame(..., stringsAsFactors = FALSE),
+    aggregate(position ~ identifier, data = df.2, FUN = f3))
   names(df.3) <- c("identifier", "start_pos", "end_pos")
   # Merge relevant columns
   df.4 <- unique(df.1[, c("identifier", "trait", "publication", "chromosome")])
@@ -104,11 +105,11 @@ build.qtl.from.lis.datastore <- function(key) {
   chr2n <- list()
   for (i in 1:nrow(df.qtl)) {
     chr <- df.qtl$chromosome[i]
-    if (is.null(chr2n[[chr]])) {
-      chr2n[[chr]] <- 0.1
-    } else {
+    if (chr %in% names(chr2n)) {
       df.qtl$val[i] <- df.qtl$val[i] + chr2n[[chr]]
       chr2n[[chr]] <- chr2n[[chr]] + 0.1
+    } else {
+      chr2n[[chr]] <- 0.1
     }
   }
   removeNotification(nid)
