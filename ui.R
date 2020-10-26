@@ -2,7 +2,7 @@ shinyUI(pageWithSidebar(
   
   headerPanel(
   introjsUI(), # to enable rintrojs
-  singleton(tags$head(tags$title("Zbrowse")))),
+  singleton(tags$head(tags$title("ZZBrowse")))),
   sidebarPanel(
     includeCSS('www/style.css'),
 #    wellPanel(
