@@ -95,11 +95,6 @@ shinyServer(function(input, output, session) {
     # Clear all genomic linkages if either organism changes
     values$glSelectedGene <- NULL
     clearGenomicLinkages()
-    # Reset chromosome view for the jth organism
-    chr1 <- chrName[values[[jth_ref("organism", j)]]][[1]][1]
-    updateSelectInput(session, jth_ref("chr", j), selected = chr1)
-    updateNumericInput(session, jth_ref("selected", j), value = defaultCenter)
-    updateSliderInput(session, jth_ref("window", j), value = defaultWindowSize)
 
     removeNotification(nid)
   }
@@ -1083,7 +1078,11 @@ shinyServer(function(input, output, session) {
       tc.id <- jth_ref(tc, j)
       all.choices <- sort(unique(values[[input[[jth_ref("datasets", j)]]]][, tc]))
       tf <- input[[jth_ref("traitFilter", j)]]
-      if (nchar(tf) == 0) {
+      # Select traits specified in the URL (if any)
+      traitsFromUrl <- isolate(values$urlFields[[jth_ref("traits", j)]])
+      if (!is.null(traitsFromUrl)) {
+        filtered.choices <- strsplit(traitsFromUrl, split = ";")[[1]]
+      } else if (nchar(tf) == 0) {
         filtered.choices <- "Select All"
       } else {
         filtered.choices <- all.choices[grep(tf, all.choices, ignore.case = TRUE)]
