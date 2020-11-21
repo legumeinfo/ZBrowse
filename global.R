@@ -40,6 +40,9 @@ url_cyverse <- "http://de.cyverse.org"
 url_dscensor <- "https://dscensor.legumeinfo.org"
 url_lis <- "https://legumeinfo.org"
 
+# whether to dynamically assign interval height in charts
+dynamic.interval.height <- TRUE
+
 # For constructing the annotations data frame on the fly
 # (must go before constructing organism-specific properties)
 source("./buildAnnotations.R")
