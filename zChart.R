@@ -34,8 +34,10 @@ create_zChart <- function(j, input, values) {
   if(input[[jth_ref("supportInterval", j)]] == TRUE){
     SIchart <- zoomChart[!(is.na(zoomChart[,input[[jth_ref("SIbpStart", j)]]])),]
     zoomChart <- zoomChart[is.na(zoomChart[,input[[jth_ref("SIbpStart", j)]]]),]
-    #not sure the below logic works for subsetting SIchart, probably not necessary anyways, since there are usually very few SI rows for one chromosome anyways (e.g. small overhead)
-    #SIchart <- SIchart[((SIchart[,input[[jth_ref("SIbpStart", j)]]] <= winHigh & SIchart[,input[[jth_ref("SIbpStart", j)]]] >= winLow) | (SIchart[,input[[jth_ref("SIbpEnd", j)]]] <= winHigh & SIchart[,input[[jth_ref("SIbpEnd", j)]]] >= winLow)),]
+    if (dynamic.interval.height) {
+      # Retain only visible intervals, in order to dynamically assign their height
+      SIchart <- SIchart[((SIchart[,input[[jth_ref("SIbpStart", j)]]] <= winHigh & SIchart[,input[[jth_ref("SIbpEnd", j)]]] >= winLow)), ]
+    }
   }    
   
   zoomChart <- zoomChart[(zoomChart[,input[[jth_ref("bpColumn", j)]]] <= winHigh) & (zoomChart[,input[[jth_ref("bpColumn", j)]]] >= winLow),]    
@@ -135,8 +137,14 @@ create_zChart <- function(j, input, values) {
       }                      
     }     
     SIchart$loc_el <- SIchart$trait
+    # Dynamically assign interval bar heights
+    if (dynamic.interval.height) {
+      SIchart$h <- rank(SIchart$trait, ties = "first")
+    } else {
+      SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
+    }
     SIchart <- SIchart[order(SIchart[[input[[jth_ref("SIbpStart", j)]]]]),]
-    jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x[[input[[jth_ref("SIbpStart", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]]),y=c(x[[input[[jth_ref("SIyAxisColumn", j)]]]],x[[input[[jth_ref("SIyAxisColumn", j)]]]],NA),trait=x$trait,
+    jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x[[input[[jth_ref("SIbpStart", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]]),y=c(x$h,x$h,NA),trait=x$trait,
                                                        name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
                                                                     #                                                                      x$trait,
                                                                     #                                                                      x[[input[[jth_ref("SIyAxisColumn", j)]]]],

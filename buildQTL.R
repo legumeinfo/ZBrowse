@@ -48,16 +48,16 @@ merge.qtl <- function(df.qtl, df.gff) {
   df.1 <- merge(df.qtl, df.gff, by = "marker", sort = FALSE)
   # Determine start and end position for each QTL identifier
   df.2 <- df.1[, c("identifier", "position")]
-  f3 <- function(r) c(min(r), max(r))
+  f3 <- function(r) c(min(r), max(r), (min(r) + max(r)) %/% 2)
   df.3 <- do.call(function(...) data.frame(..., stringsAsFactors = FALSE),
     aggregate(position ~ identifier, data = df.2, FUN = f3))
-  names(df.3) <- c("identifier", "start_pos", "end_pos")
+  names(df.3) <- c("identifier", "start_pos", "end_pos", "center_pos")
   # Merge relevant columns
   df.4 <- unique(df.1[, c("identifier", "trait", "publication", "chromosome")])
   df.merged <- merge(df.4, df.3, by = "identifier", sort = FALSE)
 
-  # Clean up column order (identifier, trait, chromosome, start_pos, end_pos, publication)
-  df.merged <- df.merged[, c(1, 2, 4, 5, 6, 3)]
+  # Clean up column order (identifier, trait, chromosome, start_pos, end_pos, center_pos, publication)
+  df.merged <- df.merged[, c(1, 2, 4, 5, 6, 7, 3)]
   df.merged
 }
 
@@ -67,8 +67,8 @@ build.qtl.from.lis.datastore <- function(key) {
 
   # TODO: Discover GFF and QTL files from DSCensor (instead of as below)
   df.qtl <- init.qtl(key)
-  gffBaseUrl <- "http://dev.lis.ncgr.org:50020/api/v1/nodes/labels/"
-  qtlBaseUrl <- "https://legumeinfo.org/data/public/Vigna_unguiculata/mixed.qtl.KF1G/"
+  gffBaseUrl <- paste(url_dscensor, "api/v1/nodes/labels/", sep = "/")
+  qtlBaseUrl <- paste(url_lis, "data/public/Vigna_unguiculata/mixed.qtl.KF1G/", sep = "/")
   qtlPrefix <- "vigun.mixed.qtl.KF1G."
   qtlFileNumbers <- c("22691139", "25620880", "26450274", "27658053", "29356213", "29674702", "30143525")
   exptFiles <- paste0(qtlBaseUrl, qtlPrefix, qtlFileNumbers, ".expt.tsv.gz")
@@ -100,18 +100,9 @@ build.qtl.from.lis.datastore <- function(key) {
       }
     }
   }
-  # Add spurious column for QTL y axis position
-  df.qtl$val <- 1.0
-  chr2n <- list()
-  for (i in 1:nrow(df.qtl)) {
-    chr <- df.qtl$chromosome[i]
-    if (chr %in% names(chr2n)) {
-      df.qtl$val[i] <- df.qtl$val[i] + chr2n[[chr]]
-      chr2n[[chr]] <- chr2n[[chr]] + 0.1
-    } else {
-      chr2n[[chr]] <- 0.1
-    }
-  }
+  # Add spurious column for QTL y axis position,
+  # as we will assign it dynamically in each chart
+  df.qtl$val <- 0
   removeNotification(nid)
   # deduplicate the results (TODO: do we need to?)
   unique(df.qtl)
@@ -120,7 +111,7 @@ build.qtl.from.lis.datastore <- function(key) {
 # Start with an empty data frame
 init.qtl <- function(o.qtl) {
   # organism <- stri_match(o.qtl, regex = ".*(?= QTL)")[, 1]
-  df.qtl <- data.frame(identifier = "QTL", chromosome = "1", start_pos = 1L, end_pos = 2L, trait = "-", stringsAsFactors = FALSE)
+  df.qtl <- data.frame(identifier = "QTL", chromosome = "1", start_pos = 1L, end_pos = 2L, center_pos = 1L, trait = "-", stringsAsFactors = FALSE)
   df.qtl <- df.qtl[-1, ]
   df.qtl
 }
