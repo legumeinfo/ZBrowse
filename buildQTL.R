@@ -67,8 +67,8 @@ build.qtl.from.lis.datastore <- function(key) {
 
   # TODO: Discover GFF and QTL files from DSCensor (instead of as below)
   df.qtl <- init.qtl(key)
-  gffBaseUrl <- "http://dev.lis.ncgr.org:50020/api/v1/nodes/labels/"
-  qtlBaseUrl <- "https://legumeinfo.org/data/public/Vigna_unguiculata/mixed.qtl.KF1G/"
+  gffBaseUrl <- paste(url_dscensor, "api/v1/nodes/labels/", sep = "/")
+  qtlBaseUrl <- paste(url_lis, "data/public/Vigna_unguiculata/mixed.qtl.KF1G/", sep = "/")
   qtlPrefix <- "vigun.mixed.qtl.KF1G."
   qtlFileNumbers <- c("22691139", "25620880", "26450274", "27658053", "29356213", "29674702", "30143525")
   exptFiles <- paste0(qtlBaseUrl, qtlPrefix, qtlFileNumbers, ".expt.tsv.gz")

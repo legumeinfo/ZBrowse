@@ -104,7 +104,7 @@ build.gwas.from.lis.datastore <- function(key) {
 
   # Discover GFF and GWAS files from DSCensor
   df.gwas <- init.gwas(key)
-  gwasBaseUrl <- "http://dev.lis.ncgr.org:50020/api/v1/nodes/labels/"
+  gwasBaseUrl <- paste(url_dscensor, "api/v1/nodes/labels/", sep = "/")
 
   # GFF (marker) files
   query.mrk <- fromJSON(paste0(gwasBaseUrl, "mrk:", lis.datastore.info[[key]]$mrkFilter))
@@ -143,9 +143,9 @@ build.gwas.from.lis.datastore <- function(key) {
 gwas.sources <- data.frame(
   name = c("CyVerse", "DSCensor", "LIS Data Store"),
   # use more basic URLs
-  url = c("http://de.cyverse.org/dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas",
-          "http://dev.lis.ncgr.org:50020",
-          "https://legumeinfo.org/data/public/Glycine_max/mixed.gwas.1W14/glyma.mixed.gwas.1W14.KGK20170707-1.gwas.tsv.gz"),
+  url = c(paste(url_cyverse, "dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas", sep = "/"),
+          url_dscensor,
+          paste(url_lis, "data/public/Glycine_max/mixed.gwas.1W14/glyma.mixed.gwas.1W14.KGK20170707-1.gwas.tsv.gz", sep = "/")),
   status = FALSE,
   stringsAsFactors = FALSE
 )
@@ -157,17 +157,17 @@ gwas.sources$status <- sapply(gwas.sources$url, url.exists)
 # TODO: generalize for other formats, if necessary.
 
 gwas.filenames <- list()
-gwas.filenames[["Arabidopsis thaliana"]] <- c(
-  "http://de.cyverse.org/dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas",
-  "http://de.cyverse.org/dl/d/64C5BD48-CF10-4833-96B4-3C74CEC47257/FT16.gwas",
-  "http://de.cyverse.org/dl/d/BBB7DCAB-87FE-4C9E-8F81-DDF8FFEFF806/FT22.gwas",
-  "http://de.cyverse.org/dl/d/57E47B19-FF8C-47F6-AB32-9A111AB1F2A7/Trichome avg C.gwas",
-  "http://de.cyverse.org/dl/d/9B68EAA3-D105-49B7-B2C1-E1690E8BAF23/Trichome avg JA.gwas"
-  # ...
-)
+gwas.filenames[["Arabidopsis thaliana"]] <- paste(url_cyverse,
+  c("dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas",
+    "dl/d/64C5BD48-CF10-4833-96B4-3C74CEC47257/FT16.gwas",
+    "dl/d/BBB7DCAB-87FE-4C9E-8F81-DDF8FFEFF806/FT22.gwas",
+    "dl/d/57E47B19-FF8C-47F6-AB32-9A111AB1F2A7/Trichome avg C.gwas",
+    "dl/d/9B68EAA3-D105-49B7-B2C1-E1690E8BAF23/Trichome avg JA.gwas"
+    # ...
+  ), sep = "/")
 
 # Get the GWAS filenames from DSCensor
-gwasBaseUrl <- "http://dev.lis.ncgr.org:50020/api/v1/nodes/labels/"
+gwasBaseUrl <- paste(url_dscensor, "api/v1/nodes/labels/", sep = "/")
 organisms.gwas <- c("Medicago truncatula") #, "Soybean", "Pigeonpea", "Cowpea")
 for (o.gwas in organisms.gwas) {
   ss <- strsplit(org.Genus_species[[o.gwas]], split = " ")[[1]]
