@@ -137,9 +137,8 @@ create_zChart <- function(j, input, values) {
       }                      
     }     
     SIchart$loc_el <- SIchart$trait
-    # Dynamically assign interval bar heights
     if (dynamic.interval.height) {
-      SIchart$h <- rank(SIchart$trait, ties = "first")
+      SIchart$h <- chart.max.height - interval.bar.height*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]], ties = "first")
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }
@@ -316,7 +315,7 @@ create_zChart <- function(j, input, values) {
     if(input[[jth_ref("SIaxisLimBool", j)]] == TRUE){
       b$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=input[[jth_ref("SIaxisMin", j)]],max=input[[jth_ref("SIaxisMax", j)]],gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }else{
-      b$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+      b$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,max=chart.max.height,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }
     
     if(SIchart[1,input[[jth_ref("SIyAxisColumn", j)]]] != -1){
@@ -325,7 +324,7 @@ create_zChart <- function(j, input, values) {
           data = toJSONArray2(x,json=F,names=T),
           type = "line",
           dashStyle = 'Solid',
-          lineWidth = 10,
+          lineWidth = interval.bar.height,
           name = unique(x$trait),
           yAxis=2,           
           color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            

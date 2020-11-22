@@ -95,7 +95,7 @@ create_pChart <- function(j, input, values) {
     }
     SIchart$loc_el <- SIchart$trait
     if (dynamic.interval.height) {
-      SIchart$h <- rank(SIchart$trait, ties = "first")
+      SIchart$h <- chart.max.height - interval.bar.height*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]], ties = "first")
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }
@@ -127,7 +127,7 @@ create_pChart <- function(j, input, values) {
     if(input[[jth_ref("SIaxisLimBool", j)]] == TRUE){
       a$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=input[[jth_ref("SIaxisMin", j)]],max=input[[jth_ref("SIaxisMax", j)]],gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }else{
-      a$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+      a$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,max=chart.max.height,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }
     
     if(SIchart[1,input[[jth_ref("SIyAxisColumn", j)]]] != -1){
@@ -137,6 +137,10 @@ create_pChart <- function(j, input, values) {
           type = "line",
           name = unique(x$trait),
           yAxis=1,
+          tooltip = list(
+            pointFormat = '<span style="color:{point.color}">\u25a0</span> {series.name}',
+            followPointer = TRUE
+          ),
           color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
     }
   }
@@ -170,7 +174,7 @@ create_pChart <- function(j, input, values) {
       )
     ),
     line = list(
-      lineWidth = 10,
+      lineWidth = interval.bar.height,
       dashStyle = 'Solid',
       cursor = "pointer",
       point = list(
