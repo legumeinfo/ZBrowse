@@ -95,7 +95,7 @@ create_pChart <- function(j, input, values) {
     }
     SIchart$loc_el <- SIchart$trait
     if (dynamic.interval.height) {
-      SIchart$h <- 200 - 10*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]], ties = "first")
+      SIchart$h <- chart.max.height - interval.bar.height*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]], ties = "first")
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }
@@ -174,7 +174,7 @@ create_pChart <- function(j, input, values) {
       )
     ),
     line = list(
-      lineWidth = 10,
+      lineWidth = interval.bar.height,
       dashStyle = 'Solid',
       cursor = "pointer",
       point = list(

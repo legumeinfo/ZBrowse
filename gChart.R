@@ -97,7 +97,7 @@ create_gChart <- function(j, input, values) {
     if (dynamic.interval.height) {
       for (chr in unique(SIchart[[input[[jth_ref("chrColumn", j)]]]])) {
         bb <- (SIchart[[input[[jth_ref("chrColumn", j)]]]] == chr)
-        SIchart$h[bb] <- 200 - 10*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]][bb], ties = "first")
+        SIchart$h[bb] <- chart.max.height - interval.bar.height*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]][bb], ties = "first")
       }
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
@@ -210,7 +210,7 @@ create_gChart <- function(j, input, values) {
       )
     ),
     line = list(
-      lineWidth = 10,
+      lineWidth = interval.bar.height,
       cursor = "pointer",
       point = list(
         events = list(

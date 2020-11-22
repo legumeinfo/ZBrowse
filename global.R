@@ -44,6 +44,8 @@ url_lis <- "https://legumeinfo.org"
 dynamic.interval.height <- TRUE
 # approximate plot height (not counting the legend)
 chart.max.height <- 200
+# interval bar height (thickness)
+interval.bar.height <- 10
 
 # For constructing the annotations data frame on the fly
 # (must go before constructing organism-specific properties)

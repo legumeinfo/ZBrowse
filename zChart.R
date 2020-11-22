@@ -138,7 +138,7 @@ create_zChart <- function(j, input, values) {
     }     
     SIchart$loc_el <- SIchart$trait
     if (dynamic.interval.height) {
-      SIchart$h <- 200 - 10*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]], ties = "first")
+      SIchart$h <- chart.max.height - interval.bar.height*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]], ties = "first")
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }
@@ -324,7 +324,7 @@ create_zChart <- function(j, input, values) {
           data = toJSONArray2(x,json=F,names=T),
           type = "line",
           dashStyle = 'Solid',
-          lineWidth = 10,
+          lineWidth = interval.bar.height,
           name = unique(x$trait),
           yAxis=2,           
           color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
