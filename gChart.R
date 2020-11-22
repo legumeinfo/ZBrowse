@@ -97,7 +97,7 @@ create_gChart <- function(j, input, values) {
     if (dynamic.interval.height) {
       for (chr in unique(SIchart[[input[[jth_ref("chrColumn", j)]]]])) {
         bb <- (SIchart[[input[[jth_ref("chrColumn", j)]]]] == chr)
-        SIchart$h[bb] <- 1:sum(bb)
+        SIchart$h[bb] <- 200 - 10*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]][bb], ties = "first")
       }
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
@@ -147,7 +147,7 @@ create_gChart <- function(j, input, values) {
     if(input[[jth_ref("SIaxisLimBool", j)]] == TRUE){
       c$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=input[[jth_ref("SIaxisMin", j)]],max=input[[jth_ref("SIaxisMax", j)]],gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }else{
-      c$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+      c$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,max=chart.max.height,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }
     
     if(SIchart[1,input[[jth_ref("SIyAxisColumn", j)]]] != -1){
@@ -159,6 +159,10 @@ create_gChart <- function(j, input, values) {
           dashStyle = 'Solid',
           marker = list(enabled=F),
           yAxis=1,           
+          tooltip = list(
+            pointFormat = '<span style="color:{point.color}">\u25a0</span> {series.name}',
+            followPointer = TRUE
+          ),
           color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
     }
   }
