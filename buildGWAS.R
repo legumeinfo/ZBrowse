@@ -19,6 +19,11 @@ lis.datastore.info[["Cowpea GWAS"]] <- list(
   chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)",
   mrkRegex = "ID=vigun.IT97K-499-35.gnm1.(\\w[^;]+);?"
 )
+lis.datastore.info[["Peanut GWAS"]] <- list(
+  mrkFilter = "arachis:hypogaea",
+  chrRegex = "arahy.Tifrunner.gnm1.(Arahy.\\d+)",
+  mrkRegex = "ID=arahy.Tifrunner.gnm1.(\\w[^;]+);?"
+)
 lis.datastore.info[["Soybean GWAS"]] <- list(
   mrkFilter = "glycine:max",
   chrRegex = "glyma.Wm82.gnm2.(Gm\\d+)",

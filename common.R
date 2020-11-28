@@ -138,11 +138,12 @@ isValidChromosomeName <- function(chrName, organism) {
 }
 
 # Return the trailing part ("Chr02") of a chromosome name like "phavu.Chr02"
+# (for peanut, extract trailing "Arahy.02")
 trailingChromosomeName <- function(s, organism) {
   if (hasNumericChromosomeNames(organism)) {
     chrName <- as.character(trailingInteger(s))
   } else {
-    chrName <- stri_match(s, regex = ".+\\.(\\S+)\\s*.*$")[, 2]
+    chrName <- stri_match(s, regex = ".+\\.([A-Za-z]+\\.?\\d+)\\s*.*$")[, 2]
   }
   chrName
 }
