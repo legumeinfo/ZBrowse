@@ -12,17 +12,17 @@ lis.datastore.info <- list()
 lis.datastore.info[["Common Bean GWAS"]] <- list(
   mrkFilter = "phaseolus:vulgaris",
   chrRegex = "phavu.G19833.gnm1.(Chr\\d+)",
-  mrkRegex = "ID=phavu.G19833.gnm1.Chr\\d+_(\\w[^;]+);?"
+  mrkRegex = "Name=(\\w[^;]+);?"
 )
 lis.datastore.info[["Cowpea GWAS"]] <- list(
   mrkFilter = "vigna:unguiculata",
   chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)",
-  mrkRegex = "ID=vigun.IT97K-499-35.gnm1.(\\w[^;]+);?"
+  mrkRegex = "Name=(\\w[^;]+);?"
 )
 lis.datastore.info[["Peanut GWAS"]] <- list(
   mrkFilter = "arachis:hypogaea",
   chrRegex = "arahy.Tifrunner.gnm1.(Arahy.\\d+)",
-  mrkRegex = "ID=arahy.Tifrunner.gnm1.(\\w[^;]+);?"
+  mrkRegex = "Name=(\\w[^;]+);?"
 )
 lis.datastore.info[["Soybean GWAS"]] <- list(
   mrkFilter = "glycine:max",
@@ -33,10 +33,10 @@ lis.datastore.info[["Soybean GWAS"]] <- list(
 
 # LIS Data Store methods
 read.gff3.lis.datastore <- function(fin) {
-  zz <- gzcon(url(fin, "r"))
-  ll <- readLines(zz)
-  close(zz)
-  # remove header lines with leading "##"
+  tmp <- tempfile()
+  download.file(fin, tmp)
+  ll <- readLines(gzfile(tmp))
+  # remove header lines with leading "#"
   ll <- ll[!startsWith(ll, "#")]
   df.gff <- read.csv(textConnection(ll), header = FALSE, sep = '\t', stringsAsFactors = FALSE)
   df.gff
@@ -67,22 +67,26 @@ scrub.gff <- function(df.gff.in, what) {
 }
 
 read.gwas.lis.datastore <- function(fin) {
-  zz <- gzcon(url(fin, "r"))
-  ll <- readLines(zz)
-  close(zz)
+  tmp <- tempfile()
+  download.file(fin, tmp)
+  ll <- readLines(gzfile(tmp))
   # read metadata before line beginning "#identifier"
   src.name <- src.url <- ""
   i <- 1
   while (!startsWith(ll[i], "#")) {
     ss <- strsplit(ll[i], split = "\t")[[1]]
-    if (ss[1] == "Name") src.name <- ss[2]
-    else if (ss[1] == "DOI") src.url <- paste0("https://doi.org/", ss[2])
-    else if (ss[1] == "PMID") src.url <- paste0("https://pubmed.ncbi.nlm.nih.gov/", ss[2], "/")
+    if (ss[1] == "Name") {
+      src.name <- ss[2]
+    } else if (ss[1] == "DOI") {
+      src.url <- ifelse(is.na(ss[2]), NA, paste0("https://doi.org/", ss[2]))
+    } else if (ss[1] == "PMID") {
+      src.url <- ifelse(is.na(ss[2]), NA, paste0("https://pubmed.ncbi.nlm.nih.gov/", ss[2], "/"))
+    }
     i <- i + 1
   }
   # read the rest
   df.gwas <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
-  df.gwas$publication <- paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>")
+  df.gwas$publication <- ifelse(is.na(src.url), src.name, paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>"))
   df.gwas
 }
 
