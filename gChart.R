@@ -61,6 +61,8 @@ create_gChart <- function(j, input, values) {
   }
   
   colorTable <- getColorTable(j, input)
+  publication <- genomeChart$publication
+  publication[is.null(publication)] <- ""
   genomeTable <- data.frame(x=genomeChart$totalBP,y=genomeChart[,input[[jth_ref("yAxisColumn", j)]]],trait=genomeChart$trait,
                             #                               name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>RMIP: %2$s<br>Location: %3$s<br>Base Pairs: %4$s<br>SNP: %5$s<br>Chromosome: %6$s</td></tr></table>",
                             #                               name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Y-value: %2$s<br>Base Pairs: %3$s<br>Chromosome: %4$s</td></tr></table>",
@@ -73,6 +75,7 @@ create_gChart <- function(j, input, values) {
                                          genomeChart[,input[[jth_ref("chrColumn", j)]]]
                             ),
                             url="http://danforthcenter.org",
+                            pub=publication,
                             chr=genomeChart[,input[[jth_ref("chrColumn", j)]]],
                             bp=genomeChart[,input[[jth_ref("bpColumn", j)]]],stringsAsFactors=FALSE)
   genomeSeries <- lapply(split(genomeTable, genomeTable$trait), function(x) {
@@ -181,7 +184,7 @@ create_gChart <- function(j, input, values) {
     }
   }
   if(genomeChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
-    invisible(sapply(genomeSeries, function(x) {if(length(x)==0){return()};c$series(data = x, turboThreshold=5000,type = "scatter", color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = paste0(x[[1]]$trait))}))
+    invisible(sapply(genomeSeries, function(x) {if(length(x)==0){return()};c$series(data = x, turboThreshold=5000,type = "scatter", color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = x[[1]]$trait)}))
   }
   
   c$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
@@ -218,8 +221,9 @@ create_gChart <- function(j, input, values) {
         radius = 5
       ),
       tooltip = list(
-        headerFormat = "<b>{series.name}</b><br/>{point.key}<br/>Y-value: {point.y}<br/>",
-        pointFormat = "",
+        headerFormat = "<b>{series.name}</b><br/>{point.key}",
+        pointFormat = "Y-value: {point.y}<br/>{point.pub}",
+        valueDecimals = 2,
         followPointer = TRUE
       )
     ),
