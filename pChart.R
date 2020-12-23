@@ -67,12 +67,15 @@ create_pChart <- function(j, input, values) {
     list(winLow=winLow,winHigh=winHigh)
   })
   
+  publication <- chromChart$publication
+  publication[is.null(publication)] <- ""
   pkTable <- data.frame(x=chromChart[,input[[jth_ref("bpColumn", j)]]],y=chromChart[,input[[jth_ref("yAxisColumn", j)]]],trait=chromChart$trait,
                         name=sprintf("Base Pair: %1$s<br/>Chromosome: %2$s<br/>",
                                      prettyNum(chromChart[,input[[jth_ref("bpColumn", j)]]], big.mark = ","),
                                      chromChart[,input[[jth_ref("chrColumn", j)]]]
                         ),
                         url="http://danforthcenter.org",
+                        pub=publication,
                         chr=chromChart[,input[[jth_ref("chrColumn", j)]]],
                         bp=chromChart[,input[[jth_ref("bpColumn", j)]]],stringsAsFactors=FALSE)
   pkSeries <- lapply(split(pkTable, pkTable$trait), function(x) {
@@ -146,7 +149,7 @@ create_pChart <- function(j, input, values) {
   }
   
   if(chromChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
-    invisible(sapply(pkSeries, function(x) {if(length(x)==0){return()};a$series(data = x, type = "scatter", turboThreshold=5000, name = paste0(x[[1]]$trait), color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)])}))
+    invisible(sapply(pkSeries, function(x) {if(length(x)==0){return()};a$series(data = x, type = "scatter", turboThreshold=5000, name = x[[1]]$trait, color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)])}))
   }
   a$chart(zoomType="x", alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
   a$title(text=paste(input[[jth_ref("datasets", j)]],"Results for Chromosome",input[[jth_ref("chr", j)]],sep=" "))
@@ -168,8 +171,9 @@ create_pChart <- function(j, input, values) {
         radius = 5
       ),
       tooltip = list(
-        headerFormat = "<b>{series.name}</b><br/>{point.key}<br/>Y-value: {point.y}<br/>",
-        pointFormat = "",
+        headerFormat = "<b>{series.name}</b><br/>{point.key}",
+        pointFormat = "Y-value: {point.y}<br/>{point.pub}",
+        valueDecimals = 2,
         followPointer = TRUE
       )
     ),
