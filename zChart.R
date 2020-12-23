@@ -212,7 +212,7 @@ create_zChart <- function(j, input, values) {
         prettyNum(x[[org.tag_end[[org.j]]]], big.mark = ","),
         x[[org.tag_chr[[org.j]]]],
         x[[org.tag_strand[[org.j]]]],
-        x[[org.tag_desc[[org.j]]]]
+        brAt(x[[org.tag_desc[[org.j]]]])
       ),
       gene = x[[org.tag_name[[org.j]]]],
       marker = c(NA, "Arrow", NA),
@@ -230,7 +230,7 @@ create_zChart <- function(j, input, values) {
         prettyNum(x[[org.tag_end[[org.j]]]], big.mark = ","),
         x[[org.tag_chr[[org.j]]]],
         x[[org.tag_strand[[org.j]]]],
-        x[[org.tag_desc[[org.j]]]]
+        brAt(x[[org.tag_desc[[org.j]]]])
       ),
       gene = x[[org.tag_name[[org.j]]]],
       marker = c(NA, "Arrow", NA),
