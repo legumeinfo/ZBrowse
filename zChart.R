@@ -329,6 +329,7 @@ create_zChart <- function(j, input, values) {
         b$series(
           data = toJSONArray2(x, json = FALSE, names = TRUE),
           type = "line",
+          showInLegend = FALSE,
           dashStyle = 'Solid',
           lineWidth = interval.bar.height,
           name = unique(x$trait),
