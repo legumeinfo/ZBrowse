@@ -69,15 +69,19 @@ create_pChart <- function(j, input, values) {
   
   publication <- chromChart$publication
   publication[is.null(publication)] <- ""
-  pkTable <- data.frame(x=chromChart[,input[[jth_ref("bpColumn", j)]]],y=chromChart[,input[[jth_ref("yAxisColumn", j)]]],trait=chromChart$trait,
-                        name=sprintf("Base Pair: %1$s<br/>Chromosome: %2$s<br/>",
-                                     prettyNum(chromChart[,input[[jth_ref("bpColumn", j)]]], big.mark = ","),
-                                     chromChart[,input[[jth_ref("chrColumn", j)]]]
-                        ),
-                        url="http://danforthcenter.org",
-                        pub=publication,
-                        chr=chromChart[,input[[jth_ref("chrColumn", j)]]],
-                        bp=chromChart[,input[[jth_ref("bpColumn", j)]]],stringsAsFactors=FALSE)
+  pkTable <- data.frame(
+    x = chromChart[, input[[jth_ref("bpColumn", j)]]],
+    y = chromChart[, input[[jth_ref("yAxisColumn", j)]]],
+    trait = chromChart$trait,
+    name = sprintf("Base Pair: %1$s<br/>Chromosome: %2$s<br/>",
+      prettyNum(chromChart[, input[[jth_ref("bpColumn", j)]]], big.mark = ","),
+      chromChart[, input[[jth_ref("chrColumn", j)]]]
+    ),
+    chr = chromChart[, input[[jth_ref("chrColumn", j)]]],
+    bp = chromChart[, input[[jth_ref("bpColumn", j)]]],
+    pub = publication,
+    stringsAsFactors = FALSE
+  )
   pkSeries <- lapply(split(pkTable, pkTable$trait), function(x) {
     res <- lapply(split(x, rownames(x)), as.list)
     names(res) <- NULL
@@ -102,17 +106,27 @@ create_pChart <- function(j, input, values) {
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }
+    SIchart$publication[is.null(SIchart$publication)] <- ""
     SIchart <- SIchart[order(SIchart[[input[[jth_ref("SIbpStart", j)]]]]),]
-    jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x[[input[[jth_ref("SIbpStart", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]]),y=c(x$h,x$h,NA),trait=x$trait,
-                                                       name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
-                                                                    prettyNum(x[[input[[jth_ref("SIbpStart", j)]]]], big.mark = ","),
-                                                                    prettyNum(x[[input[[jth_ref("SIbpEnd", j)]]]], big.mark = ","),
-                                                                    x[[input[[jth_ref("chrColumn", j)]]]]
-                                                       ),loc_el=x$loc_el,bp=x[[input[[jth_ref("bpColumn", j)]]]],chr=x[[input[[jth_ref("chrColumn", j)]]]],stringsAsFactors=FALSE
-    )}#end jlTable and function
-    )#end adply
-    jlTable <- jlTable[,c("x","y","trait","name","loc_el","bp","chr")]
-  }#end build jlTable if support intervals        
+    jlTable <- adply(SIchart, 1, function(x) {
+      data.frame(
+        x = c(x[[input[[jth_ref("SIbpStart", j)]]]], x[[input[[jth_ref("SIbpEnd", j)]]]], x[[input[[jth_ref("SIbpEnd", j)]]]]),
+        y = c(x$h, x$h, NA),
+        trait = x$trait,
+        name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
+          prettyNum(x[[input[[jth_ref("SIbpStart", j)]]]], big.mark = ","),
+          prettyNum(x[[input[[jth_ref("SIbpEnd", j)]]]], big.mark = ","),
+          x[[input[[jth_ref("chrColumn", j)]]]]
+        ),
+        loc_el = x$loc_el,
+        bp = x[[input[[jth_ref("bpColumn", j)]]]],
+        chr = x[[input[[jth_ref("chrColumn", j)]]]],
+        pub = x$publication,
+        stringsAsFactors=FALSE
+      ) #end jlTable
+    }) #end adply
+    jlTable <- jlTable[, c("x", "y", "trait", "name", "loc_el", "bp", "chr", "pub")]
+  } #end build jlTable if support intervals
   
   a <- rCharts::Highcharts$new()
   a$LIB$url <- 'highcharts/' #use the local copy of highcharts, not the one installed by rCharts
@@ -141,15 +155,28 @@ create_pChart <- function(j, input, values) {
           name = unique(x$trait),
           yAxis=1,
           tooltip = list(
-            pointFormat = '<span style="color:{point.color}">\u25a0</span> {series.name}',
+            pointFormat = '<span style="color:{point.color}">\u25a0</span> {series.name}<br>{point.pub}',
             followPointer = TRUE
           ),
-          color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
+          color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))]
+        )
+      })
     }
   }
   
-  if(chromChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
-    invisible(sapply(pkSeries, function(x) {if(length(x)==0){return()};a$series(data = x, type = "scatter", turboThreshold=5000, name = x[[1]]$trait, color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)])}))
+  if (chromChart[1, input[[jth_ref("yAxisColumn", j)]]] != -1) {
+    invisible(sapply(pkSeries, function(x) {
+      if (length(x) == 0) {
+        return()
+      }
+      a$series(
+        data = x,
+        type = "scatter",
+        turboThreshold = 5000,
+        name = x[[1]]$trait,
+        color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)]
+      )
+    }))
   }
   a$chart(zoomType="x", alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
   a$title(text=paste(input[[jth_ref("datasets", j)]],"Results for Chromosome",input[[jth_ref("chr", j)]],sep=" "))

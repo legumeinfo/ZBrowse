@@ -73,19 +73,22 @@ create_zChart <- function(j, input, values) {
     zoomChart <- zoomChart[zoomChart[,input[[jth_ref("yAxisColumn", j)]]] >= cutVal,]
   }                
   
-  zoomTable <- data.frame(x=zoomChart[,input[[jth_ref("bpColumn", j)]]],y=zoomChart[,input[[jth_ref("yAxisColumn", j)]]],trait=zoomChart$trait,
-                          #                                         name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>RMIP: %2$s<br>Location: %3$s<br>Base Pairs: %4$s<br>SNP: %5$s<br>Chromosome: %6$s</td></tr></table>",
-                          name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Y-axis value: %2$s<br>Base Pairs: %3$s<br>Chromosome: %4$s</td></tr></table>",                                         
-                                       zoomChart$trait,
-                                       zoomChart[,input[[jth_ref("yAxisColumn", j)]]],
-                                       #zoomChart$loc,
-                                       prettyNum(zoomChart[,input[[jth_ref("bpColumn", j)]]], big.mark = ","),
-                                       #zoomChart$SNP,
-                                       zoomChart[,input[[jth_ref("chrColumn", j)]]]
-                          ),
-                          url="http://danforthcenter.org",
-                          chr=zoomChart[,input[[jth_ref("chrColumn", j)]]],
-                          bp=zoomChart[,input[[jth_ref("bpColumn", j)]]])
+  zoomChart$publication[is.null(zoomChart$publication)] <- ""
+  zoomTable <- data.frame(
+    x = zoomChart[, input[[jth_ref("bpColumn", j)]]],
+    y = zoomChart[, input[[jth_ref("yAxisColumn", j)]]],
+    trait = zoomChart$trait,
+    name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'><b>%1$s</b><br>Base Pair: %2$s<br>Chromosome: %3$s<br>Y-value: %4$.2f<br>%5$s</td></tr></table>",
+      zoomChart$trait,
+      prettyNum(zoomChart[, input[[jth_ref("bpColumn", j)]]], big.mark = ","),
+      zoomChart[, input[[jth_ref("chrColumn", j)]]],
+      zoomChart[, input[[jth_ref("yAxisColumn", j)]]],
+      zoomChart$publication
+    ),
+    chr = zoomChart[, input[[jth_ref("chrColumn", j)]]],
+    bp = zoomChart[, input[[jth_ref("bpColumn", j)]]],
+    stringsAsFactors = FALSE
+  )
   zoomSeries <- lapply(split(zoomTable, zoomTable$trait), function(x) {
     res <- lapply(split(x, rownames(x)), as.list)
     names(res) <- NULL
@@ -142,25 +145,28 @@ create_zChart <- function(j, input, values) {
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }
+    SIchart$publication[is.null(SIchart$publication)] <- ""
     SIchart <- SIchart[order(SIchart[[input[[jth_ref("SIbpStart", j)]]]]),]
-    jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x[[input[[jth_ref("SIbpStart", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]],x[[input[[jth_ref("SIbpEnd", j)]]]]),y=c(x$h,x$h,NA),trait=x$trait,
-                                                       name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
-                                                                    #                                                                      x$trait,
-                                                                    #                                                                      x[[input[[jth_ref("SIyAxisColumn", j)]]]],
-                                                                    prettyNum(x[[input[[jth_ref("SIbpStart", j)]]]], big.mark = ","),
-                                                                    prettyNum(x[[input[[jth_ref("SIbpEnd", j)]]]], big.mark = ","),
-                                                                    x[[input[[jth_ref("chrColumn", j)]]]]
-                                                       ),loc_el=x$loc_el,bp=x[[input[[jth_ref("bpColumn", j)]]]],chr=x[[input[[jth_ref("chrColumn", j)]]]],stringsAsFactors=FALSE
-                                                       #                                                   
-                                                       #                                                   totalBP=x$totalBP,
-                                                       #                                                   chr=x$Chromosome,stringsAsFactors=FALSE
-    )}#end jlTable and function
-    )#end adply
-    jlTable <- jlTable[,c("x","y","trait","name","loc_el","bp","chr")]
-    #jlTable <- jlTable[order(jlTable$x),]
-  }#end if support interval
-  #     
-  #     
+    jlTable <- adply(SIchart, 1, function(x) {
+      data.frame(
+        x = c(x[[input[[jth_ref("SIbpStart", j)]]]], x[[input[[jth_ref("SIbpEnd", j)]]]], x[[input[[jth_ref("SIbpEnd", j)]]]]),
+        y = c(x$h, x$h, NA),
+        trait = x$trait,
+        name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
+          prettyNum(x[[input[[jth_ref("SIbpStart", j)]]]], big.mark = ","),
+          prettyNum(x[[input[[jth_ref("SIbpEnd", j)]]]], big.mark = ","),
+          x[[input[[jth_ref("chrColumn", j)]]]]
+        ),
+        loc_el = x$loc_el,
+        bp = x[[input[[jth_ref("bpColumn", j)]]]],
+        chr = x[[input[[jth_ref("chrColumn", j)]]]],
+        pub = x$publication,
+        stringsAsFactors = FALSE
+      ) #end jlTable
+    }) #end adply
+    jlTable <- jlTable[, c("x", "y", "trait", "name", "loc_el", "bp", "chr", "pub")]
+  } #end if support interval
+
   #     jl$loc_el <- paste(jl$env,jl$el,"JL",sep="_")      
   #     jlTable <- adply(jl,1,function(x) {data.frame(x=c(x$lowerCIbp,x$upperCIbp,x$upperCIbp),y=c(x$F,x$F,NA),element=x$loc_el,url="http://danforthcenter.org",
   #                                                   name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>F: %2$.2f  -logP: %3$.2f<br>Location: %4$s<br>Base Pair: %5$s<br>SI: %6$s-%7$s<br>SNP: %8$s<br>Chromosome: %9$s</td></tr></table>",       
@@ -206,7 +212,7 @@ create_zChart <- function(j, input, values) {
       x = c(x[[org.tag_start[[org.j]]]], x[[org.tag_end[[org.j]]]], x[[org.tag_end[[org.j]]]]),
       y = c(annotYvalForward, annotYvalForward, NA),
       url = sprintf(org.urlFormat[[org.j]], x[[org.tag_id[[org.j]]]]),
-      name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
+      name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'><b>%1$s</b><br>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
         x[[org.tag_name[[org.j]]]],
         prettyNum(x[[org.tag_start[[org.j]]]], big.mark = ","),
         prettyNum(x[[org.tag_end[[org.j]]]], big.mark = ","),
@@ -224,7 +230,7 @@ create_zChart <- function(j, input, values) {
       x = c(x[[org.tag_start[[org.j]]]], x[[org.tag_end[[org.j]]]], x[[org.tag_end[[org.j]]]]),
       y = c(annotYvalReverse, annotYvalReverse, NA),
       url = sprintf(org.urlFormat[[org.j]], x[[org.tag_id[[org.j]]]]),
-      name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
+      name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'><b>%1$s</b><br>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
         x[[org.tag_name[[org.j]]]],
         prettyNum(x[[org.tag_start[[org.j]]]], big.mark = ","),
         prettyNum(x[[org.tag_end[[org.j]]]], big.mark = ","),
@@ -318,16 +324,22 @@ create_zChart <- function(j, input, values) {
       b$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,max=chart.max.height,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }
     
-    if(SIchart[1,input[[jth_ref("SIyAxisColumn", j)]]] != -1){
-      d_ply(jlTable,.(trait),function(x){
+    if (SIchart[1, input[[jth_ref("SIyAxisColumn", j)]]] != -1) {
+      d_ply(jlTable, .(trait), function(x) {
         b$series(
-          data = toJSONArray2(x,json=F,names=T),
+          data = toJSONArray2(x, json = FALSE, names = TRUE),
           type = "line",
           dashStyle = 'Solid',
           lineWidth = interval.bar.height,
           name = unique(x$trait),
-          yAxis=2,           
-          color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
+          yAxis = 2,
+          tooltip = list(
+            pointFormat = '<span style="color:{point.color}">\u25a0</span> {series.name}<br>{point.pub}',
+            followPointer = TRUE
+          ),
+          color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))]
+        )
+      })
     }
   }
   
@@ -366,9 +378,20 @@ create_zChart <- function(j, input, values) {
   #         )
   #       })
   #     }
-  #     
+
   if(zoomChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
-    invisible(sapply(zoomSeries, function(x) {if(length(x)==0){return()};b$series(data = x, type = "scatter", showInLegend = FALSE, color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = paste0(x[[1]]$trait))}))
+    invisible(sapply(zoomSeries, function(x) {
+      if (length(x) == 0) {
+        return()
+      }
+      b$series(
+        data = x,
+        type = "scatter",
+        showInLegend = FALSE,
+        color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)],
+        name = x[[1]]$trait
+      )
+    }))
   }
 
   geneColor <- "#53377A"
@@ -382,6 +405,7 @@ create_zChart <- function(j, input, values) {
     zIndex = 1,
     color = geneColor,
     marker = list(symbol = "circle", enabled = FALSE),
+    tooltip = list(pointFormat = '', followPointer = TRUE),
     yAxis = 1
   )
   if (hasHighlightsForward) {
@@ -394,6 +418,7 @@ create_zChart <- function(j, input, values) {
       zIndex = 1,
       color = geneColorH,
       marker = list(symbol = "circle", enabled = FALSE),
+      tooltip = list(pointFormat = '', followPointer = TRUE),
       yAxis = 1
     )
   }
@@ -407,6 +432,7 @@ create_zChart <- function(j, input, values) {
     zIndex = 1,
     color = geneColor,
     marker = list(symbol = "circle", enabled = FALSE),
+    tooltip = list(pointFormat = '', followPointer = TRUE),
     yAxis = 1
   )
   if (hasHighlightsReverse) {
@@ -419,6 +445,7 @@ create_zChart <- function(j, input, values) {
       zIndex = 1,
       color = geneColorH,
       marker = list(symbol = "circle", enabled = FALSE),
+      tooltip = list(pointFormat = '', followPointer = TRUE),
       yAxis = 1
     )
   }
@@ -448,6 +475,11 @@ create_zChart <- function(j, input, values) {
           linkedTo = sid,
           lineWidth = 12,
           yAxis = 1,
+          tooltip = list(
+            headerFormat = sprintf("<b>%s</b><br>%s", g$name, g$family),
+            pointFormat = '',
+            followPointer = TRUE
+          ),
           zIndex = 0
         )
       }
@@ -460,7 +492,7 @@ create_zChart <- function(j, input, values) {
   #b$subtitle(text="Rollover for more info. Drag chart area to zoom. Click point for zoomed annotated plot.")
   
   # User clicked on a point -> display trait in popup
-  doClickOnPoint <- "#! function(event) { alert(this.trait); } !#"
+  #doClickOnPoint <- "#! function(event) { alert(this.trait); } !#"
   # User clicked on a line -> various possible responses:
   microSyntenySearch <- getMicroSyntenySearch()
   geneToQueryTrack <- getGeneToQueryTrack(org.gcvUrlBase[values$organism], org.gcvUrlBase[values$organism2], microSyntenySearch)
@@ -517,15 +549,17 @@ create_zChart <- function(j, input, values) {
   b$plotOptions(
     scatter = list(
       cursor = "pointer",
-      point = list(
-        events = list(
-          #click = "#! function() { window.open(this.options.url); } !#")), #open webpage
-          click = doClickOnPoint
-        )
-      ),
+      # Disable clicking on point, as the tooltip is sufficient to identify the trait
+      # point = list(
+      #   events = list(
+      #     #click = "#! function() { window.open(this.options.url); } !#")), #open webpage
+      #     click = doClickOnPoint
+      #   )
+      # ),
       #click = "#! function(event) {console.log(this);} !#")), #write object to log
       #click = "#! function(){$('input#selected').val(134); $('input#selected').trigger('change');} !#")),
       #click = "#! function(){$('input#selected').val(this.options.bp); $('input#selected').trigger('change');} !#")),
+      tooltip = list(headerFormat = '', pointFormat = '{point.name}', followPointer = TRUE),
       marker = list(
         symbol = "circle",
         radius = 5
@@ -539,7 +573,8 @@ create_zChart <- function(j, input, values) {
         events = list(
           click = doClickOnLine
         )
-      )
+      ),
+      marker = list(symbol = "square")
     ),
     #click = "#! function(event) {alert(this.url);} !#")), #display popup
     #click = "#! function(event) {console.log(this);} !#")), #write object to log
@@ -558,7 +593,7 @@ create_zChart <- function(j, input, values) {
   #it seems almost impossible to get the tooltip to hover along the chart with this version of highcharts (4.0.1), perhaps a question to stackoverflow could solve it.
   #see an example of the problem here: http://jsfiddle.net/N5ymb/
   #one hack/fix would be to add dummy points to the middle of the line that show up when moused over
-  b$tooltip(snap=5, useHTML = T, formatter = "#! function() { return this.point.name; } !#") #followTouchMove = T, shared=T, followPointer = T
+  #b$tooltip(snap=5, useHTML = T, formatter = "#! function() { return this.point.name; } !#") #followTouchMove = T, shared=T, followPointer = T
   b$exporting(enabled=TRUE,filename='zoomChart',sourceWidth=2000)
   b$credits(enabled=TRUE)
   b$set(dom = jth_ref('zChart', j))
