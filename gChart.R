@@ -63,28 +63,26 @@ create_gChart <- function(j, input, values) {
   colorTable <- getColorTable(j, input)
   publication <- genomeChart$publication
   publication[is.null(publication)] <- ""
-  genomeTable <- data.frame(x=genomeChart$totalBP,y=genomeChart[,input[[jth_ref("yAxisColumn", j)]]],trait=genomeChart$trait,
-                            #                               name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>RMIP: %2$s<br>Location: %3$s<br>Base Pairs: %4$s<br>SNP: %5$s<br>Chromosome: %6$s</td></tr></table>",
-                            #                               name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Y-value: %2$s<br>Base Pairs: %3$s<br>Chromosome: %4$s</td></tr></table>",
-                            name=sprintf("Base Pair: %1$s<br/>Chromosome: %2$s<br/>",
-                                         #                                            genomeChart$trait,
-                                         #                                            genomeChart[,input[[jth_ref("yAxisColumn", j)]]],
-                                         #                                            genomeChart$loc,
-                                         prettyNum(genomeChart[,input[[jth_ref("bpColumn", j)]]], big.mark = ","),
-                                         #                                            genomeChart$SNP,
-                                         genomeChart[,input[[jth_ref("chrColumn", j)]]]
-                            ),
-                            url="http://danforthcenter.org",
-                            pub=publication,
-                            chr=genomeChart[,input[[jth_ref("chrColumn", j)]]],
-                            bp=genomeChart[,input[[jth_ref("bpColumn", j)]]],stringsAsFactors=FALSE)
+  genomeTable <- data.frame(
+    x = genomeChart$totalBP,
+    y = genomeChart[, input[[jth_ref("yAxisColumn", j)]]],
+    trait = genomeChart$trait,
+    name = sprintf("Base Pair: %1$s<br/>Chromosome: %2$s<br/>",
+      prettyNum(genomeChart[, input[[jth_ref("bpColumn", j)]]], big.mark = ","),
+      genomeChart[, input[[jth_ref("chrColumn", j)]]]
+    ),
+    chr = genomeChart[,input[[jth_ref("chrColumn", j)]]],
+    bp = genomeChart[,input[[jth_ref("bpColumn", j)]]],
+    pub = publication,
+    stringsAsFactors = FALSE
+  )
   genomeSeries <- lapply(split(genomeTable, genomeTable$trait), function(x) {
     res <- lapply(split(x, rownames(x)), as.list)
     names(res) <- NULL
     res <- res[order(sapply(res, function(x) x$x))]
     return(res)
   })
-  #     
+
   #build JL series
   if(input[[jth_ref("supportInterval", j)]]==TRUE){
     if(nrow(SIchart)==0){ #nothing is in the window, but lets still make a data.frame
@@ -105,24 +103,27 @@ create_gChart <- function(j, input, values) {
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }
+    SIchart$publication[is.null(SIchart$publication)] <- ""
     SIchart <- SIchart[order(SIchart$SIbpStartTotal),]
-    jlTable <- adply(SIchart,1,function(x) {data.frame(x=c(x$SIbpStartTotal,x$SIbpEndTotal,x$SIbpEndTotal),y=c(x$h,x$h,NA),trait=x$trait,
-                                                       #name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><th>%1$s</th></tr><tr><td align='left'>Y-value: %2$.2f <br>Interval: %3$s-%4$s<br>Chromosome: %5$s</td></tr></table>",
-                                                       name=sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
-                                                                    #                                                                 x$trait,
-                                                                    #                                                                 x[[input[[jth_ref("SIyAxisColumn", j)]]]],
-                                                                    prettyNum(x[[input[[jth_ref("SIbpStart", j)]]]], big.mark = ","),
-                                                                    prettyNum(x[[input[[jth_ref("SIbpEnd", j)]]]], big.mark = ","),
-                                                                    x[[input[[jth_ref("chrColumn", j)]]]]
-                                                       ),loc_el=x$loc_el,bp=x[[input[[jth_ref("bpColumn", j)]]]],chr=x[[input[[jth_ref("chrColumn", j)]]]],stringsAsFactors=FALSE
-                                                       #                                                   
-                                                       #                                                   totalBP=x$totalBP,
-                                                       #                                                   chr=x$Chromosome,stringsAsFactors=FALSE
-    )}#end jlTable and function
-    )#end adply
-    jlTable <- jlTable[,c("x","y","trait","name","loc_el","bp","chr")]
-    #jlTable <- jlTable[order(jlTable$x),]
-  }#end build jlTable if support intervals
+    jlTable <- adply(SIchart, 1, function(x) {
+      data.frame(
+        x = c(x$SIbpStartTotal, x$SIbpEndTotal, x$SIbpEndTotal),
+        y = c(x$h, x$h, NA),
+        trait = x$trait,
+        name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'>Interval: %1$s-%2$s<br>Chromosome: %3$s</td></tr></table>",
+          prettyNum(x[[input[[jth_ref("SIbpStart", j)]]]], big.mark = ","),
+          prettyNum(x[[input[[jth_ref("SIbpEnd", j)]]]], big.mark = ","),
+          x[[input[[jth_ref("chrColumn", j)]]]]
+        ),
+        loc_el = x$loc_el,
+        bp = x[[input[[jth_ref("bpColumn", j)]]]],
+        chr = x[[input[[jth_ref("chrColumn", j)]]]],
+        pub = x$publication,
+        stringsAsFactors = FALSE
+      ) #end jlTable
+    }) #end adply
+    jlTable <- jlTable[, c("x", "y", "trait", "name", "loc_el", "bp", "chr", "pub")]
+  } #end build jlTable if support intervals
   
   #build list for where to put plotbands for this organism
   bigList <- list()
@@ -177,14 +178,25 @@ create_gChart <- function(j, input, values) {
           marker = list(enabled=F),
           yAxis=1,           
           tooltip = list(
-            pointFormat = '<span style="color:{point.color}">\u25a0</span> {series.name}',
+            pointFormat = '<span style="color:{point.color}">\u25a0</span> {series.name}<br>{point.pub}',
             followPointer = TRUE
           ),
           color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
     }
   }
-  if(genomeChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
-    invisible(sapply(genomeSeries, function(x) {if(length(x)==0){return()};c$series(data = x, turboThreshold=5000,type = "scatter", color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)], name = x[[1]]$trait)}))
+  if (genomeChart[1, input[[jth_ref("yAxisColumn", j)]]] != -1) {
+    invisible(sapply(genomeSeries, function(x) {
+      if (length(x) == 0) {
+        return()
+      }
+      c$series(
+        data = x,
+        turboThreshold = 5000,
+        type = "scatter",
+        color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)],
+        name = x[[1]]$trait
+      )
+    }))
   }
   
   c$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
