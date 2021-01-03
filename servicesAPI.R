@@ -1,68 +1,59 @@
-getMicroSyntenySearch <- function() {
-  paste(
-    "$.ajax({",
-      "url: 'https://' + url2 + '/services/v1/micro-synteny-search/',",
-      "dataType: 'json',",
-      "data: JSON.stringify({",
-        "query: families1,",
-        "matched: $('input#matched').val(),",
-        "intermediate: $('input#intermediate').val()",
-      "}),",
-      "type: 'POST',",
-      "success: function(response2) {",
-        "obj2 = response2;",
-        # Send information about neighboring and related genes back to the chart
-        "Shiny.onInputChange('genomicLinkages', {",
-          "results1: obj1,",
-          "results2: obj2",
-        "});",
-      "},",
-      "error: function(errmsg2) { alert('FAIL2: ' + errmsg2.responseText); }",
-    "});"
-  )
-}
+# Services API v2 calls used in ZZBrowse
+# https://github.com/legumeinfo/gcv/wiki/Services-API-v2
 
-getGeneToQueryTrack <- function(url1, url2, microSyntenySearch, selectedGene = NULL) {
-  if (is.null(selectedGene)) {
-    gene.js <- paste(
-      "var geneString = '';",
-      "if (this.gene.search('AT') >= 0) {",
-        # workaround for A. thaliana
-        "at0 = this.url.search('gene:');",
-        "geneString = 'arath.Col.' + this.url.substring(at0 + 5);",
-      "} else if (typeof this.gene != undefined) {",
-        "geneString = this.gene;",
-      "} else {",
-        "return;",
-      "}"
-    )
-  } else {
-    gene.js <- sprintf("var geneString = '%s';", selectedGene)
-  }
+microSyntenySearchService <- function(url, families, matched, intermediate) {
   paste(
-    # Query the Genome Context Viewer for genomic linkages
-    sprintf("url1 = '%s';", url1),
-    sprintf("url2 = '%s';", url2),
-    gene.js,
+    sprintf("url = '%s';", url),
+    sprintf("families = %s;", families),
+    sprintf("matched = %d;", matched),
+    sprintf("intermediate = %d;", intermediate),
     "$.ajax({",
-      "url: 'https://' + url1 + '/services/v1/gene-to-query-track/',",
+      "url: 'https://' + url + '/services/v2/micro-synteny-search/',",
       "dataType: 'json',",
       "data: JSON.stringify({",
-        "gene: geneString,",
-        "neighbors: $('input#neighbors').val()",
+        "query: families,",
+        "matched: matched,",
+        "intermediate: intermediate",
       "}),",
       "type: 'POST',",
       "success: function(response) {",
-        "obj1 = response;",
-        "families1 = Array.from(obj1.genes, x => x.family);",
-        microSyntenySearch,
+        "Shiny.onInputChange('microSyntenySearchResults', {",
+          "results: response",
+        "});",
       "},",
-      "error: function(errmsg) { alert('FAIL: ' + errmsg.responseText); }",
+      "error: function(errmsg) {",
+        "alert('microSyntenySearchService() failed: ' + errmsg.responseText);",
+      "}",
     "});"
   )
 }
 
-getProvideMultipleURLs <- function() {
+genesService <- function(url, genes) {
+  paste(
+    sprintf("genes = %s;", genes),
+    sprintf("url = '%s';", url),
+    "$.ajax({",
+      "url: 'https://' + url + '/services/v2/genes/',",
+      "dataType: 'json',",
+      "data: JSON.stringify({",
+        "genes: genes",
+      "}),",
+      "type: 'POST',",
+      "success: function(response) {",
+        "Shiny.onInputChange('genesResults', {",
+          "results: response",
+        "});",
+      "},",
+      "error: function(errmsg) {",
+        "alert('genesService() failed: ' + errmsg.responseText);",
+      "}",
+    "});"
+  )
+}
+
+# Not a Services API call, but convenient to place here as it is
+# also a response to a doClickOnLine in the zChart.
+provideMultipleURLs <- function() {
   paste(
     # From the JSON at this.url, extract the URLs related to this gene.
     # Note that this.url = 'https://legumeinfo.org/gene_links/' + geneString + '/json'
