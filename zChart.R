@@ -451,8 +451,10 @@ create_zChart <- function(j, input, values) {
     )
   }
 
-  if (!is.null(values[[jth_ref("glGenes", j)]])) {
+  # Wait for values$glGenes2 to be populated before drawing the zChart
+  if (!is.null(values$glGenes2)) {
     apply(values[[jth_ref("glGenes", j)]], 1, FUN = function(g) {
+      g <- data.frame(as.list(g)) # to avoid "$ operator is invalid for atomic vectors" warning
       g.strand <- as.integer(g$strand)
       yh <- -1
       if (g.strand == 1) {
@@ -495,16 +497,13 @@ create_zChart <- function(j, input, values) {
   # User clicked on a point -> display trait in popup
   #doClickOnPoint <- "#! function(event) { alert(this.trait); } !#"
   # User clicked on a line -> various possible responses:
-  microSyntenySearch <- getMicroSyntenySearch()
-  geneToQueryTrack <- getGeneToQueryTrack(org.gcvUrlBase[values$organism], org.gcvUrlBase[values$organism2], microSyntenySearch)
-  provideMultipleURLs <- getProvideMultipleURLs()
   bGenomicLinkage <- ifelse(j == 1, 1, 0)
   doClickOnLine <- sprintf(paste(
     "#! function() {",
       "if (%d && $('input#boolGenomicLinkage').prop('checked')) {",
-        geneToQueryTrack,
+        "Shiny.onInputChange('selectedGene', this.gene);",
       "} else if (this.url.includes('legumeinfo.org')) {",
-        provideMultipleURLs,
+        provideMultipleURLs(),
       "} else {",
         # for all other species
         "window.open(this.url);", #open webpage

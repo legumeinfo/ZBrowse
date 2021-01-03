@@ -133,6 +133,11 @@ for(i in 1:length(files)){
       locValue <- build.annotations(key, annotFilename, chromosome.lengths, org.annotChrFormat[key][[1]])
     } else {
       locValue<-read.table(annotFilename,sep=",",head=TRUE,stringsAsFactors = FALSE,quote = c("\""))
+      if (startsWith(key, "Arabidopsis")) {
+        # Strip trailing ".n" from gene names, and remove Locus column (identical to name)
+        locValue$name <- stri_match_first(locValue$name, regex = "^(AT.+)\\.")[, 2]
+        locValue$Locus <- NULL
+      }
     }
     chr2i <- suppressWarnings(as.integer(locValue$chromosome))
     if (!any(is.na(chr2i))) locValue$chromosome <- as.character(chr2i)
