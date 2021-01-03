@@ -451,8 +451,7 @@ create_zChart <- function(j, input, values) {
     )
   }
 
-  # Wait for values$glGenes2 to be populated before drawing the zChart
-  if (!is.null(values$glGenes2)) {
+  if (!is.null(values[[jth_ref("glGenes", j)]])) {
     apply(values[[jth_ref("glGenes", j)]], 1, FUN = function(g) {
       g <- data.frame(as.list(g)) # to avoid "$ operator is invalid for atomic vectors" warning
       g.strand <- as.integer(g$strand)
