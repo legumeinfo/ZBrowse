@@ -1273,6 +1273,7 @@ shinyServer(function(input, output, session) {
         clearGenomicLinkages()
         return()
       }
+      values$glGenes2 <- NULL # to disable redrawing the zCharts until we have the micro-synteny-search results
 
       # Send to the micro-synteny-search service
       runjs(microSyntenySearchService(org.gcvUrlBase[values$organism2], toJSON(unique(values$glGenes$family)), input$matched, input$intermediate))
