@@ -74,6 +74,7 @@ shinyServer(function(input, output, session) {
     }
     
     # Uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
+    updateTextInput(session, inputId = jth_ref("traitFilter", j), value = "")
     trait.choices <- gwas.traits[[values[[jth_ref("organism", j)]]]]
     if (is.null(trait.choices)) trait.choices <- character(0)
     # Initialize remote GWAS trait files specified in the URL (if any)
@@ -841,9 +842,15 @@ shinyServer(function(input, output, session) {
   createTraitColBoxes <- function(j) {
     if(is.null(input[[jth_ref("datasets", j)]])){return()}
     if(input[[jth_ref("plotAll", j)]] == TRUE){return()}
+    df.data <- values[[input[[jth_ref("datasets", j)]]]]
+    hasGwasTraits <- any(is.na(df.data[, input[[jth_ref("SIbpStart", j)]]]))
+    hasQtlTraits <- any(!is.na(df.data[, input[[jth_ref("SIbpStart", j)]]]))
     lapply(input[[jth_ref("traitColumns", j)]], function(i) {
       traits <- c("Select All", "Deselect All", sort(unique(values[[input[[jth_ref("datasets", j)]]]][,i])))
       # trait index is 1 for Select All, 2 for Deselect All, 3 for the first trait, etc
+      if (hasGwasTraits && hasQtlTraits) {
+        traits <- c(traits[1], "Select only GWAS traits", "Select only QTL traits", traits[-1])
+      }
       selectedTraits <- traits[1] # default is Select All
       # Select traits specified in the URL (if any)
       traitsFromUrl <- isolate(values$urlFields[[jth_ref("traits", j)]])
@@ -860,8 +867,21 @@ shinyServer(function(input, output, session) {
 
   updateTraitsMenu <- function(j) {
     lapply(input[[jth_ref("traitColumns", j)]], function(i){
+      df.data <- values[[input[[jth_ref("datasets", j)]]]]
+      tf <- input[[jth_ref("traitFilter", j)]]
       if ("Select All" %in% input[[jth_ref(i, j)]]) {
-        selected_choices <- sort(unique(values[[input[[jth_ref("datasets", j)]]]][,i]))
+        selected_choices <- sort(unique(df.data[, i]))
+        selected_choices <- stringsThatMatchPattern(selected_choices, tf)
+        updateSelectizeInput(session, jth_ref(i, j), selected = selected_choices)
+      } else if ("Select only GWAS traits" %in% input[[jth_ref(i, j)]]) {
+        df.data <- df.data[is.na(df.data[, input[[jth_ref("SIbpStart", j)]]]), ]
+        selected_choices <- sort(unique(df.data[, i]))
+        selected_choices <- stringsThatMatchPattern(selected_choices, tf)
+        updateSelectizeInput(session, jth_ref(i, j), selected = selected_choices)
+      } else if ("Select only QTL traits" %in% input[[jth_ref(i, j)]]) {
+        df.data <- df.data[!is.na(df.data[, input[[jth_ref("SIbpStart", j)]]]), ]
+        selected_choices <- sort(unique(df.data[, i]))
+        selected_choices <- stringsThatMatchPattern(selected_choices, tf)
         updateSelectizeInput(session, jth_ref(i, j), selected = selected_choices)
       } else if ("Deselect All" %in% input[[jth_ref(i, j)]]) {
         updateSelectizeInput(session, jth_ref(i, j), selected = character(0))
@@ -1076,7 +1096,8 @@ shinyServer(function(input, output, session) {
     isolate({
       tc <- input[[jth_ref("traitColumns", j)]]
       tc.id <- jth_ref(tc, j)
-      all.choices <- sort(unique(values[[input[[jth_ref("datasets", j)]]]][, tc]))
+      df.data <- values[[input[[jth_ref("datasets", j)]]]]
+      all.choices <- sort(unique(df.data[, tc]))
       tf <- input[[jth_ref("traitFilter", j)]]
       # Select traits specified in the URL (if any)
       traitsFromUrl <- isolate(values$urlFields[[jth_ref("traits", j)]])
@@ -1088,6 +1109,11 @@ shinyServer(function(input, output, session) {
         filtered.choices <- all.choices[grep(tf, all.choices, ignore.case = TRUE)]
       }
       all.choices <- c("Select All", "Deselect All", all.choices)
+      hasGwasTraits <- any(is.na(df.data[, input[[jth_ref("SIbpStart", j)]]]))
+      hasQtlTraits <- any(!is.na(df.data[, input[[jth_ref("SIbpStart", j)]]]))
+      if (hasGwasTraits && hasQtlTraits) {
+        all.choices <- c(all.choices[1], "Select only GWAS traits", "Select only QTL traits", all.choices[-1])
+      }
       updateSelectizeInput(session, tc.id, choices = all.choices, selected = filtered.choices)
     })
   }

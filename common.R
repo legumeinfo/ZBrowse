@@ -159,3 +159,13 @@ getRainbowColors <- function(n) {
 brAt <- function(s, n = 90) {
   gsub(sprintf('(.{1,%d})(\\s|$)', n), '\\1<br>', s)
 }
+
+# Return the subset of string vector ss that matches pattern p (case-insensitive)
+stringsThatMatchPattern <- function(ss, p) {
+  if (is.null(p) || p == "") return(ss)
+  ss[!is.na(unlist(
+    sapply(ss, function(s) {
+      stri_match_all(s, regex = paste0("(?i)", p))
+    }, USE.NAMES = FALSE)
+  ))]
+}
