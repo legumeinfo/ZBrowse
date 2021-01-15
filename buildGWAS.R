@@ -86,13 +86,14 @@ read.gwas.lis.datastore <- function(fin) {
   }
   # read the rest
   df.gwas <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  names(df.gwas)[1:4] <- c("identifier", "phenotype", "marker", "p_value") # clean up column names
   df.gwas$publication <- ifelse(is.na(src.url), src.name, paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>"))
   df.gwas
 }
 
 merge.gwas <- function(df.gwas, df.gff) {
   # df.gwas is the GWAS data frame downloaded from the data store:
-  #   X.identifier,phenotype,marker,pvalue
+  #   identifier,phenotype,marker,p_value,publication
   # TODO: keep other columns?
   # df.gff is the processed GFF file:
   #   marker,chromosome,position
@@ -100,10 +101,8 @@ merge.gwas <- function(df.gwas, df.gff) {
   # Merge on marker to convert to chromosome,phenotype(=trait),position,p_value
   df.merged <- merge(df.gwas, df.gff, by = "marker", sort = FALSE)
 
-  # Clean up column order and names
-  # Ordering by column index should be correct, sometimes the names differ (like "phenotype" v. "trait")
-  df.merged <- df.merged[, c(1, 6, 7, 3, 4, 5)]
-  names(df.merged) <- c("marker", "chromosome", "position", "phenotype", "p_value", "publication")
+  # Clean up column order
+  df.merged <- df.merged[, c("marker", "chromosome", "position", "phenotype", "p_value", "publication")]
   df.merged
 }
 
