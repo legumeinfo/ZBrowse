@@ -11,25 +11,21 @@ library(RCurl)
 lis.datastore.info <- list()
 lis.datastore.info[["Common Bean GWAS"]] <- list(
   mrkFilter = "phaseolus:vulgaris",
-  chrRegex = "phavu.G19833.gnm1.(Chr\\d+)",
-  mrkRegex = "Name=(\\w[^;]+);?"
+  chrRegex = "phavu.G19833.gnm1.(Chr\\d+)"
 )
 lis.datastore.info[["Cowpea GWAS"]] <- list(
   mrkFilter = "vigna:unguiculata",
-  chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)",
-  mrkRegex = "Name=(\\w[^;]+);?"
+  chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)"
 )
 lis.datastore.info[["Peanut GWAS"]] <- list(
   mrkFilter = "arachis:hypogaea",
-  chrRegex = "arahy.Tifrunner.gnm1.(Arahy.\\d+)",
-  mrkRegex = "Name=(\\w[^;]+);?"
+  chrRegex = "arahy.Tifrunner.gnm1.(Arahy.\\d+)"
 )
 lis.datastore.info[["Soybean GWAS"]] <- list(
   mrkFilter = "glycine:max",
-  chrRegex = "glyma.Wm82.gnm2.(Gm\\d+)",
-  # strip leading Gm<nn>_ from markers like Gm06_AX-90336800 (as in the Kim et al. paper)
-  mrkRegex = "ID=glyma.Wm82.gnm2.((?=Gm\\d+_AX-)(?:Gm\\d+_)(\\w[^;]+)|\\w[^;]+);?"
+  chrRegex = "glyma.Wm82.gnm2.(Gm\\d+)"
 )
+lis.datastore.mrkRegex <- "Name=(\\w[^;]+);?"
 
 # LIS Data Store methods
 read.gff3.lis.datastore <- function(fin) {
@@ -55,7 +51,7 @@ scrub.gff <- function(df.gff.in, what) {
     s[length(s)]
   })
   marker <- sapply(v9, function(s) {
-    s <- stri_match_first(s, regex = what$mrkRegex)
+    s <- stri_match_first(s, regex = lis.datastore.mrkRegex)
     # use the last valid capture
     s <- s[!is.na(s)]
     s[length(s)]
