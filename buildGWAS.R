@@ -11,25 +11,21 @@ library(RCurl)
 lis.datastore.info <- list()
 lis.datastore.info[["Common Bean GWAS"]] <- list(
   mrkFilter = "phaseolus:vulgaris",
-  chrRegex = "phavu.G19833.gnm1.(Chr\\d+)",
-  mrkRegex = "Name=(\\w[^;]+);?"
+  chrRegex = "phavu.G19833.gnm1.(Chr\\d+)"
 )
 lis.datastore.info[["Cowpea GWAS"]] <- list(
   mrkFilter = "vigna:unguiculata",
-  chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)",
-  mrkRegex = "Name=(\\w[^;]+);?"
+  chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)"
 )
 lis.datastore.info[["Peanut GWAS"]] <- list(
   mrkFilter = "arachis:hypogaea",
-  chrRegex = "arahy.Tifrunner.gnm1.(Arahy.\\d+)",
-  mrkRegex = "Name=(\\w[^;]+);?"
+  chrRegex = "arahy.Tifrunner.gnm1.(Arahy.\\d+)"
 )
 lis.datastore.info[["Soybean GWAS"]] <- list(
   mrkFilter = "glycine:max",
-  chrRegex = "glyma.Wm82.gnm2.(Gm\\d+)",
-  # strip leading Gm<nn>_ from markers like Gm06_AX-90336800 (as in the Kim et al. paper)
-  mrkRegex = "ID=glyma.Wm82.gnm2.((?=Gm\\d+_AX-)(?:Gm\\d+_)(\\w[^;]+)|\\w[^;]+);?"
+  chrRegex = "glyma.Wm82.gnm2.(Gm\\d+)"
 )
+lis.datastore.mrkRegex <- "Name=(\\w[^;]+);?"
 
 # LIS Data Store methods
 read.gff3.lis.datastore <- function(fin) {
@@ -55,7 +51,7 @@ scrub.gff <- function(df.gff.in, what) {
     s[length(s)]
   })
   marker <- sapply(v9, function(s) {
-    s <- stri_match_first(s, regex = what$mrkRegex)
+    s <- stri_match_first(s, regex = lis.datastore.mrkRegex)
     # use the last valid capture
     s <- s[!is.na(s)]
     s[length(s)]
@@ -86,13 +82,14 @@ read.gwas.lis.datastore <- function(fin) {
   }
   # read the rest
   df.gwas <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  names(df.gwas)[1:4] <- c("identifier", "phenotype", "marker", "p_value") # clean up column names
   df.gwas$publication <- ifelse(is.na(src.url), src.name, paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>"))
   df.gwas
 }
 
 merge.gwas <- function(df.gwas, df.gff) {
   # df.gwas is the GWAS data frame downloaded from the data store:
-  #   X.identifier,phenotype,marker,pvalue
+  #   identifier,phenotype,marker,p_value,publication
   # TODO: keep other columns?
   # df.gff is the processed GFF file:
   #   marker,chromosome,position
@@ -100,10 +97,8 @@ merge.gwas <- function(df.gwas, df.gff) {
   # Merge on marker to convert to chromosome,phenotype(=trait),position,p_value
   df.merged <- merge(df.gwas, df.gff, by = "marker", sort = FALSE)
 
-  # Clean up column order and names
-  # Ordering by column index should be correct, sometimes the names differ (like "phenotype" v. "trait")
-  df.merged <- df.merged[, c(1, 6, 7, 3, 4, 5)]
-  names(df.merged) <- c("marker", "chromosome", "position", "phenotype", "p_value", "publication")
+  # Clean up column order
+  df.merged <- df.merged[, c("marker", "chromosome", "position", "phenotype", "p_value", "publication")]
   df.merged
 }
 
