@@ -70,7 +70,7 @@ read.gwas.lis.datastore <- function(fin) {
   src.name <- src.url <- ""
   i <- 1
   while (!startsWith(ll[i], "#")) {
-    ss <- strsplit(ll[i], split = "\t")[[1]]
+    ss <- unlist(strsplit(ll[i], split = "\t"))
     if (ss[1] == "Name") {
       src.name <- ss[2]
     } else if (ss[1] == "DOI") {
@@ -174,7 +174,7 @@ gwas.filenames[["Arabidopsis thaliana"]] <- paste(url_cyverse,
 gwasBaseUrl <- paste(url_dscensor, "api/v1/nodes/labels/", sep = "/")
 organisms.gwas <- c("Medicago truncatula") #, "Soybean", "Pigeonpea", "Cowpea")
 for (o.gwas in organisms.gwas) {
-  ss <- strsplit(org.Genus_species[[o.gwas]], split = " ")[[1]]
+  ss <- unlist(strsplit(org.Genus_species[[o.gwas]], split = " "))
   genus <- ss[1]
   species <- ss[2]
 

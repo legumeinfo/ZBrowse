@@ -8,9 +8,9 @@ create_zChart <- function(j, input, values) {
   showNotification(paste0("Creating Annotation chart for ", values[[jth_ref("organism", j)]], ". Please wait."),
     duration = NULL, id = nid, type = "message")
 
-  centerBP <- as.numeric(input[[jth_ref("selected", j)]][[1]])
-  winHigh <- centerBP + input[[jth_ref("window", j)]][1]
-  winLow <- centerBP - input[[jth_ref("window", j)]][1]
+  centerBP <- as.numeric(input[[jth_ref("selected", j)]])
+  winHigh <- centerBP + input[[jth_ref("window", j)]]
+  winLow <- centerBP - input[[jth_ref("window", j)]]
   if (winLow < 0) {winLow <- 0}
   
   zoomChart <- values[[input[[jth_ref("datasets", j)]]]]
@@ -196,7 +196,7 @@ create_zChart <- function(j, input, values) {
   
   #build annotation series
   #thisChrAnnot <- subset(org.annotGeneLoc,chromosome==input[[jth_ref("chr", j)]])
-  thisChrAnnot <- subset(org.annotGeneLoc[values[[jth_ref("organism", j)]]][[1]],chromosome==input[[jth_ref("chr", j)]])
+  thisChrAnnot <- subset(org.annotGeneLoc[[values[[jth_ref("organism", j)]]]], chromosome == input[[jth_ref("chr", j)]])
   thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]
   if(nrow(thisAnnot)==0){ #nothing is in the window, but lets still make a data.frame (actually make it big just to hopefully pick up one row from each strand...)
     thisAnnot <- thisChrAnnot[1:100,]
@@ -516,7 +516,7 @@ create_zChart <- function(j, input, values) {
   if (j == 2 && !is.null(values$glGenes2) && !(is.null(input$relatedRegions) || length(input$relatedRegions) == 0)) {
     glGenes2 <- values$glGenes2
     # parse from the format "chr[Chr] [minBP]-[maxBP] Mbp"
-    ss <- strsplit(input$relatedRegions, split = " ")[[1]]
+    ss <- unlist(strsplit(input$relatedRegions, split = " "))
     if (startsWith(ss[1], "Gm") || startsWith(ss[1], "Vu")) {
       chr <- ss[1]
     } else {

@@ -81,7 +81,7 @@ shinyServer(function(input, output, session) {
     gwj <- jth_ref("gwasTraits", j)
     selectedGwasTraits <- isolate(values$urlFields[[gwj]])
     if (!is.null(selectedGwasTraits)) {
-      selectedGwasTraits <- strsplit(selectedGwasTraits, split = ";")[[1]]
+      selectedGwasTraits <- unlist(strsplit(selectedGwasTraits, split = ";"))
     }
     updateSelectizeInput(session, gwj, choices = trait.choices, selected = selectedGwasTraits)
     # this update will trigger a call to remoteTraitsSelected(j) (below), which loads the remote data
@@ -424,11 +424,11 @@ shinyServer(function(input, output, session) {
 
   createAnnotTable <- function(j) {
     if (is.null(input[[jth_ref("datasets", j)]])) return()
-    centerBP <- as.numeric(input[[jth_ref("selected", j)]][[1]])
-    winHigh <- centerBP + input[[jth_ref("window", j)]][1]
-    winLow <- centerBP - input[[jth_ref("window", j)]][1]
+    centerBP <- as.numeric(input[[jth_ref("selected", j)]])
+    winHigh <- centerBP + input[[jth_ref("window", j)]]
+    winLow <- centerBP - input[[jth_ref("window", j)]]
     if (winLow < 0) { winLow <- 0 }
-    thisChrAnnot <- subset(org.annotGeneLoc[values[[jth_ref("organism", j)]]][[1]], chromosome == input[[jth_ref("chr", j)]])
+    thisChrAnnot <- subset(org.annotGeneLoc[[values[[jth_ref("organism", j)]]]], chromosome == input[[jth_ref("chr", j)]])
     thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh, ]
     thisAnnot
   }
@@ -617,7 +617,7 @@ shinyServer(function(input, output, session) {
   
   createDownloadAnnot <- function(j) {
     downloadHandler(
-      filename = function() {paste0("AnnotationsAround.chr",input[[jth_ref("chr", j)]],".",input[[jth_ref("selected", j)]][[1]],"bp.",values[[jth_ref("organism", j)]],".csv")},
+      filename = function() {paste0("AnnotationsAround.chr",input[[jth_ref("chr", j)]],".",input[[jth_ref("selected", j)]],"bp.",values[[jth_ref("organism", j)]],".csv")},
       content = function(file) {write.csv(createAnnotTable(j),file,row.names=F)}
     )
   }
@@ -855,7 +855,7 @@ shinyServer(function(input, output, session) {
       # Select traits specified in the URL (if any)
       traitsFromUrl <- isolate(values$urlFields[[jth_ref("traits", j)]])
       if (!is.null(traitsFromUrl)) {
-        selectedTraits <- strsplit(traitsFromUrl, split = ";")[[1]]
+        selectedTraits <- unlist(strsplit(traitsFromUrl, split = ";"))
       }
       selectizeInput(inputId = jth_ref(i, j), label = paste0("Select ", i),
         choices = traits, selected = selectedTraits, multiple = TRUE,
@@ -929,7 +929,7 @@ shinyServer(function(input, output, session) {
   createSelectChr <- function(j) {
     organism <- values[[jth_ref("organism", j)]]
     if (is.null(organism)) { return() }
-    chrChoices <- chrName[organism][[1]]
+    chrChoices <- chrName[[organism]]
     chr <- jth_ref("chr", j)
     # Select the chromosome specified in the URL (if any)
     initialChromosome <- isolate(values$urlFields[[chr]])
@@ -1102,7 +1102,7 @@ shinyServer(function(input, output, session) {
       # Select traits specified in the URL (if any)
       traitsFromUrl <- isolate(values$urlFields[[jth_ref("traits", j)]])
       if (!is.null(traitsFromUrl)) {
-        filtered.choices <- strsplit(traitsFromUrl, split = ";")[[1]]
+        filtered.choices <- unlist(strsplit(traitsFromUrl, split = ";"))
       } else if (nchar(tf) == 0) {
         filtered.choices <- "Select All"
       } else {
@@ -1178,9 +1178,9 @@ shinyServer(function(input, output, session) {
    #From:
    #http://stackoverflow.com/questions/20247759/add-highcharts-plotband-after-render-in-r-shiny-rcharts/20249933?noredirect=1#20249933
    updatePlotbandWindow <- function(j) {
-     center <- as.numeric(input[[jth_ref("selected", j)]][[1]])
-     winHigh <- center + input[[jth_ref("window", j)]][1]
-     winLow <- center - input[[jth_ref("window", j)]][1]
+     center <- as.numeric(input[[jth_ref("selected", j)]])
+     winHigh <- center + input[[jth_ref("window", j)]]
+     winLow <- center - input[[jth_ref("window", j)]]
      #eventually I would use winLow/winHigh to change the plotband range
      band = list(from = winLow, to = winHigh, color = "rgba(68, 170, 213, 0.4)")
      #print(band)
@@ -1201,9 +1201,9 @@ shinyServer(function(input, output, session) {
     } else {
       # parse from the format "[Chr] [minBP]-[maxBP] Mbp"
       # (or "chr[Chr]" if [Chr] is a number)
-      ss <- strsplit(input$relatedRegions, split = " ")[[1]]
+      ss <- unlist(strsplit(input$relatedRegions, split = " "))
       chr <- ifelse(hasNumericChromosomeNames(values$organism2), stri_sub(ss[1], 4), ss[1])
-      ss2 <- strsplit(ss[2], split = "-")[[1]]
+      ss2 <- unlist(strsplit(ss[2], split = "-"))
       centerBP <- as.integer(1.0e6*mean(as.numeric(ss2)))
       updateSelectInput(session, "chr2", selected = chr)
       updateNumericInput(session, "selected2", value = centerBP)
@@ -1255,7 +1255,7 @@ shinyServer(function(input, output, session) {
     if (is.null(input$selectedGene)) return()
     isolate({
       values$glSelectedGene <- input$selectedGene
-      df.genes <- subset(org.annotGeneLoc[values$organism][[1]], chromosome == input$chr, select = name)
+      df.genes <- subset(org.annotGeneLoc[[values$organism]], chromosome == input$chr, select = name)
       n0 <- which(df.genes$name == values$glSelectedGene)
       n <- input$neighbors
       nn <- n0 + (-n:n)
@@ -1316,7 +1316,7 @@ shinyServer(function(input, output, session) {
       for (i in 1:length(results2$tracks)) {
         results2$tracks[[i]]$id <- i
       }
-      df.annot <- subset(org.annotGeneLoc[values$organism2][[1]], select = c(name, transcript_start, transcript_end, strand, chromosome))
+      df.annot <- subset(org.annotGeneLoc[[values$organism2]], select = c(name, transcript_start, transcript_end, strand, chromosome))
       df.annot$strand[df.annot$strand == "+"] <- "1"
       df.annot$strand[df.annot$strand == "-"] <- "-1"
       df.annot$strand <- as.integer(df.annot$strand)
@@ -1514,7 +1514,7 @@ shinyServer(function(input, output, session) {
         fam <- input$bc_gcv$targets$family
         isSingletons <- startsWith(fam, "singleton")
         # Parse "singleton,phytozome_10_2.xxxxxxxx,phytozome_10_2.yyyyyyyy,..."
-        if (isSingletons) fam <- strsplit(fam, split = ",")[[1]][-1]
+        if (isSingletons) fam <- unlist(strsplit(fam, split = ","))[-1]
         isOrphans <- (fam == "")
       }
     }

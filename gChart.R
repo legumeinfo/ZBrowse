@@ -128,11 +128,11 @@ create_gChart <- function(j, input, values) {
   #build list for where to put plotbands for this organism
   bigList <- list()
   title.margin <- 15
-  cumBP<-c(0,cumsum(as.numeric(chrSize[values[[jth_ref("organism", j)]]][[1]])))
+  cumBP<-c(0,cumsum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])))
   for(i in 1:(length(cumBP)-1)){
-    chrLabel <- chrName[values[[jth_ref("organism", j)]]][[1]][i]
+    chrLabel <- chrName[[values[[jth_ref("organism", j)]]]][i]
     # split character names like "Arahy.01"
-    k.dot <- gregexpr("\\.", chrLabel)[[1]][1]
+    k.dot <- unlist(gregexpr("\\.", chrLabel))
     if (k.dot > 1) {
       chrLabel <- paste(substring(chrLabel, 1, k.dot - 1), substring(chrLabel, k.dot), sep = "<br>")
       title.margin <- 30
@@ -152,7 +152,7 @@ create_gChart <- function(j, input, values) {
   c <- rCharts::Highcharts$new()
   c$LIB$url <- 'highcharts/'
   c$xAxis(title = list(text = "Chromosome", margin = title.margin), startOnTick = TRUE,
-    min = 0, max = sum(as.numeric(chrSize[values[[jth_ref("organism", j)]]][[1]])),
+    min = 0, max = sum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])),
     endOnTick = FALSE, labels = list(enabled = FALSE), tickWidth = 0, plotBands = bigList)
   
   if(input[[jth_ref("axisLimBool", j)]] == TRUE){       
