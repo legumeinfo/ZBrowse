@@ -142,6 +142,10 @@ for(i in 1:length(files)){
     chr2i <- suppressWarnings(as.integer(locValue$chromosome))
     if (!any(is.na(chr2i))) locValue$chromosome <- as.character(chr2i)
     org.annotGeneLoc[key]<-list(locValue)
+    # add gene families to annotations table
+    if (!(key %in% c("Arabidopsis", "Corn", "Sorghum"))) {
+      org.annotGeneLoc[[key]] <- merge.gene.families(org.annotGeneLoc[[key]], key)
+    }
 
     org.gcvUrlBase[key] <- data[6]
 

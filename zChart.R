@@ -4,8 +4,9 @@ source("servicesAPI.R")
 create_zChart <- function(j, input, values) {
   if (is.null(input[[jth_ref("selected", j)]])) return()
 
+  org.j <- values[[jth_ref("organism", j)]]
   nid <- jth_ref("notify.create_zChart", j)
-  showNotification(paste0("Creating Annotation chart for ", values[[jth_ref("organism", j)]], ". Please wait."),
+  showNotification(paste0("Creating Annotation chart for ", org.j, ". Please wait."),
     duration = NULL, id = nid, type = "message")
 
   centerBP <- as.numeric(input[[jth_ref("selected", j)]])
@@ -196,7 +197,7 @@ create_zChart <- function(j, input, values) {
   
   #build annotation series
   #thisChrAnnot <- subset(org.annotGeneLoc,chromosome==input[[jth_ref("chr", j)]])
-  thisChrAnnot <- subset(org.annotGeneLoc[[values[[jth_ref("organism", j)]]]], chromosome == input[[jth_ref("chr", j)]])
+  thisChrAnnot <- subset(org.annotGeneLoc[[org.j]], chromosome == input[[jth_ref("chr", j)]])
   thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh,]
   if(nrow(thisAnnot)==0){ #nothing is in the window, but lets still make a data.frame (actually make it big just to hopefully pick up one row from each strand...)
     thisAnnot <- thisChrAnnot[1:100,]
@@ -206,7 +207,6 @@ create_zChart <- function(j, input, values) {
   annotYvalReverse <- 0.02
   #if(input[[jth_ref("axisLimBool", j)]] == TRUE){annotYvalReverse <- input[[jth_ref("axisMin", j)]] + 0.01}
   annotYvalForward <- annotYvalReverse + 0.04
-  org.j <- values[[jth_ref("organism", j)]]
   annotTable <- adply(thisAnnot[thisAnnot[[org.tag_strand[[org.j]]]] == org.strand_fwd[[org.j]], ], 1, function(x) {
     data.frame(
       x = c(x[[org.tag_start[[org.j]]]], x[[org.tag_end[[org.j]]]], x[[org.tag_end[[org.j]]]]),
@@ -455,21 +455,18 @@ create_zChart <- function(j, input, values) {
   if (!is.null(values$glGenes2)) {
     apply(values[[jth_ref("glGenes", j)]], 1, FUN = function(g) {
       g <- data.frame(as.list(g), stringsAsFactors = FALSE) # to avoid "$ operator is invalid for atomic vectors" warning
-      g.strand <- as.integer(g$strand)
       yh <- -1
-      if (g.strand == 1) {
+      if (g$strand == org.strand_fwd[[org.j]]) {
         yh <- annotYvalForward
         sid <- "forward-genes"
-      } else if (g.strand == -1) {
+      } else if (g$strand == org.strand_rev[[org.j]]) {
         yh <- annotYvalReverse
         sid <- "reverse-genes"
       }
-      # cat(paste("chr=",g$chr))
-      # cat("\n")
-      if (yh > 0 && !(is.na(g$chr)) && g$chr == input[[jth_ref("chr", j)]]) {
+      if (yh > 0 && !(is.na(g$chromosome)) && g$chromosome == input[[jth_ref("chr", j)]]) {
         g.data <- vector("list", 2)
-        g.data[[1]]$x <- as.integer(g$fmin)
-        g.data[[2]]$x <- as.integer(g$fmax)
+        g.data[[1]]$x <- as.integer(g$transcript_start)
+        g.data[[2]]$x <- as.integer(g$transcript_end)
         g.data[[1]]$y <- g.data[[2]]$y <- yh
         b$series(
           type = "line",
@@ -520,7 +517,7 @@ create_zChart <- function(j, input, values) {
     } else {
       chr <- stri_sub(ss[1], 4)
     }
-    glFamilies <- intersect(glFamilies, glGenes2$family[glGenes2$chr == chr])
+    glFamilies <- intersect(glFamilies, glGenes2$family[glGenes2$chromosome == chr])
   }
   doClickOnColumn <- paste(
     "#! function() {",

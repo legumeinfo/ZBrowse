@@ -1242,8 +1242,10 @@ shinyServer(function(input, output, session) {
     # User selected a gene in the organism 1 zChart, or in the URL
     if (is.null(input$selectedGene)) return()
     isolate({
+      org1 <- values$organism
       values$glSelectedGene <- input$selectedGene
-      df.genes <- subset(org.annotGeneLoc[[values$organism]], chromosome == input$chr, select = name)
+      df.genes <- subset(org.annotGeneLoc[[org1]], chromosome == input$chr,
+        select = c(name, chromosome, transcript_start, transcript_end, strand, family))
       n0 <- which(df.genes$name == values$glSelectedGene)
       n <- input$neighbors
       nn <- n0 + (-n:n)
@@ -1253,32 +1255,7 @@ shinyServer(function(input, output, session) {
       } else if (tail(nn, 1) > length(df.genes$name)) {
         nn <- nn - (tail(nn, 1) - length(df.genes$name))
       }
-      geneNames <- df.genes$name[nn]
-      geneNames <- geneNames[!is.na(geneNames)]
-      # workaround for A. thaliana: convert gene names like "AT1G28130" to "arath.Col.AT1G28130"
-      if (values$organism == "Arabidopsis thaliana") {
-        geneNames <- paste0("arath.Col.", geneNames)
-      }
-
-      # Send to the genes service
-      runjs(genesService(org.gcvUrlBase[values$organism], toJSON(geneNames)))
-    })
-  })
-  observe({
-    # genes service returns gene information for organism 1
-    if (is.null(input$genesResults)) return()
-    isolate({
-      # Parse neighboring genes from species 1
-      results1 <- input$genesResults$results
-      if (length(results1$genes) == 0) {
-        clearGenomicLinkages()
-        return()
-      }
-      values$glGenes <- data.frame(matrix(unlist(results1$genes), nrow = length(results1$genes), byrow = TRUE),
-        stringsAsFactors = FALSE)
-      names(values$glGenes) <- names(results1$genes[[1]])
-      values$glGenes <- values$glGenes[, c("name", "family", "fmin", "fmax", "strand")]
-      values$glGenes$chr <- trailingChromosomeName(results1$genes[[1]]$chromosome, values$organism)
+      values$glGenes <- df.genes[nn, ]
       values$glGenes <- values$glGenes[nchar(values$glGenes$family) > 0, ]
       if (nrow(values$glGenes) == 0) {
         # could reach here if none of the (2*n + 1) genes has a family id
@@ -1304,21 +1281,17 @@ shinyServer(function(input, output, session) {
       for (i in 1:length(results2$tracks)) {
         results2$tracks[[i]]$id <- i
       }
-      df.annot <- subset(org.annotGeneLoc[[values$organism2]], select = c(name, transcript_start, transcript_end, strand, chromosome))
-      df.annot$strand[df.annot$strand == "+"] <- "1"
-      df.annot$strand[df.annot$strand == "-"] <- "-1"
-      df.annot$strand <- as.integer(df.annot$strand)
-      names(df.annot) <- c("name", "fmin", "fmax", "strand", "chr")
+      org2 <- values$organism2
+      df.annot <- subset(org.annotGeneLoc[[org2]], select = c(name, chromosome, transcript_start, transcript_end, strand, family))
       values$glGenes2 <- do.call(rbind, lapply(results2$tracks, FUN = function(tr) {
-        if (paste(substr(tr$genus, 1, 1), tr$species, sep = ".") == org.G.species[values$organism2]) {
-          df.genes <- data.frame(name = unlist(tr$genes), family = unlist(tr$families), stringsAsFactors = FALSE)
+        if (paste(substr(tr$genus, 1, 1), tr$species, sep = ".") == org.G.species[[org2]]) {
+          df.genes <- data.frame(name = unlist(tr$genes), trackId = tr$id, stringsAsFactors = FALSE)
           # workaround for A. thaliana: convert gene names like "arath.Col.AT1G28130" back to "AT1G28130"
-          if (values$organism2 == "Arabidopsis thaliana") {
+          if (org2 == "Arabidopsis thaliana") {
             df.genes$name <- stri_match_first(df.genes$name, regex = "^arath.Col.(.+)$")[, 2]
           }
           df.genes <- merge(df.genes, df.annot)
           if (nrow(df.genes) == 0) return()
-          df.genes$trackId <- tr$id
           df.genes <- df.genes[nchar(df.genes$family) > 0, ]
           df.genes
         }
@@ -1350,9 +1323,9 @@ shinyServer(function(input, output, session) {
         tr.genes <- subset(values$glGenes2, trackId == tr.id)
         tr.chr <- tr.genes$chr[1]
         # Prepend "chr" if chromosome name is a number
-        chrd <- ifelse(hasNumericChromosomeNames(values$organism2), paste0("chr", tr.chr), tr.chr)
-        tr.minBP <- min(tr.genes$fmin)
-        tr.maxBP <- max(tr.genes$fmax)
+        chrd <- ifelse(hasNumericChromosomeNames(org2), paste0("chr", tr.chr), tr.chr)
+        tr.minBP <- min(tr.genes$transcript_start)
+        tr.maxBP <- max(tr.genes$transcript_end)
         list(region = sprintf("%s %3.2f-%3.2f Mbp", chrd, tr.minBP*1.0e-6, tr.maxBP*1.0e-6),
           chr = tr.chr, minBP = tr.minBP, maxBP = tr.maxBP)
       }))
@@ -1360,7 +1333,7 @@ shinyServer(function(input, output, session) {
       glRelatedRegions <- glRelatedRegions[with(glRelatedRegions, order(chr, minBP)), ]
 
       # Recenter the window around the selected gene
-      centerBP1 <- (as.integer(values$glGenes$fmin[1]) + as.integer(values$glGenes$fmax[nrow(values$glGenes)])) %/% 2
+      centerBP1 <- (as.integer(values$glGenes$transcript_start[1]) + as.integer(values$glGenes$transcript_end[nrow(values$glGenes)])) %/% 2
       updateNumericInput(session, "selected", value = centerBP1)
       # Select the related region specified in the URL (if any)
       selectedRegion <- values$urlFields$relatedRegion
