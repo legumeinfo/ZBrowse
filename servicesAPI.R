@@ -53,7 +53,7 @@ genesService <- function(url, genes) {
 
 # Not a Services API call, but convenient to place here as it is
 # also a response to a doClickOnLine in the zChart.
-provideMultipleURLs <- function() {
+provideMultipleURLs <- function(includeGenomicLinkage) {
   paste(
     # From the JSON at this.url, extract the URLs related to this gene.
     # Note that this.url = 'https://legumeinfo.org/gene_links/' + geneString + '/json'
@@ -75,6 +75,14 @@ provideMultipleURLs <- function() {
             "content = content + '<p><a href=' + urlPhylogram + ' target=_blank>' + textPhylogram + '</a></p>';",
           "}",
         "});",
+        # Add the Genomic Linkage button if requested
+        ifelse(!includeGenomicLinkage, "", paste(
+          "content = content + '<p><button",
+            # button actions: first close the dialog, then handle genomic linkages
+            "onclick=\"$(this).closest(&quot;.ui-dialog-content&quot;).dialog(&quot;close&quot;);",
+            "Shiny.onInputChange(&quot;selectedGene&quot;, &quot;' + geneString + '&quot;);\"",
+          ">Genomic Linkage</button></p>';"
+        )),
       "}",
       "var $div = $('<div></div>');",
       "$div.html(content);",

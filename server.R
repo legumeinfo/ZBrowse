@@ -219,12 +219,6 @@ shinyServer(function(input, output, session) {
     )
   }
   createGenomicLinkageSidebar <- function() {
-    glOn <- isolate(values$urlFields$genomicLinkage)
-    if (is.null(glOn)) {
-      glOn <- FALSE
-    } else {
-      glOn <- (tolower(glOn) == "true")
-    }
     val.bcName <- isolate(values$urlFields$bcName)
     if (is.null(val.bcName)) val.bcName <- private$bcName
     val.n <- isolate(values$urlFields$neighbors)
@@ -234,28 +228,25 @@ shinyServer(function(input, output, session) {
     val.i <- isolate(values$urlFields$intermediate)
     if (is.null(val.i)) val.i <- private$intermediate
     tags$div(id = "tour-genLink", wellPanel(
-      h5("Genomic Linkage options:"),
-      checkboxInput('boolGenomicLinkage', 'ON', glOn),
-      conditionalPanel("input.boolGenomicLinkage == true",
-        h5("Broadcast Channel options:"),
-        textInput("bcName", "Name:", value = val.bcName),
-        checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
-        checkboxInput('boolListenToBC', 'Listen', TRUE),
-        tags$div(id = "tour-genLink-1", wellPanel(
-          uiOutput("selectedGene"),
-          numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = val.n),
-          numericInput("matched", "Matched:", min = 1, max = 20, value = val.m),
-          numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = val.i),
-          conditionalPanel("input.boolBroadcastToBC == true",
-            actionLink("viewInGCV", "View in GCV")
-          ),
-          style = paste0("background-color: ", bgColors[1], ";")
-        )),
-        tags$div(id = "tour-genLink-2", wellPanel(
-          uiOutput("relatedRegions"),
-          style = paste0("background-color: ", bgColors[2], ";")
-        ))
-      )
+      h5("Genomic Linkage options"),
+      textInput("bcName", "Broadcast Channel name:", value = val.bcName),
+      checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
+      checkboxInput('boolListenToBC', 'Listen', TRUE),
+      tags$div(id = "tour-genLink-1", wellPanel(
+        uiOutput("selectedGene"),
+        numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = val.n),
+        numericInput("matched", "Matched:", min = 1, max = 20, value = val.m),
+        numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = val.i),
+        conditionalPanel("input.boolBroadcastToBC == true",
+          actionLink("viewInGCV", "View in GCV")
+        ),
+        actionButton("clearGenomicLinkage", "Clear"),
+        style = paste0("background-color: ", bgColors[1], ";")
+      )),
+      tags$div(id = "tour-genLink-2", wellPanel(
+        uiOutput("relatedRegions"),
+        style = paste0("background-color: ", bgColors[2], ";")
+      ))
     ))
   }
 
@@ -1240,13 +1231,10 @@ shinyServer(function(input, output, session) {
     updateSelectInput(session, "relatedRegions", choices = character(0))
   }
 
-  # If the user unchecks Genomic Linkage options, clear any existing genomic linkage query results
-  observe({
-    glOn <- input$boolGenomicLinkage
-    if (!(is.null(glOn) || glOn)) {
-      values$glSelectedGene <- NULL
-      clearGenomicLinkages()
-    }
+  # Clear any existing genomic linkage query results
+  observeEvent(input$clearGenomicLinkage, {
+    values$glSelectedGene <- NULL
+    clearGenomicLinkages()
   })
 
   # Determine genomic linkages using the Services API v2
@@ -1389,7 +1377,7 @@ shinyServer(function(input, output, session) {
   # Handle Broadcast Channel messages from the Genome Context Viewer
   # (move to a separate file?...)
   observeEvent(input$bc_gcv, {
-    if (!(input$boolGenomicLinkage && input$boolListenToBC)) return()
+    if (!input$boolListenToBC) return()
     # TODO: move to servicesAPI.R ?
     if (input$bc_gcv$type == 'select') {
       # Parse the message
@@ -1624,8 +1612,7 @@ shinyServer(function(input, output, session) {
       if (traits != "") url.q <- paste0(url.q, "&", trj, "=", traits)
     }
     # optional: genomic linkage information
-    if (isolate(input$boolGenomicLinkage)) {
-      url.q <- paste0(url.q, "&genomicLinkage=true")
+    if (isolate(!is.null(values$glSelectedGene))) {
       ss.gl <- c("neighbors", "matched", "intermediate")
       for (s in ss.gl) {
         x <- isolate(input[[s]])
@@ -1659,7 +1646,6 @@ shinyServer(function(input, output, session) {
       input$chr2
       input$selected2
       input$window2
-      input$boolGenomicLinkage
       input$neighbors
       input$matched
       input$intermediate
@@ -1673,8 +1659,6 @@ shinyServer(function(input, output, session) {
   observeEvent(input$datatabs, {
     if (input$datatabs != "Chrom") return()
 
-    glOn <- values$urlFields$genomicLinkage
-    if (is.null(glOn) || tolower(glOn) != "true") return()
     if (is.null(values$urlFields$selectedGene)) return()
 
     # Query the Genome Context Viewer for genomic linkages

@@ -500,16 +500,14 @@ create_zChart <- function(j, input, values) {
   bGenomicLinkage <- ifelse(j == 1, 1, 0)
   doClickOnLine <- sprintf(paste(
     "#! function() {",
-      "if (%d && $('input#boolGenomicLinkage').prop('checked')) {",
-        "Shiny.onInputChange('selectedGene', this.gene);",
-      "} else if (this.url.includes('legumeinfo.org')) {",
-        provideMultipleURLs(),
+      "if (this.url.includes('legumeinfo.org')) {",
+        provideMultipleURLs(bGenomicLinkage),
       "} else {",
         # for all other species
         "window.open(this.url);", #open webpage
       "}",
     "} !#"
-  ), bGenomicLinkage)
+  ))
   
   # Create the gene family legend. For organism 2, show only the gene families on the currently selected chromosome.
   glFamilies <- names(values$glColors)
