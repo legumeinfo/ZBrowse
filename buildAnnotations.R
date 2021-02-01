@@ -81,3 +81,20 @@ build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
 }
 
 # --------------------------------------------------------------
+
+merge.gene.families <- function(df.annot, org) {
+  # Each organism has a JSON file, each line of which is a JSON object for each chromosome,
+  # obtained from the chromosome service.
+  ll <- readLines(paste0("gene-families/", org, ".json"))
+  do.call(rbind, lapply(ll, function(l) {
+    gf <- fromJSON(l)
+    df.gf <- data.frame(name = gf$chromosome$genes, family = gf$chromosome$families, stringsAsFactors = FALSE)
+    # workaround for A. thaliana: convert gene names like "arath.Col.AT1G28130" back to "AT1G28130"
+    if (org == "Arabidopsis thaliana") {
+      df.gf$name <- stri_match_first(df.gf$name, regex = "^arath.Col.(.+)$")[, 2]
+    }
+    merge(df.annot, df.gf, by = "name")
+  }))
+}
+
+# --------------------------------------------------------------

@@ -95,7 +95,7 @@ for(i in 1:length(files)){
     key<-data[1]
     #added ability to specify chrom names in organisms file by separating with a :, otherwise it just assumes they are alphanumerically sorted    
     if(length(grep(":",data[2]))){
-      features <- strsplit(data[2], ",")[[1]]
+      features <- unlist(strsplit(data[2], ","))
       names <- read.table(text=features,sep=":",stringsAsFactors = FALSE) #this will die if any names are missing
       #order so that numeric come first in order, then named chrs
       if(length(which.nonnum(names$V1))>0){
@@ -116,21 +116,21 @@ for(i in 1:length(files)){
     chrSize[key]<-list(value)
     chrName[key]<-list(name)
 
-    ss.org.names <- strsplit(data[3], split = ",")[[1]]
+    ss.org.names <- unlist(strsplit(data[3], split = ","))
     org.Genus_species[key] <- ss.org.names[1]
     org.G.species[key] <- ss.org.names[2]
     org.Gensp[key] <- ss.org.names[3]
     annotFilename <- data[4]
 
     # chromosome name formats
-    chr.formats <- strsplit(data[5], split = ",")[[1]]
+    chr.formats <- unlist(strsplit(data[5], split = ","))
     chr.formats <- sapply(chr.formats, function(chrfmt) ifelse(chrfmt == "NA", NA, chrfmt))
     org.chrFormat[key] <- chr.formats[1]
     org.annotChrFormat[key] <- chr.formats[2]
     org.gcvChrFormat[key] <- chr.formats[3]
     if (stri_endswith_fixed(annotFilename, "gff3.gz")) {
-      chromosome.lengths <- chrSize[key][[1]]
-      locValue <- build.annotations(key, annotFilename, chromosome.lengths, org.annotChrFormat[key][[1]])
+      chromosome.lengths <- chrSize[[key]]
+      locValue <- build.annotations(key, annotFilename, chromosome.lengths, org.annotChrFormat[[key]])
     } else {
       locValue<-read.table(annotFilename,sep=",",head=TRUE,stringsAsFactors = FALSE,quote = c("\""))
       if (startsWith(key, "Arabidopsis")) {
@@ -142,12 +142,14 @@ for(i in 1:length(files)){
     chr2i <- suppressWarnings(as.integer(locValue$chromosome))
     if (!any(is.na(chr2i))) locValue$chromosome <- as.character(chr2i)
     org.annotGeneLoc[key]<-list(locValue)
+    # add gene families to annotations table
+    org.annotGeneLoc[[key]] <- merge.gene.families(org.annotGeneLoc[[key]], key)
 
     org.gcvUrlBase[key] <- data[6]
 
     # Annotations table may have different column names (etc) for different species,
     # so define them in the organism file
-    ss.org.annot <- strsplit(data[7], split = ",")[[1]]
+    ss.org.annot <- unlist(strsplit(data[7], split = ","))
     org.tag_strand[key] <- ss.org.annot[1] # strand column name
     org.strand_fwd[key] <- ss.org.annot[2] # code for forward strand
     org.strand_rev[key] <- ss.org.annot[3] # code for reverse strand

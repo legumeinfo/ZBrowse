@@ -61,9 +61,9 @@ create_pChart <- function(j, input, values) {
   
   #calculate window for plotband
   pbWin <- isolate({
-    center <- as.numeric(input[[jth_ref("selected", j)]][[1]])
-    winHigh <- center + input[[jth_ref("window", j)]][1]
-    winLow <- center - input[[jth_ref("window", j)]][1]
+    center <- as.numeric(input[[jth_ref("selected", j)]])
+    winHigh <- center + input[[jth_ref("window", j)]]
+    winLow <- center - input[[jth_ref("window", j)]]
     list(winLow=winLow,winHigh=winHigh)
   })
   
@@ -131,7 +131,7 @@ create_pChart <- function(j, input, values) {
   a <- rCharts::Highcharts$new()
   a$LIB$url <- 'highcharts/' #use the local copy of highcharts, not the one installed by rCharts
   chrNumber <- trailingInteger(input[[jth_ref("chr", j)]])
-  a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[values[[jth_ref("organism", j)]]][[1]][chrNumber],endOnTick=FALSE,
+  a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[[values[[jth_ref("organism", j)]]]][chrNumber],endOnTick=FALSE,
           plotBands = list(list(from=pbWin$winLow,to=pbWin$winHigh,color='rgba(68, 170, 213, 0.4)')))
   
   if(input[[jth_ref("axisLimBool", j)]] == TRUE){

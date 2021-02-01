@@ -14,7 +14,7 @@ read.qtl.lis.datastore <- function(fin.expt, fin.marker) {
   src.name <- src.url <- ""
   i <- 1
   while (!startsWith(ll[i], "#")) {
-    ss <- strsplit(ll[i], split = "\t")[[1]]
+    ss <- unlist(strsplit(ll[i], split = "\t"))
     if (ss[1] == "Name") src.name <- ss[2]
     else if (ss[1] == "DOI") src.url <- paste0("https://doi.org/", ss[2])
     else if (ss[1] == "PMID") src.url <- paste0("https://pubmed.ncbi.nlm.nih.gov/", ss[2], "/")

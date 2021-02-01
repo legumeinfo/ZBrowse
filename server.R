@@ -81,7 +81,7 @@ shinyServer(function(input, output, session) {
     gwj <- jth_ref("gwasTraits", j)
     selectedGwasTraits <- isolate(values$urlFields[[gwj]])
     if (!is.null(selectedGwasTraits)) {
-      selectedGwasTraits <- strsplit(selectedGwasTraits, split = ";")[[1]]
+      selectedGwasTraits <- unlist(strsplit(selectedGwasTraits, split = ";"))
     }
     updateSelectizeInput(session, gwj, choices = trait.choices, selected = selectedGwasTraits)
     # this update will trigger a call to remoteTraitsSelected(j) (below), which loads the remote data
@@ -221,12 +221,6 @@ shinyServer(function(input, output, session) {
     )
   }
   createGenomicLinkageSidebar <- function() {
-    glOn <- isolate(values$urlFields$genomicLinkage)
-    if (is.null(glOn)) {
-      glOn <- FALSE
-    } else {
-      glOn <- (tolower(glOn) == "true")
-    }
     val.bcName <- isolate(values$urlFields$bcName)
     if (is.null(val.bcName)) val.bcName <- private$bcName
     val.n <- isolate(values$urlFields$neighbors)
@@ -236,28 +230,25 @@ shinyServer(function(input, output, session) {
     val.i <- isolate(values$urlFields$intermediate)
     if (is.null(val.i)) val.i <- private$intermediate
     tags$div(id = "tour-genLink", wellPanel(
-      h5("Genomic Linkage options:"),
-      checkboxInput('boolGenomicLinkage', 'ON', glOn),
-      conditionalPanel("input.boolGenomicLinkage == true",
-        h5("Broadcast Channel options:"),
-        textInput("bcName", "Name:", value = val.bcName),
-        checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
-        checkboxInput('boolListenToBC', 'Listen', TRUE),
-        tags$div(id = "tour-genLink-1", wellPanel(
-          uiOutput("selectedGene"),
-          numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = val.n),
-          numericInput("matched", "Matched:", min = 1, max = 20, value = val.m),
-          numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = val.i),
-          conditionalPanel("input.boolBroadcastToBC == true",
-            actionLink("viewInGCV", "View in GCV")
-          ),
-          style = paste0("background-color: ", bgColors[1], ";")
-        )),
-        tags$div(id = "tour-genLink-2", wellPanel(
-          uiOutput("relatedRegions"),
-          style = paste0("background-color: ", bgColors[2], ";")
-        ))
-      )
+      h5("Genomic Linkage options"),
+      textInput("bcName", "Broadcast Channel name:", value = val.bcName),
+      checkboxInput('boolBroadcastToBC', 'Broadcast', TRUE),
+      checkboxInput('boolListenToBC', 'Listen', TRUE),
+      tags$div(id = "tour-genLink-1", wellPanel(
+        uiOutput("selectedGene"),
+        numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = val.n),
+        numericInput("matched", "Matched:", min = 1, max = 20, value = val.m),
+        numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = val.i),
+        conditionalPanel("input.boolBroadcastToBC == true",
+          actionLink("viewInGCV", "View in GCV")
+        ),
+        actionButton("clearGenomicLinkage", "Clear"),
+        style = paste0("background-color: ", bgColors[1], ";")
+      )),
+      tags$div(id = "tour-genLink-2", wellPanel(
+        uiOutput("relatedRegions"),
+        style = paste0("background-color: ", bgColors[2], ";")
+      ))
     ))
   }
 
@@ -426,11 +417,11 @@ shinyServer(function(input, output, session) {
 
   createAnnotTable <- function(j) {
     if (is.null(input[[jth_ref("datasets", j)]])) return()
-    centerBP <- as.numeric(input[[jth_ref("selected", j)]][[1]])
-    winHigh <- centerBP + input[[jth_ref("window", j)]][1]
-    winLow <- centerBP - input[[jth_ref("window", j)]][1]
+    centerBP <- as.numeric(input[[jth_ref("selected", j)]])
+    winHigh <- centerBP + input[[jth_ref("window", j)]]
+    winLow <- centerBP - input[[jth_ref("window", j)]]
     if (winLow < 0) { winLow <- 0 }
-    thisChrAnnot <- subset(org.annotGeneLoc[values[[jth_ref("organism", j)]]][[1]], chromosome == input[[jth_ref("chr", j)]])
+    thisChrAnnot <- subset(org.annotGeneLoc[[values[[jth_ref("organism", j)]]]], chromosome == input[[jth_ref("chr", j)]])
     thisAnnot <- thisChrAnnot[thisChrAnnot$transcript_start >= winLow & thisChrAnnot$transcript_end <= winHigh, ]
     thisAnnot
   }
@@ -619,7 +610,7 @@ shinyServer(function(input, output, session) {
   
   createDownloadAnnot <- function(j) {
     downloadHandler(
-      filename = function() {paste0("AnnotationsAround.chr",input[[jth_ref("chr", j)]],".",input[[jth_ref("selected", j)]][[1]],"bp.",values[[jth_ref("organism", j)]],".csv")},
+      filename = function() {paste0("AnnotationsAround.chr",input[[jth_ref("chr", j)]],".",input[[jth_ref("selected", j)]],"bp.",values[[jth_ref("organism", j)]],".csv")},
       content = function(file) {write.csv(createAnnotTable(j),file,row.names=F)}
     )
   }
@@ -857,7 +848,7 @@ shinyServer(function(input, output, session) {
       # Select traits specified in the URL (if any)
       traitsFromUrl <- isolate(values$urlFields[[jth_ref("traits", j)]])
       if (!is.null(traitsFromUrl)) {
-        selectedTraits <- strsplit(traitsFromUrl, split = ";")[[1]]
+        selectedTraits <- unlist(strsplit(traitsFromUrl, split = ";"))
       }
       selectizeInput(inputId = jth_ref(i, j), label = paste0("Select ", i),
         choices = traits, selected = selectedTraits, multiple = TRUE,
@@ -931,7 +922,7 @@ shinyServer(function(input, output, session) {
   createSelectChr <- function(j) {
     organism <- values[[jth_ref("organism", j)]]
     if (is.null(organism)) { return() }
-    chrChoices <- chrName[organism][[1]]
+    chrChoices <- chrName[[organism]]
     chr <- jth_ref("chr", j)
     # Select the chromosome specified in the URL (if any)
     initialChromosome <- isolate(values$urlFields[[chr]])
@@ -1104,7 +1095,7 @@ shinyServer(function(input, output, session) {
       # Select traits specified in the URL (if any)
       traitsFromUrl <- isolate(values$urlFields[[jth_ref("traits", j)]])
       if (!is.null(traitsFromUrl)) {
-        filtered.choices <- strsplit(traitsFromUrl, split = ";")[[1]]
+        filtered.choices <- unlist(strsplit(traitsFromUrl, split = ";"))
       } else if (nchar(tf) == 0) {
         filtered.choices <- "Select All"
       } else {
@@ -1180,9 +1171,9 @@ shinyServer(function(input, output, session) {
    #From:
    #http://stackoverflow.com/questions/20247759/add-highcharts-plotband-after-render-in-r-shiny-rcharts/20249933?noredirect=1#20249933
    updatePlotbandWindow <- function(j) {
-     center <- as.numeric(input[[jth_ref("selected", j)]][[1]])
-     winHigh <- center + input[[jth_ref("window", j)]][1]
-     winLow <- center - input[[jth_ref("window", j)]][1]
+     center <- as.numeric(input[[jth_ref("selected", j)]])
+     winHigh <- center + input[[jth_ref("window", j)]]
+     winLow <- center - input[[jth_ref("window", j)]]
      #eventually I would use winLow/winHigh to change the plotband range
      band = list(from = winLow, to = winHigh, color = "rgba(68, 170, 213, 0.4)")
      #print(band)
@@ -1203,9 +1194,9 @@ shinyServer(function(input, output, session) {
     } else {
       # parse from the format "[Chr] [minBP]-[maxBP] Mbp"
       # (or "chr[Chr]" if [Chr] is a number)
-      ss <- strsplit(input$relatedRegions, split = " ")[[1]]
+      ss <- unlist(strsplit(input$relatedRegions, split = " "))
       chr <- ifelse(hasNumericChromosomeNames(values$organism2), stri_sub(ss[1], 4), ss[1])
-      ss2 <- strsplit(ss[2], split = "-")[[1]]
+      ss2 <- unlist(strsplit(ss[2], split = "-"))
       centerBP <- as.integer(1.0e6*mean(as.numeric(ss2)))
       updateSelectInput(session, "chr2", selected = chr)
       updateNumericInput(session, "selected2", value = centerBP)
@@ -1242,13 +1233,10 @@ shinyServer(function(input, output, session) {
     updateSelectInput(session, "relatedRegions", choices = character(0))
   }
 
-  # If the user unchecks Genomic Linkage options, clear any existing genomic linkage query results
-  observe({
-    glOn <- input$boolGenomicLinkage
-    if (!(is.null(glOn) || glOn)) {
-      values$glSelectedGene <- NULL
-      clearGenomicLinkages()
-    }
+  # Clear any existing genomic linkage query results
+  observeEvent(input$clearGenomicLinkage, {
+    values$glSelectedGene <- NULL
+    clearGenomicLinkages()
   })
 
   # Determine genomic linkages using the Services API v2
@@ -1256,8 +1244,10 @@ shinyServer(function(input, output, session) {
     # User selected a gene in the organism 1 zChart, or in the URL
     if (is.null(input$selectedGene)) return()
     isolate({
+      org1 <- values$organism
       values$glSelectedGene <- input$selectedGene
-      df.genes <- subset(org.annotGeneLoc[values$organism][[1]], chromosome == input$chr, select = name)
+      df.genes <- subset(org.annotGeneLoc[[org1]], chromosome == input$chr,
+        select = c(name, chromosome, transcript_start, transcript_end, strand, family))
       n0 <- which(df.genes$name == values$glSelectedGene)
       n <- input$neighbors
       nn <- n0 + (-n:n)
@@ -1267,32 +1257,7 @@ shinyServer(function(input, output, session) {
       } else if (tail(nn, 1) > length(df.genes$name)) {
         nn <- nn - (tail(nn, 1) - length(df.genes$name))
       }
-      geneNames <- df.genes$name[nn]
-      geneNames <- geneNames[!is.na(geneNames)]
-      # workaround for A. thaliana: convert gene names like "AT1G28130" to "arath.Col.AT1G28130"
-      if (values$organism == "Arabidopsis thaliana") {
-        geneNames <- paste0("arath.Col.", geneNames)
-      }
-
-      # Send to the genes service
-      runjs(genesService(org.gcvUrlBase[values$organism], toJSON(geneNames)))
-    })
-  })
-  observe({
-    # genes service returns gene information for organism 1
-    if (is.null(input$genesResults)) return()
-    isolate({
-      # Parse neighboring genes from species 1
-      results1 <- input$genesResults$results
-      if (length(results1$genes) == 0) {
-        clearGenomicLinkages()
-        return()
-      }
-      values$glGenes <- data.frame(matrix(unlist(results1$genes), nrow = length(results1$genes), byrow = TRUE),
-        stringsAsFactors = FALSE)
-      names(values$glGenes) <- names(results1$genes[[1]])
-      values$glGenes <- values$glGenes[, c("name", "family", "fmin", "fmax", "strand")]
-      values$glGenes$chr <- trailingChromosomeName(results1$genes[[1]]$chromosome, values$organism)
+      values$glGenes <- df.genes[nn, ]
       values$glGenes <- values$glGenes[nchar(values$glGenes$family) > 0, ]
       if (nrow(values$glGenes) == 0) {
         # could reach here if none of the (2*n + 1) genes has a family id
@@ -1318,21 +1283,17 @@ shinyServer(function(input, output, session) {
       for (i in 1:length(results2$tracks)) {
         results2$tracks[[i]]$id <- i
       }
-      df.annot <- subset(org.annotGeneLoc[values$organism2][[1]], select = c(name, transcript_start, transcript_end, strand, chromosome))
-      df.annot$strand[df.annot$strand == "+"] <- "1"
-      df.annot$strand[df.annot$strand == "-"] <- "-1"
-      df.annot$strand <- as.integer(df.annot$strand)
-      names(df.annot) <- c("name", "fmin", "fmax", "strand", "chr")
+      org2 <- values$organism2
+      df.annot <- subset(org.annotGeneLoc[[org2]], select = c(name, chromosome, transcript_start, transcript_end, strand, family))
       values$glGenes2 <- do.call(rbind, lapply(results2$tracks, FUN = function(tr) {
-        if (paste(substr(tr$genus, 1, 1), tr$species, sep = ".") == org.G.species[values$organism2]) {
-          df.genes <- data.frame(name = unlist(tr$genes), family = unlist(tr$families), stringsAsFactors = FALSE)
+        if (paste(substr(tr$genus, 1, 1), tr$species, sep = ".") == org.G.species[[org2]]) {
+          df.genes <- data.frame(name = unlist(tr$genes), trackId = tr$id, stringsAsFactors = FALSE)
           # workaround for A. thaliana: convert gene names like "arath.Col.AT1G28130" back to "AT1G28130"
-          if (values$organism2 == "Arabidopsis thaliana") {
+          if (org2 == "Arabidopsis thaliana") {
             df.genes$name <- stri_match_first(df.genes$name, regex = "^arath.Col.(.+)$")[, 2]
           }
           df.genes <- merge(df.genes, df.annot)
           if (nrow(df.genes) == 0) return()
-          df.genes$trackId <- tr$id
           df.genes <- df.genes[nchar(df.genes$family) > 0, ]
           df.genes
         }
@@ -1364,9 +1325,9 @@ shinyServer(function(input, output, session) {
         tr.genes <- subset(values$glGenes2, trackId == tr.id)
         tr.chr <- tr.genes$chr[1]
         # Prepend "chr" if chromosome name is a number
-        chrd <- ifelse(hasNumericChromosomeNames(values$organism2), paste0("chr", tr.chr), tr.chr)
-        tr.minBP <- min(tr.genes$fmin)
-        tr.maxBP <- max(tr.genes$fmax)
+        chrd <- ifelse(hasNumericChromosomeNames(org2), paste0("chr", tr.chr), tr.chr)
+        tr.minBP <- min(tr.genes$transcript_start)
+        tr.maxBP <- max(tr.genes$transcript_end)
         list(region = sprintf("%s %3.2f-%3.2f Mbp", chrd, tr.minBP*1.0e-6, tr.maxBP*1.0e-6),
           chr = tr.chr, minBP = tr.minBP, maxBP = tr.maxBP)
       }))
@@ -1374,7 +1335,7 @@ shinyServer(function(input, output, session) {
       glRelatedRegions <- glRelatedRegions[with(glRelatedRegions, order(chr, minBP)), ]
 
       # Recenter the window around the selected gene
-      centerBP1 <- (as.integer(values$glGenes$fmin[1]) + as.integer(values$glGenes$fmax[nrow(values$glGenes)])) %/% 2
+      centerBP1 <- (as.integer(values$glGenes$transcript_start[1]) + as.integer(values$glGenes$transcript_end[nrow(values$glGenes)])) %/% 2
       updateNumericInput(session, "selected", value = centerBP1)
       # Select the related region specified in the URL (if any)
       selectedRegion <- values$urlFields$relatedRegion
@@ -1391,7 +1352,7 @@ shinyServer(function(input, output, session) {
   # Handle Broadcast Channel messages from the Genome Context Viewer
   # (move to a separate file?...)
   observeEvent(input$bc_gcv, {
-    if (!(input$boolGenomicLinkage && input$boolListenToBC)) return()
+    if (!input$boolListenToBC) return()
     # TODO: move to servicesAPI.R ?
     if (input$bc_gcv$type == 'select') {
       # Parse the message
@@ -1516,7 +1477,7 @@ shinyServer(function(input, output, session) {
         fam <- input$bc_gcv$targets$family
         isSingletons <- startsWith(fam, "singleton")
         # Parse "singleton,phytozome_10_2.xxxxxxxx,phytozome_10_2.yyyyyyyy,..."
-        if (isSingletons) fam <- strsplit(fam, split = ",")[[1]][-1]
+        if (isSingletons) fam <- unlist(strsplit(fam, split = ","))[-1]
         isOrphans <- (fam == "")
       }
     }
@@ -1626,8 +1587,7 @@ shinyServer(function(input, output, session) {
       if (traits != "") url.q <- paste0(url.q, "&", trj, "=", traits)
     }
     # optional: genomic linkage information
-    if (isolate(input$boolGenomicLinkage)) {
-      url.q <- paste0(url.q, "&genomicLinkage=true")
+    if (isolate(!is.null(values$glSelectedGene))) {
       ss.gl <- c("neighbors", "matched", "intermediate")
       for (s in ss.gl) {
         x <- isolate(input[[s]])
@@ -1661,7 +1621,6 @@ shinyServer(function(input, output, session) {
       input$chr2
       input$selected2
       input$window2
-      input$boolGenomicLinkage
       input$neighbors
       input$matched
       input$intermediate
@@ -1675,8 +1634,6 @@ shinyServer(function(input, output, session) {
   observeEvent(input$datatabs, {
     if (input$datatabs != "Chrom") return()
 
-    glOn <- values$urlFields$genomicLinkage
-    if (is.null(glOn) || tolower(glOn) != "true") return()
     if (is.null(values$urlFields$selectedGene)) return()
 
     # Query the Genome Context Viewer for genomic linkages
