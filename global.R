@@ -53,6 +53,7 @@ source("./buildAnnotations.R")
 
 # Add each organism's properties from its configuration file
 # instead of using hardcoded arrays
+organismNames <- list()
 chrSize<-list()
 chrName<-list()
 # Species full taxonomic name (Genus species)
@@ -92,7 +93,7 @@ for(i in 1:length(files)){
     conn=file(filename,open="r")
     data<-readLines(conn)
     
-    key<-data[1]
+    organismNames[[key]] <- key <- data[1]
     #added ability to specify chrom names in organisms file by separating with a :, otherwise it just assumes they are alphanumerically sorted    
     if(length(grep(":",data[2]))){
       features <- unlist(strsplit(data[2], ","))
@@ -142,8 +143,6 @@ for(i in 1:length(files)){
     chr2i <- suppressWarnings(as.integer(locValue$chromosome))
     if (!any(is.na(chr2i))) locValue$chromosome <- as.character(chr2i)
     org.annotGeneLoc[key]<-list(locValue)
-    # add gene families to annotations table
-    org.annotGeneLoc[[key]] <- merge.gene.families(org.annotGeneLoc[[key]], key)
 
     org.gcvUrlBase[key] <- data[6]
 

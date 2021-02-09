@@ -1,6 +1,30 @@
 # Services API v2 calls used in ZZBrowse
 # https://github.com/legumeinfo/gcv/wiki/Services-API-v2
 
+chromosomeService <- function(url, chromosome, org) {
+  paste(
+    sprintf("url = '%s';", url),
+    sprintf("chr = '%s';", chromosome),
+    "$.ajax({",
+      "url: 'https://' + url + '/services/v2/chromosome/',",
+      "dataType: 'json',",
+      "data: JSON.stringify({",
+        "chromosome: chr",
+      "}),",
+      "type: 'POST',",
+      "success: function (response) {",
+        "Shiny.onInputChange('chromosomeResults', {",
+          sprintf("org: '%s',", org),
+          "results: response",
+        "});",
+      "},",
+      "error: function(errmsg) {",
+        "alert('chromosomeService() failed: ' + errmsg.responseText);",
+      "}",
+    "});"
+  )
+}
+
 microSyntenySearchService <- function(url, families, matched, intermediate) {
   paste(
     sprintf("url = '%s';", url),

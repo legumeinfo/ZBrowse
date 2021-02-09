@@ -51,6 +51,17 @@ shinyServer(function(input, output, session) {
   # TODO: Do we really need legumeInfo.organisms?
   legumeInfo.organisms <- c("Arabidopsis thaliana", "Medicago truncatula", "Soybean", "Cowpea", "Pigeonpea")
 
+  # Call the GCV chromosome service to assign gene families to annotations (on launch)
+  for (org in organismNames) {
+    if ("family" %in% names(org.annotGeneLoc[[org]])) return()
+    dfmt <- ifelse(length(chrName[[org]]) < 10, "%d", "%02d")
+    for (chr in chrName[[org]]) {
+      gcvFmt <- gsub("\\\\d\\+", dfmt, org.gcvChrFormat[[org]])
+      gcvChr <- sprintf(gcvFmt, trailingInteger(chr))
+      runjs(chromosomeService(org.gcvUrlBase[[org]], gcvChr, org))
+    }
+  }
+
   # Extract initial values specified in the URL
   isolate({
     values$urlFields <- parseQueryString(session$clientData$url_search)
@@ -1237,6 +1248,22 @@ shinyServer(function(input, output, session) {
   observeEvent(input$clearGenomicLinkage, {
     values$glSelectedGene <- NULL
     clearGenomicLinkages()
+  })
+
+  # Handle chromosome service results (merge gene families into annotations)
+  observe({
+    if (is.null(input$chromosomeResults)) return()
+    isolate({
+      org <- input$chromosomeResults$org
+      gg <- unlist(input$chromosomeResults$results$chromosome$genes)
+      # workaround for A. thaliana: convert gene names like "arath.Col.AT1G28130" back to "AT1G28130"
+      if (org == "Arabidopsis thaliana") {
+        gg <- stri_match_first(gg, regex = "^arath.Col.(.+)$")[, 2]
+      }
+      ff <- unlist(input$chromosomeResults$results$chromosome$families)
+      bb <- gg %in% org.annotGeneLoc[[org]]$name
+      org.annotGeneLoc[[org]][match(gg[bb], org.annotGeneLoc[[org]]$name), "family"] <<- ff[bb]
+    })
   })
 
   # Determine genomic linkages using the Services API v2
