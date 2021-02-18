@@ -1178,6 +1178,10 @@ shinyServer(function(input, output, session) {
          values$datasetToOrganism[[dp$dataset[i]]] <- dp$organism[i]
        }
      }
+     # replace hyphens in strings like "p-value" as they are not allowed in column names
+     # (note that the above read.table() converts them to a period)
+     dp$yAxisColumn <- sapply(dp$yAxisColumn, function(s) gsub("-", ".", s))
+     dp$SIyAxisColumn <- sapply(dp$SIyAxisColumn, function(s) gsub("-", ".", s))
      return(dp)
    }
    #this provides the functionality to update the plotband window after a user clicks without rerendering the whole plot
