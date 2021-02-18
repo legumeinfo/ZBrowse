@@ -53,7 +53,9 @@ shinyServer(function(input, output, session) {
 
   # Call the GCV chromosome service to assign gene families to annotations (on launch)
   for (org in organismNames) {
-    if ("family" %in% names(org.annotGeneLoc[[org]])) return()
+    # skip if gene families already exist (on reload, or with values specified in URL)
+    if ("family" %in% names(org.annotGeneLoc[[org]])) next
+
     dfmt <- ifelse(length(chrName[[org]]) < 10, "%d", "%02d")
     for (chr in chrName[[org]]) {
       gcvFmt <- gsub("\\\\d\\+", dfmt, org.gcvChrFormat[[org]])
