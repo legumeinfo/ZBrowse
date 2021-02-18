@@ -1287,12 +1287,6 @@ shinyServer(function(input, output, session) {
         nn <- nn - (tail(nn, 1) - length(df.genes$name))
       }
       values$glGenes <- df.genes[nn, ]
-      values$glGenes <- values$glGenes[nchar(values$glGenes$family) > 0, ]
-      if (nrow(values$glGenes) == 0) {
-        # could reach here if none of the (2*n + 1) genes has a family id
-        clearGenomicLinkages()
-        return()
-      }
       values$glGenes2 <- NULL # to disable redrawing the zCharts until we have the micro-synteny-search results
 
       # Send to the micro-synteny-search service
