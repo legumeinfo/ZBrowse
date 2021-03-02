@@ -1,38 +1,20 @@
 # --------------------------------------------------------------
 # Build an annotations data frame from a tab-indexed, gzipped GFF3 file accessible by HTTP
 # --------------------------------------------------------------
-
 library(Rsamtools)
 library(stringi)
-source("common.R")
 
+source("common.R")
 # --------------------------------------------------------------
 
 extract.gff.attribute <- function(text, s) {
   stri_match_first(text, regex = sprintf("%s=(.*?)(;|$)", s))[, 2]
 }
 
-# --------------------------------------------------------------
-
-pp.special <- c(
-  "%20", "%21", "%22", "%23", "%24", "%25", "%26", "%27",
-  "%28", "%29", "%2A", "%2B", "%2C", "%2D", "%2E", "%2F",
-  "%3A", "%3B", "%3C", "%3D", "%3E", "%3F"
-)
-rr.special <- c(
-  " ", "!", "&quot;", "#", "$", "%", "&amp;", "'",
-    # use "'" because &apos; does not work in some browsers
-  "(", ")", "*", "+", ",", "-", ".", "/",
-  ":", ";", "&lt;", "=", "&gt;", "?"
-)
-replace.special.characters <- function(text) {
-  stri_replace_all_fixed(text, pp.special, rr.special, vectorize_all = FALSE)
-}
-
-# --------------------------------------------------------------
-
 # GFF column indices for ("chromosome", "type", "transcript_start", "transcript_end", "strand", "attributes")
 gff.cols <- c(1, 3, 4, 5, 7, 9)
+
+# --------------------------------------------------------------
 
 build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
   t0 <- proc.time()[3]
@@ -73,7 +55,7 @@ build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
   } else {
     df.annot$name <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "Name"))
   }
-  df.annot$description <- sapply(df.annot$attributes, FUN = function(s) replace.special.characters(extract.gff.attribute(s, "Note")))
+  df.annot$description <- sapply(df.annot$attributes, FUN = function(s) URLdecode(extract.gff.attribute(s, "Note")))
   df.annot$attributes <- NULL # remove attributes column
 
   cat(sprintf("Done. (%2.1f seconds)\n", proc.time()[3] - t0))
