@@ -243,6 +243,14 @@ allColors <- c(moreColors,colors)
 # background colors for comparing two organisms
 bgColors <- c("lightblue", "lightsalmon")
 
+# macro-synteny block colors (enough to represent 20 chromosomes)
+macrosyntenyColors <- c(
+  "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
+  "#C00000", "#00C000", "#0000C0", "#C0C000", "#C000C0", "#00C0C0",
+  "#FF8000", "#00FF80", "#8000FF", "#80FF00", "#FF0080", "#0080FF",
+  "#808080", "#000000"
+)
+
 # default window center and half-width
 defaultCenter <- 100000
 defaultWindowSize <- 250000

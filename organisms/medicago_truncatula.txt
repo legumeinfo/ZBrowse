@@ -3,5 +3,5 @@ chr1:52991155,chr2:45729672,chr3:55515152,chr4:56582383,chr5:43630510,chr6:35275
 Medicago truncatula,M.truncatula,Medtr
 https://v1.legumefederation.org/data/public/Medicago_truncatula/A17_HM341.gnm4.ann2.G3ZY/medtr.A17_HM341.gnm4.ann2.G3ZY.gene_models_main.gff3.gz
 chr%d,medtr.A17_HM341.gnm4.chr%d,medtr.chr\d+
-gcv-services.lis.ncgr.org/gcv2_phytozome_10_2_lis
+http://localhost:6427/gcv
 strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

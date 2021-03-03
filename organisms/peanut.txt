@@ -2,6 +2,6 @@ Peanut
 Arahy.01:112420854,Arahy.02:102981163,Arahy.03:143813506,Arahy.04:128801742,Arahy.05:115930344,Arahy.06:115504342,Arahy.07:81119488,Arahy.08:51897010,Arahy.09:120519698,Arahy.10:117088237,Arahy.11:149299306,Arahy.12:120579088,Arahy.13:146725006,Arahy.14:143237272,Arahy.15:160879708,Arahy.16:154808347,Arahy.17:134922436,Arahy.18:135150084,Arahy.19:158625764,Arahy.20:143980330
 Arachis hypogaea,A.hypogaea,Arahy
 https://v1.legumefederation.org/data/index/public/Arachis_hypogaea/Tifrunner.gnm1.ann1.CCJH/arahy.Tifrunner.gnm1.ann1.CCJH.gene_models_main.gff3.gz
-Arahy.%02d,arahy.Tifrunner.gnm1.Arahy.%02d,arahy.Tifrunner.gnm1.Arahy.\d+
-gcv-services.lis.ncgr.org/gcv2_phytozome_10_2_lis
+Arahy.%02d,arahy.Tifrunner.gnm1.Arahy.%02d,arahy.Arahy.\d+
+http://localhost:6427/gcv
 strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

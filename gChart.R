@@ -155,6 +155,7 @@ create_gChart <- function(j, input, values) {
     min = 0, max = sum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])),
     endOnTick = FALSE, labels = list(enabled = FALSE), tickWidth = 0, plotBands = bigList)
   
+  yAxisCount <- 0
   if(input[[jth_ref("axisLimBool", j)]] == TRUE){       
     c$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),min=input[[jth_ref("axisMin", j)]],max=input[[jth_ref("axisMax", j)]],startOnTick=FALSE)
   }else{
@@ -162,6 +163,7 @@ create_gChart <- function(j, input, values) {
   }
   
   if(input[[jth_ref("supportInterval", j)]]==TRUE){
+    yAxisCount <- yAxisCount + 1
     if(input[[jth_ref("SIaxisLimBool", j)]] == TRUE){
       c$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=input[[jth_ref("SIaxisMin", j)]],max=input[[jth_ref("SIaxisMax", j)]],gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }else{
@@ -176,7 +178,7 @@ create_gChart <- function(j, input, values) {
           name = unique(x$trait),
           dashStyle = 'Solid',
           marker = list(enabled=F),
-          yAxis=1,           
+          yAxis = yAxisCount,
           tooltip = list(
             pointFormat = '<span style="color:{point.color}">\u25a0</span> {series.name}<br>{point.pub}',
             followPointer = TRUE
@@ -198,7 +200,49 @@ create_gChart <- function(j, input, values) {
       )
     }))
   }
-  
+
+  # Display macro-synteny blocks
+  blocks <- values$pairwiseBlocks[[j]]
+  if (!is.null(blocks)) {
+    yAxisCount <- yAxisCount + 1
+    c$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
+    yvalFwd <- 0.98
+    yvalRev <- yvalFwd - 0.04
+    apply(blocks, 1, function(r) {
+      r <- data.frame(as.list(r), stringsAsFactors = FALSE) # to avoid "$ operator is invalid for atomic vectors" warning
+      yh <- yvalFwd
+      if (j == 2 && r$orientation == "-") {
+        yh <- yvalRev
+      }
+      r.data <- vector("list", 2)
+      r.data[[1]]$x <- as.numeric(r$cumfmin)
+      r.data[[2]]$x <- as.numeric(r$cumfmax)
+      r.data[[1]]$y <- r.data[[2]]$y <- yh
+      c$series(
+        type = "line",
+        data = r.data,
+        color = r$color,
+        lineWidth = 6,
+        yAxis = yAxisCount,
+        showInLegend = FALSE,
+        tooltip = list(
+          headerFormat = ifelse(j == 1,
+            sprintf("<b>Macro-synteny</b><br>%s chromosome %d<br>Blocks %d-%d<br>Location %s-%s",
+              values$organism, as.integer(r$chromosome), as.integer(r$i), as.integer(r$j),
+              prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ",")),
+            sprintf("<b>Macro-synteny</b><br>%s chromosome %d<br>Location %s-%s Orientation: %s<br>with %s chromosome %d<br>Blocks %d-%d<br>Levenshtein distance: %d",
+              values$organism2, as.integer(r$chromosome), prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ","), r$orientation,
+              values$organism, as.integer(r$chr1), as.integer(r$i), as.integer(r$j), as.integer(r$levenshtein))
+          ),
+          pointFormat = '',
+          followPointer = TRUE
+        ),
+        # put shortest blocks on top (note zIndex < 0 for macrosynteny blocks)
+        zIndex = as.integer(r$fmin) - as.integer(r$fmax)
+      )
+    })
+  }
+
   c$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
   c$title(text=paste(input[[jth_ref("datasets", j)]]," Results",sep=" "))
   c$subtitle(text="Rollover for more info. Drag chart area to zoom. Click point to switch to chromosome and annotation view.")
@@ -215,7 +259,19 @@ create_gChart <- function(j, input, values) {
       "$('.tab-content div').toggleClass(function(){if(this.getAttribute('data-value')=='Chrom' || this.getAttribute('data-value')=='WhGen'){return 'active';}else{return '';}});",
       "$('.tab-content div').trigger('change');$('ul#datatabs li').trigger('change');} !#"
     ), js, js, js, js, js, js)
-  doClickOnLine <- doClickOnPoint # they happen to be identical, but we could make them different
+  doClickOnLine <- sprintf(paste(
+    "#! function() {",
+      "if (this.series.userOptions.zIndex < 0) return;", # do nothing if user clicked on macro-synteny block
+      "$('select#chr%s').val(this.options.chr); $('select#chr%s').trigger('change'); $('input#selected%s').val(this.options.bp);",
+      "$('input#selected%s').trigger('change'); $('ul#datatabs li').eq(0).removeClass('active');",
+      "$('ul#datatabs li').eq(1).removeClass('active'); $('ul#datatabs li').eq(2).removeClass('active');",
+      "$('ul#datatabs li').eq(4).removeClass('active');",
+      "$('ul#datatabs li').eq(3).addClass('active');",
+      "$('#pChart%s').trigger('change');$('#pChart%s').trigger('shown');",
+      "$('.tab-content div').toggleClass(function(){if(this.getAttribute('data-value')=='Chrom' || this.getAttribute('data-value')=='WhGen'){return 'active';}else{return '';}});",
+      "$('.tab-content div').trigger('change');$('ul#datatabs li').trigger('change');",
+    "} !#"
+  ), js, js, js, js, js, js)
   c$plotOptions(
     scatter = list(
       cursor = "pointer",
