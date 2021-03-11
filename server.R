@@ -1,5 +1,7 @@
 source("gChart.R")
+source("gChartMacro.R")
 source("pChart.R")
+source("pChartMacro.R")
 source("zChart.R")
 source("gcvMicroservices.R")
 
@@ -255,11 +257,32 @@ shinyServer(function(input, output, session) {
     if (is.null(val.i)) val.i <- private$macroIntermediate
     val.mask <- isolate(values$urlFields$macroMask)
     if (is.null(val.mask)) val.mask <- private$macroMask
+    val.dd <- isolate(values$urlFields$macroDistance)
+    if (is.null(val.dd)) {
+      val.dd <- unlist(strsplit(private$macroDistance, split = ":"))
+    } else {
+      val.dd <- unlist(strsplit(val.dd, split = ":"))
+    }
+    val.dist <- val.dd[1]
+    if (val.dist == "jaccard" && length(val.dd) == 3) {
+      val.ngram <- as.integer(val.dd[2])
+      val.rev <- as.logical(val.dd[3])
+    } else {
+      val.ngram <- 1
+      val.rev <- FALSE
+    }
     tags$div(id = "tour-macrosynteny", wellPanel(
       h5("Macro-synteny options"),
       numericInput("macroMatched", "Matched:", min = 1, max = 50, value = val.m),
       numericInput("macroIntermediate", "Intermediate:", min = 1, max = 25, value = val.i),
-      numericInput("macroMask", "Mask:", min = 1, max = 50, value = val.mask)
+      numericInput("macroMask", "Mask:", min = 1, max = 50, value = val.mask),
+      selectInput("macroDistance", "Distance metric:", choices = c("Jaccard", "Levenshtein"), selected = stri_trans_totitle(val.dist)),
+      conditionalPanel("input.macroDistance == 'Jaccard'",
+        numericInput("macroNgram", "n-gram size:", min = 1, max = 2, value = val.ngram),
+        conditionalPanel("input.macroNgram > 1",
+          checkboxInput('macroReversals', 'Reversals?', value = val.rev)
+        )
+      )
       # style = paste0("background-color: ", bgColors[1], ";")
     ))
   }
@@ -564,12 +587,16 @@ shinyServer(function(input, output, session) {
         wellPanel(dataTableOutput("dataviewer2"), style = paste0("background-color: ", bgColors[2], ";"))
       ),
       tabPanel(title="Whole Genome View",value="WhGen",
+        wellPanel(showOutput("gChartMacro", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
+        wellPanel(showOutput("gChartMacro2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";")),
         tags$div(id = "tour-wholegenome",
           wellPanel(showOutput("gChart", "highcharts"), style = paste0("background-color: ", bgColors[1], ";"))
         ),
         wellPanel(showOutput("gChart2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
       ),
       tabPanel(title="Chromosome View",value="Chrom",
+        wellPanel(showOutput("pChartMacro", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
+        wellPanel(showOutput("pChartMacro2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";")),
         wellPanel(
           tags$div(id = "tour-pChart", showOutput("pChart", "highcharts")),
           tags$div(id = "tour-zChart", showOutput("zChart", "highcharts")),
@@ -1114,10 +1141,14 @@ shinyServer(function(input, output, session) {
   #subset whole chart based on selection
   output$pChart <- renderChart(create_pChart(1, input, values))
   output$pChart2 <- renderChart(create_pChart(2, input, values))
+  output$pChartMacro <- renderChart(create_pChartMacro(1, input, values))
+  output$pChartMacro2 <- renderChart(create_pChartMacro(2, input, values))
   
   #Genome wide chart
   output$gChart <- renderChart(create_gChart(1, input, values))
   output$gChart2 <- renderChart(create_gChart(2, input, values))
+  output$gChartMacro <- renderChart(create_gChartMacro(1, input, values))
+  output$gChartMacro2 <- renderChart(create_gChartMacro(2, input, values))
 
   output$zChart <- renderChart(create_zChart(1, input, values))
   output$zChart2 <- renderChart(create_zChart(2, input, values))
@@ -1285,6 +1316,9 @@ shinyServer(function(input, output, session) {
     if (is.null(input$macroMatched)) return()
     if (is.null(input$macroIntermediate)) return()
     if (is.null(input$macroMask)) return()
+    if (is.null(input$macroDistance)) return()
+    if (is.null(input$macroNgram)) return()
+    if (is.null(input$macroReversals)) return()
     org1 <- values$organism
     org2 <- values$organism2
     if (is.null(org1) || is.null(org2)) return()
@@ -1300,7 +1334,9 @@ shinyServer(function(input, output, session) {
         tt <- sapply(1:nchr2, function(chr2) {
           paste0(chr2fmt, ifelse(nchr2 < 10 || chr2 >= 10, "", "0"), chr2)
         })
-        blocks <- macroSyntenyBlocksMicroservice(org.gcvUrlBase[[org1]], ff, input$macroMatched, input$macroIntermediate, input$macroMask, tt, chr1, org1, org2)
+        distanceMetric <- tolower(input$macroDistance)
+        if (distanceMetric == "jaccard") distanceMetric <- paste(distanceMetric, input$macroNgram, tolower(input$macroReversals), sep = ":")
+        blocks <- macroSyntenyBlocksMicroservice(org.gcvUrlBase[[org1]], ff, input$macroMatched, input$macroIntermediate, input$macroMask, tt, distanceMetric, chr1, org1, org2)
         if (!is.null(results$error)) {
           print(results$error)
         } else {
@@ -1684,10 +1720,16 @@ shinyServer(function(input, output, session) {
       }
     }
     # optional: macro-synteny information
-    ss.gl <- c("macroMatched", "macroIntermediate", "macroMask")
+    ss.gl <- c("macroMatched", "macroIntermediate", "macroMask", "macroDistance")
     for (s in ss.gl) {
       x <- isolate(input[[s]])
       if (!is.null(x)) {
+        if (s == "macroDistance") {
+          x <- tolower(x)
+          if (x == "jaccard") {
+            x <- paste(x, isolate(input$macroNgram), tolower(isolate(input$macroReversals)), sep = ":")
+          }
+        }
         url.q <- paste0(url.q, "&", s, "=", x)
       }
     }
@@ -1717,6 +1759,9 @@ shinyServer(function(input, output, session) {
       input$macroMatched
       input$macroIntermediate
       input$macroMask
+      input$macroDistance
+      input$macroNgram
+      input$macroReversals
       input$datatabs
     },
     handlerExpr = updateURL(), ignoreInit = TRUE)
