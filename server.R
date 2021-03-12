@@ -588,7 +588,9 @@ shinyServer(function(input, output, session) {
       ),
       tabPanel(title="Whole Genome View",value="WhGen",
         wellPanel(showOutput("gChartMacro", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
-        wellPanel(showOutput("gChartMacro2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";")),
+        tags$div(id = "tour-wholegenome-macrosynteny",
+          wellPanel(showOutput("gChartMacro2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";")),
+        ),
         tags$div(id = "tour-wholegenome",
           wellPanel(showOutput("gChart", "highcharts"), style = paste0("background-color: ", bgColors[1], ";"))
         ),
