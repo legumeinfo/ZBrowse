@@ -1014,7 +1014,7 @@ shinyServer(function(input, output, session) {
     # Select the center position specified in the URL (if any)
     initialCenter <- isolate(values$urlFields[[selected]])
     if (is.null(initialCenter)) { initialCenter <- defaultCenter }
-    numericInput(selected, "", value = initialCenter)
+    numericInput(selected, "", min = 1000, value = initialCenter, step = 1000)
   }
   output$selectedOut <- renderUI(createSelectedOut(1))
   outputOptions(output, "selectedOut", suspendWhenHidden=FALSE)
@@ -1027,7 +1027,7 @@ shinyServer(function(input, output, session) {
     initialWindowSize <- isolate(values$urlFields[[window]])
     if (is.null(initialWindowSize)) { initialWindowSize <- defaultWindowSize }
     sliderInput(inputId = window, label="Window size around selected point:",
-      min = 1000, max = 500000, value = initialWindowSize)
+      min = 1000, max = 2000000, value = initialWindowSize, step = 1000)
   }
   output$windowOut <- renderUI(createWindowOut(1))
   outputOptions(output, "windowOut", suspendWhenHidden=FALSE)
