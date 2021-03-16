@@ -7,7 +7,7 @@ jth_ref <- function(name, j) {
 
 #add a totalBP column to an input dataset if not already present
 calculateTotalBP <- function(j, input, values) {
-  if("totalBP" %in% colnames(values[[input[[jth_ref("datasets", j)]]]])){
+  if(nrow(values[[input[[jth_ref("datasets", j)]]]]) == 0 || "totalBP" %in% colnames(values[[input[[jth_ref("datasets", j)]]]])){
     
   }else{
     #      progress <- Progress$new(session, min=1, max=1)

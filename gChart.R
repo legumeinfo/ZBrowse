@@ -42,6 +42,7 @@ create_gChart <- function(j, input, values) {
   if(nrow(genomeChart)==0){ #nothing is in the window, but lets still make a data.frame
     genomeChart <- values[[input[[jth_ref("datasets", j)]]]][1,]
     genomeChart[,input[[jth_ref("yAxisColumn", j)]]] <- -1    
+genomeChart$totalBP <- 1
     if(length(input[[jth_ref("traitColumns", j)]]) > 1){
       genomeChart$trait <- do.call(paste,c(genomeChart[,input[[jth_ref("traitColumns", j)]]],sep="_"))    
     }else{
