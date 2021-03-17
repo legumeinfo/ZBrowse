@@ -1,5 +1,5 @@
 #Load GenomicRange packages locally, order here matters
-pkgs <- c("BiocGenerics","S4Vectors","IRanges","XVector","Rsamtools","GenomeInfoDb","GenomicRanges")
+pkgs <- c("BiocGenerics","S4Vectors","IRanges","XVector","GenomeInfoDb","GenomicRanges","rtracklayer")
 if (!require("BiocManager")) install.packages("BiocManager", dependencies = TRUE)
 
 for(p in pkgs){

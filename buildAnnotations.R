@@ -1,19 +1,10 @@
 # --------------------------------------------------------------
 # Build an annotations data frame from a tab-indexed, gzipped GFF3 file accessible by HTTP
 # --------------------------------------------------------------
-library(Rsamtools)
+library(rtracklayer)
 library(stringi)
 
 source("common.R")
-# --------------------------------------------------------------
-
-extract.gff.attribute <- function(text, s) {
-  stri_match_first(text, regex = sprintf("%s=(.*?)(;|$)", s))[, 2]
-}
-
-# GFF column indices for ("chromosome", "type", "transcript_start", "transcript_end", "strand", "attributes")
-gff.cols <- c(1, 3, 4, 5, 7, 9)
-
 # --------------------------------------------------------------
 
 build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
@@ -32,31 +23,23 @@ build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
         download.file(filename, gff, method = "wget", quiet = TRUE)
         download.file(paste0(filename, ".tbi"), paste0(gff, ".tbi"), method = "wget", quiet = TRUE)
     }
-    df.annot <- unlist(scanTabix(gff, param = pp), use.names = FALSE)
+    df.annot <- readGFF(gff, columns = c("seqid", "start", "end", "strand"), tags = c("ID", "Name", "Note"), filter = list(type = "gene"))
   } else {
-    df.annot <- unlist(scanTabix(filename, param = pp), use.names = FALSE)
+    df.annot <- readGFF(filename, columns = c("seqid", "start", "end", "strand"), tags = c("ID", "Name", "Note"), filter = list(type = "gene"))
   }
-  df.annot <- stri_split_fixed(df.annot, "\t")
-  df.annot <- lapply(df.annot, FUN = function(x) x[gff.cols])
-  df.annot <- as.data.frame(do.call(rbind, df.annot), stringsAsFactors = FALSE)
-  df.annot <- df.annot[df.annot[, 2] == "gene", -2] # filter and then remove the type column
-  names(df.annot) <- c("chromosome", "transcript_start", "transcript_end", "strand", "attributes")
+  names(df.annot) <- c("chromosome", "transcript_start", "transcript_end", "strand", "id", "name", "description")
   df.annot$chromosome <- trailingChromosomeName(df.annot$chromosome, organism = key)
-  df.annot$transcript_start <- as.integer(df.annot$transcript_start)
-  df.annot$transcript_end <- as.integer(df.annot$transcript_end)
-  df.annot$id <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "ID"))
   if (key == "Medicago truncatula") {
-    # it has no Name field, so construct one
-    #df.annot$name <- paste0("medtr.", df.annot$id)
     # the Names in the new file have additional prefixing that miust be stripped off before the linkout service will 
     # function properly
-    df.annot$name <- gsub("^medtr\\.A17_HM341\\.", "medtr.",
-            sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "Name")))
-  } else {
-    df.annot$name <- sapply(df.annot$attributes, FUN = function(s) extract.gff.attribute(s, "Name"))
+    df.annot$name <- gsub("^medtr\\.A17_HM341\\.", "medtr.", df.annot$name)
   }
-  df.annot$description <- sapply(df.annot$attributes, FUN = function(s) URLdecode(extract.gff.attribute(s, "Note")))
-  df.annot$attributes <- NULL # remove attributes column
+  # Convert the Note/description column from a list to a URL-decoded character vector,
+  # replacing missing values with a blank string
+  df.annot$description <- sapply(df.annot$description, function(desc) {
+    ifelse(identical(desc, character(0)), "", desc)
+  })
+  df.annot$description <- sapply(df.annot$description, URLdecode, USE.NAMES = FALSE)
 
   cat(sprintf("Done. (%2.1f seconds)\n", proc.time()[3] - t0))
   df.annot
