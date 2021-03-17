@@ -11,9 +11,6 @@ build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
   t0 <- proc.time()[3]
   cat(paste("Constructing", key, "annotations ... "))
 
-  chrs <- sprintf(annotChrFormat, 1:length(chrLengths))
-  pp <- GRanges(seqnames = chrs, ranges = IRanges(start = 1, end = chrLengths))
-
   if (startsWith(filename, "https:")) {
     # since R cannot handle https directly
     gff <- stri_match(annotChrFormat, regex = "(.+)\\.")[, 2]
