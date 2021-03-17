@@ -37,6 +37,9 @@ build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
     ifelse(identical(desc, character(0)), "", desc)
   })
   df.annot$description <- sapply(df.annot$description, URLdecode, USE.NAMES = FALSE)
+  # Finally, convert back from S4Vectors DataFrame to a basic data frame
+  # to prevent crashing on genomic linkages
+  df.annot <- as.data.frame(df.annot)
 
   cat(sprintf("Done. (%2.1f seconds)\n", proc.time()[3] - t0))
   df.annot
