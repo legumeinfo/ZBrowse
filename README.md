@@ -1,42 +1,69 @@
-# Zbrowse
+# ZZBrowse
 
-`Zbrowse` is an interactive GWAS viewer focused on comparing results across traits and other variables. 
+ZZBrowse is an interactive R/Shiny web application for GWAS visualization. Here we describe our enhancements to the original [ZBrowse](https://github.com/baxterlabZbrowse/ZBrowse) developed by the [Baxter Laboratory](https://www.baxterlab.org/untitled-cqi0).
 
-### Requirements
+These wiki pages serve as a user manual:
 
-- [R] (http://www.r-project.org/) (tested on R versions > 3.1)
-- [R Studio] (http://www.rstudio.com/)
+- [Setup](https://github.com/legumeinfo/ZZBrowse/wiki/Setup)
+- [Usage](https://github.com/legumeinfo/ZZBrowse/wiki/Usage-(from-original-ZBrowse)) (from original ZBrowse)
+- [Add a dataset](https://github.com/legumeinfo/ZZBrowse/wiki/Add-a-dataset) (in ZZBrowse)
 
-### Download and Install
+### Comparative GWAS Visualization
 
-1. Navigate to http://www.baxterlab.org/	
-2. Click "Download ZBrowse".
-  - This will download a zipped file to your computer. 
+Each ZZBrowse view now supports simultaneous visualization of GWAS data for two species, with Species 1 (here, cowpea) framed in blue and Species 2 (soybean) in orange.
 
-3. Unzip the file and open `interactiveGWASuploadable.Rproj`
-  - This will open the project in R Studio.
+![whole-genome-gwas](img/whgen.png)
 
-4. At the R command prompt enter:
-`source("startup.R")`
-  - This will check for and install any necessary libraries and open `ZBrowse` in your default browser.
+### Macrosynteny blocks
 
-### Using the Browser
+The Whole Genome and Chromosome views now display macrosynteny blocks. You may compute Levenshtein or Jaccard distance for the species 2 blocks (relative to their species 1 block). The other macrosynteny options (at the bottom of the sidebar) are described [here](https://github.com/legumeinfo/ZZBrowse/wiki/Macro-Synteny-options).
 
-#### Load data
+![macrosynteny](img/macrosynteny.png)
 
-##### Prepare GWAS dataset
+### Linkouts and Genomic Linkages
 
-Your GWAS dataset is likely already in a comma-separated format. If not, open your dataset in spreadsheet software such as Excel and save as csv. `Zbrowse` is designed for plotting the most significant hits from a GWAS experiment and is therefore limited to plotting less than 5000 markers for a single trait. Most GWAS results files contain results from every marker, so it may be necessary to filter the non-significant markers before uploading to the browser.
+In the Chromosome view, clicking on a gene pops up a menu of linkouts. Click any of these to open its link in a new window.
 
-##### Load into browser
+![linkouts](img/linkouts.png)
 
-In the browser, select the '.csv' radio button. Most likely you have a header row in the csv file for variable names, if not, deselect the 'Header' check box. If the data are not comma separated you can also choose a semicolon or tab separated format. Then click 'Choose file' and locate the csv file on your computer.
+For Species 1, the menu also has a Genomic Linkage option. Clicking this calls the Genome Context Viewer to identify similar regions in Species 2, defined by the number of matching and non-matching neighboring genes. Matching genes are color-coded by gene family in rainbow order (relative to their Species 1 sequence), illustrating the degree of synteny between the two species. If more than one similar region exists in Species 2, the Related Regions menu lets you choose which one to view.
 
-#### Select Appropriate Columns
+![chromosome-gwas](img/chrom.png)
 
-The manage tab gives a look at the first ten rows of your data and provides selection boxes to tell the plotting software which columns to use for graphing. Select appropriate columns, then click the 'Whole Genome View' tab to take a look at your data. Note that traits may be a composition of multiple columns (e.g. a trait and a location), so multiple columns can be selected in that box. 
+In the example above, there is considerable synteny between regions of cowpea chromosome 5 (2.5-2.9 Mbp) and soybean chromosome 18 (55.0-55.3 Mbp). The GWAS data (Manhattan plots) show significant associations for seed weight in both regions.
 
-#### Browser Usage
+### Communication with the Genome Context Viewer
 
-Once you've selected your data in the manage tab, you can view the browser plot and select your combinations of traits from the boxes on the left. The genome view tab provides an overview of significant SNPs across the genome. Clicking any point will switch the view to the chromosome tab. The chromosome tab provides a look at just the chromosome you clicked as well as a zoomed in look at the region directly surrounding your SNP of interest. The maximum number of data-points that can be viewed for a single trait is 5000. If you attempt to plot more than this number the software will simply display an empty plot. Try narrowing down your dataset and re-uploading the file.
+The Genomic Linkage options (described [here](https://github.com/legumeinfo/ZZBrowse/wiki/Genomic-Linkage-options)) enable communication between ZZBrowse and the Genome Context Viewer (GCV). For example, when Broadcast is enabled, clicking a gene family legend item like ![gene-family-legend](img/phytozome_10_2.59162212.png) highlights genes belonging to that family in the GCV. Similarly, when Listen is enabled, mousing over an item in the GCV highlights the corresponding item(s) in ZZBrowse.
 
+![genomic-linkage](img/gcv.png)
+
+The Show in GCV link tells the GCV to focus on the same region of the Species 1 genome displayed in ZZBrowse.
+
+### Other New Features
+
+#### Importing local GWAS data
+
+<img src="img/load-data.png" align=left> The original ZBrowse allowed loading your own local GWAS data files, but assigned each to a new, standalone dataset. Our implementation does not create new datasets on the fly, but instead adds user data to existing ones. We hope this feature will benefit researchers desiring to superimpose their own bleeding-edge GWAS data on previously published results.
+
+We provide GWAS datasets for common bean, cowpea, peanut, pigeonpea, and soybean, while the _Medicago truncatula_ and _Arabidopsis thaliana_ datasets are initially empty (a few traits are available through the Remote Trait Files selector).
+
+To add your own local GWAS data, first prepare them as a delimited text file with a header row listing the column names. Required columns are chromosome, position, trait (= phenotype), and p-value (or other significance metric) for each SNP, but you may include others. Click the Local Trait Files/Browse button to specify which file(s) to load, then click the Load Data button to append the GWAS data. Finally, tweak any details (such as whether to take the negative logarithm of the reported p-value) through the Manage tab.
+
+#### Importing local QTL data
+
+We provide a QTL dataset for cowpea. To add your own QTL data, prepare a similar delimited text file as for GWAS data, but including columns for start and end position of the QTL interval. In the position column, put the center position of the interval.
+
+#### Application state
+
+The URL automatically reflects the current state of ZZBrowse, allowing you to easily save a result and replicate it later. For example, if you want to share an interesting genomic linkage with a colleague, just copy the current URL and paste it into an e-mail message. They can then launch ZZBrowse and recreate the same view.
+
+<img src="img/sidebar.png" align=left>
+
+#### Tour
+
+The Start Tour link (in the Manage tab) launches a guided tour (or tutorial) of ZZBrowse.
+
+#### Connection Status
+
+This panel (also in the Manage tab) indicates when remote data sources are unavailable, relieving user angst.
