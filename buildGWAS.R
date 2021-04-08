@@ -126,13 +126,17 @@ build.gwas.from.lis.datastore <- function(key) {
 
         # Read the GWAS files, merge with the GFF data, and append the results
         for (f in gwasFiles) {
-          df.f <- read.gwas.lis.datastore(f)
-          df.f2 <- merge.gwas(df.f, df.gff)
-          if (nrow(df.gwas) == 0) {
-            df.gwas <- df.f2
-          } else {
-            df.gwas <- rbind(df.gwas, df.f2)
-          }
+          tryCatch({
+            df.f <- read.gwas.lis.datastore(f)
+            df.f2 <- merge.gwas(df.f, df.gff)
+            if (nrow(df.gwas) == 0) {
+              df.gwas <- df.f2
+            } else {
+              df.gwas <- rbind(df.gwas, df.f2)
+            }
+          }, error = function(e) {
+            print(e)
+          })
         }
       }
     }
