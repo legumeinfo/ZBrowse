@@ -74,9 +74,9 @@ read.gwas.lis.datastore <- function(fin) {
     if (ss[1] == "Name") {
       src.name <- ss[2]
     } else if (ss[1] == "DOI") {
-      src.url <- ifelse(is.na(ss[2]), NA, paste0("https://doi.org/", ss[2]))
+      src.url <- ifelse(is.na(ss[2]) || ss[2] == "none", NA, paste0("https://doi.org/", ss[2]))
     } else if (ss[1] == "PMID") {
-      src.url <- ifelse(is.na(ss[2]), NA, paste0("https://pubmed.ncbi.nlm.nih.gov/", ss[2], "/"))
+      src.url <- ifelse(is.na(ss[2]) || ss[2] == "none", NA, paste0("https://pubmed.ncbi.nlm.nih.gov/", ss[2], "/"))
     }
     i <- i + 1
   }
