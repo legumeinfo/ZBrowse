@@ -9,7 +9,9 @@ shinyServer(function(input, output, session) {
   #Load any saved datasets
   values <- reactiveValues()
   dataPath <- "./www/config/data/"
-  dataFiles <- list.files(dataPath,recursive=T)
+  dataFiles <- list.files(dataPath)
+  # ignore subdirectories - we can hide unused datasets there
+  dataFiles <- dataFiles[sapply(dataFiles, function(f) !dir.exists(paste0(dataPath, f)))]
   # Append names of any data we will create on the fly:
   # Add your organism to legumeInfo.gwas if its GWAS files live on a server instead of locally.
   legumeInfo.gwas <- c("Arabidopsis thaliana GWAS", "Medicago truncatula GWAS")
