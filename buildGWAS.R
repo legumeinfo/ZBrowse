@@ -82,7 +82,8 @@ read.gwas.lis.datastore <- function(fin) {
   }
   # read the rest
   df.gwas <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
-  names(df.gwas)[1:4] <- c("identifier", "phenotype", "marker", "p_value") # clean up column names
+  df.gwas <- df.gwas[, 1:4]
+  names(df.gwas) <- c("identifier", "phenotype", "marker", "p_value") # clean up column names
   df.gwas$publication <- ifelse(is.na(src.url), src.name, paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>"))
   df.gwas
 }
@@ -115,32 +116,39 @@ build.gwas.from.lis.datastore <- function(key) {
   if (length(query.mrk$data) > 0) {
     df.mrk <- query.mrk$data[endsWith(query.mrk$data$url, ".gff3.gz"), ]
     if (nrow(df.mrk) > 0) {
-      for (i in 1:nrow(df.mrk)) {
-        df.gff <- read.gff3.lis.datastore(df.mrk[i, "url"])
-        df.gff <- scrub.gff(df.gff, lis.datastore.info[[key]])
+      ll.mrk <- lapply(df.mrk$url, function(u) {
+        df.mrku <- read.gff3.lis.datastore(u)
+        df.mrku <- scrub.gff(df.mrku, lis.datastore.info[[key]])
+        df.mrku
+      })
+      df.gff <- do.call(rbind, ll.mrk)
 
-        # Associated GWAS files
-        query.gwas <- fromJSON(paste0(gwasBaseUrl, "gwas:", lis.datastore.info[[key]]$mrkFilter))
-        if (length(query.gwas$data) == 0) next
+      # GWAS files
+      query.gwas <- fromJSON(paste0(gwasBaseUrl, "gwas:", lis.datastore.info[[key]]$mrkFilter))
+      if (length(query.gwas$data) > 0) {
         gwasFiles <- query.gwas$data$url[endsWith(query.gwas$data$url, ".tsv.gz")]
-
-        # Read the GWAS files, merge with the GFF data, and append the results
-        for (f in gwasFiles) {
-          tryCatch({
-            df.f <- read.gwas.lis.datastore(f)
-            df.f2 <- merge.gwas(df.f, df.gff)
-            if (nrow(df.gwas) == 0) {
-              df.gwas <- df.f2
-            } else {
-              df.gwas <- rbind(df.gwas, df.f2)
-            }
-          }, error = function(e) {
-            print(e)
+        if (length(gwasFiles) > 0) {
+          ll.gwas <- lapply(gwasFiles, function(u) {
+            df.g <- NULL
+            tryCatch({
+              df.g <- read.gwas.lis.datastore(u)
+            }, error = function(e) {
+              print(e)
+            })
+            df.g
           })
+          nn <- sapply(ll.gwas, is.null)
+          if (any(nn)) ll.gwas <- ll.gwas[-which(nn)]
+          if (length(ll.gwas) > 0) {
+            df.f <- do.call(rbind, ll.gwas)
+            # Merge GWAS and marker data frames
+            df.gwas <- merge.gwas(df.f, df.gff)
+          }
         }
       }
     }
   }
+
   removeNotification(nid)
   # deduplicate the results
   unique(df.gwas)
