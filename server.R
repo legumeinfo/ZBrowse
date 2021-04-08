@@ -275,7 +275,7 @@ shinyServer(function(input, output, session) {
     }
     tags$div(id = "tour-macrosynteny", wellPanel(
       h5("Macro-synteny options"),
-      numericInput("macroMatched", "Matched:", min = 1, max = 50, value = val.m),
+      numericInput("macroMatched", "Matched:", min = 5, max = 50, value = val.m),
       numericInput("macroIntermediate", "Intermediate:", min = 1, max = 25, value = val.i),
       numericInput("macroMask", "Mask:", min = 1, max = 50, value = val.mask),
       selectInput("macroDistance", "Distance metric:", choices = c("Jaccard", "Levenshtein"), selected = stri_trans_totitle(val.dist)),
@@ -1023,6 +1023,13 @@ shinyServer(function(input, output, session) {
   output$selectedOut2 <- renderUI(createSelectedOut(2))
   outputOptions(output, "selectedOut2", suspendWhenHidden=FALSE)
 
+  observeEvent(input$selected, {
+    validNumericInput("selected", defaultCenter, 1000)
+  })
+  observeEvent(input$selected2, {
+    validNumericInput("selected2", defaultCenter, 1000)
+  })
+
   createWindowOut <- function(j) {
     window <- jth_ref("window", j)
     # Select the window size (half-width) specified in the URL (if any)
@@ -1317,11 +1324,11 @@ shinyServer(function(input, output, session) {
     # Clear any existing macro-synteny blocks before proceeding
     values$pairwiseBlocks <- list(NULL, NULL)
 
-    if (is.null(input$macroMatched)) return()
-    if (is.null(input$macroIntermediate)) return()
-    if (is.null(input$macroMask)) return()
+    if (!validNumericInput("macroMatched", private$macroMatched, 5, 50)) return()
+    if (!validNumericInput("macroIntermediate", private$macroIntermediate, 1, 25)) return()
+    if (!validNumericInput("macroMask", private$macroMask, 1, 50)) return()
     if (is.null(input$macroDistance)) return()
-    if (is.null(input$macroNgram)) return()
+    if (!validNumericInput("macroNgram", 1, 1, 2)) return()
     if (is.null(input$macroReversals)) return()
     org1 <- values$organism
     org2 <- values$organism2
@@ -1373,6 +1380,9 @@ shinyServer(function(input, output, session) {
   observe({
     # User selected a gene in the organism 1 zChart, or in the URL
     if (is.null(input$selectedGene)) return()
+    if (!validNumericInput("neighbors", private$neighbors, 1, 20)) return()
+    if (!validNumericInput("matched", private$matched, 1, 20)) return()
+    if (!validNumericInput("intermediate", private$intermediate, 1, 10)) return()
     isolate({
       org1 <- values$organism
       values$glSelectedGene <- input$selectedGene
@@ -1781,5 +1791,20 @@ shinyServer(function(input, output, session) {
 
     values$urlFields$selectedGene <- NULL # to reset it
   }, ignoreInit = TRUE)
+
+  # Validate numericInputs
+  validNumericInput <- function(inputId, default, min, max = Inf) {
+    if (!is.numeric(input[[inputId]])) {
+      updateNumericInput(session, inputId, value = default)
+      return(FALSE)
+    } else if (input[[inputId]] < min) {
+      updateNumericInput(session, inputId, value = min)
+      return(FALSE)
+    } else if (max < Inf && input[[inputId]] > max) {
+      updateNumericInput(session, inputId, value = max)
+      return(FALSE)
+    }
+    TRUE
+  }
 
 })#end server

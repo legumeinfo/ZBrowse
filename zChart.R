@@ -44,7 +44,7 @@ provideMultipleURLs <- function(includeGenomicLinkage) {
 }
 
 create_zChart <- function(j, input, values) {
-  if (is.null(input[[jth_ref("selected", j)]])) return()
+  if (!is.numeric(input[[jth_ref("selected", j)]])) return(rCharts::Highcharts$new())
 
   org.j <- values[[jth_ref("organism", j)]]
   nid <- jth_ref("notify.create_zChart", j)
