@@ -25,10 +25,6 @@ library(jsonlite)
 library(shinyjs)
 library(rintrojs)
 
-addResourcePath('datatables','www/DataTables/')
-addResourcePath('tabletools','www/TableTools/')
-addResourcePath('highcharts','www/highcharts/')
-
 #find the non-numeric values in a vector
 which.nonnum <- function(x) {
   badNum <- is.na(suppressWarnings(as.numeric(as.character(x))))
