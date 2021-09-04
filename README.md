@@ -16,7 +16,7 @@ Each ZZBrowse view now supports simultaneous visualization of GWAS data for two 
 
 ### Macrosynteny blocks
 
-The Whole Genome and Chromosome views now plot macrosynteny blocks v. a syntenic distance metric (Levenshtein or Jaccard), for the purpose of quickly identifying likely related regions of the two genomes to explore further, using the Genomic Linkage feature described below. The other macrosynteny options (at the bottom of the sidebar) are described [here](https://github.com/legumeinfo/ZZBrowse/wiki/Macro-Synteny-options).
+The Whole Genome and Chromosome views now plot macrosynteny blocks v. a syntenic distance metric (Levenshtein or Jaccard), for the purpose of quickly identifying likely related regions of the two genomes to explore further, using the Genomic Linkage feature described below. The other macrosynteny options (at the bottom of the sidebar) are described [here](https://github.com/legumeinfo/ZZBrowse/wiki/Macrosynteny-options).
 
 ![macrosynteny](img/macrosynteny.png)
 

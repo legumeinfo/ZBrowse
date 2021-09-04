@@ -104,6 +104,11 @@ shinyServer(function(input, output, session) {
         values[[jth_ref("organism", j)]] <- values$datasetToOrganism[[input[[jth_ref("datasets", j)]]]]
       })
     }
+    if (j == 1) {
+      chrNames1 <- "All"
+      if (!is.null(values$organism)) chrNames1 <- c(chrNames1, chrName[[values$organism]])
+      updateSelectInput(session, "macroChromosome", choices = chrNames1)
+    }
     
     # Uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
     updateTextInput(session, inputId = jth_ref("traitFilter", j), value = "")
@@ -284,6 +289,9 @@ shinyServer(function(input, output, session) {
         conditionalPanel("input.macroNgram > 1",
           checkboxInput('macroReversals', 'Reversals?', value = val.rev)
         )
+      ),
+      conditionalPanel(condition = wholeGenomeTabSelected,
+        selectInput("macroChromosome", "Species 1 Chromosome:", choices = "All")
       )
       # style = paste0("background-color: ", bgColors[1], ";")
     ))

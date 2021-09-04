@@ -41,9 +41,12 @@ create_gChartMacro <- function(j, input, values) {
   # Display macro-synteny blocks
   blocks <- values$pairwiseBlocks[[j]]
   if (!is.null(blocks)) {
+    chr1 <- trailingInteger(input$macroChromosome) # to filter by macro-synteny species 1 chromosome
     if (j == 1) {
+      if (!is.na(chr1)) blocks <- blocks[blocks$chromosome == chr1, ]
       c$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
     } else {
+      if (!is.na(chr1)) blocks <- blocks[blocks$chr1 == chr1, ]
       ylab2 <- paste(input$macroDistance, "distance")
       if (input$macroDistance == "Levenshtein") ylab2 <- paste("Normalized", ylab2)
       c$yAxis(title=list(text=ylab2),min=0,max=1,reversed=TRUE,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
