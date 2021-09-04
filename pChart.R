@@ -233,6 +233,7 @@ create_pChart <- function(j, input, values) {
   removeNotification(nid)
 
   a$exporting(enabled=TRUE,filename='chromChart',sourceWidth=2000)
+  a$credits(enabled=TRUE)
   a$set(dom = jth_ref('pChart', j))
   return(a)
 }

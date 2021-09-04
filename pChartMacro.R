@@ -81,6 +81,7 @@ create_pChartMacro <- function(j, input, values) {
   removeNotification(nid)
 
   a$exporting(enabled=TRUE,filename='chromChartMacro',sourceWidth=2000)
+  a$credits(enabled=TRUE)
   a$set(dom = jth_ref('pChartMacro', j))
   return(a)
 }
