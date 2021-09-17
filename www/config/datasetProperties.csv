@@ -8,3 +8,4 @@
 "Cowpea QTL","chromosome {character}","center_pos {integer}","trait {character}","val {numeric}",FALSE,FALSE,0,1,"Cowpea",FALSE,TRUE,"val","start_pos","end_pos",FALSE,0,1
 "Cowpea GWAS-QTL","chromosome {character}","position {integer}","phenotype {character}","p_value {numeric}",TRUE,FALSE,0,1,"Cowpea",FALSE,TRUE,"p_value","start_pos","end_pos",FALSE,0,1
 "Peanut GWAS","chromosome {character}","position {integer}","phenotype {character}","p_value {numeric}",TRUE,FALSE,0,1,"Peanut",FALSE,FALSE,"p_value","position","position",FALSE,0,1
+"Mung bean GWAS","chromosome {character}","position {integer}","phenotype {character}","p_value {numeric}",TRUE,FALSE,0,1,"Mung bean",FALSE,FALSE,"p_value","position","position",FALSE,0,1

@@ -1,0 +1,7 @@
+Mung bean
+Vr01:36501346,Vr02:25360630,Vr03:12950713,Vr04:20812224,Vr05:37180910,Vr06:37436759,Vr07:55601358,Vr08:45727239,Vr09:21008463,Vr10:20996616,Vr11:19732206
+Vigna radiata,V.radiata,Vigra
+https://legumeinfo.org/data/public/Vigna_radiata/VC1973A.gnm6.ann1.M1Qs/vigra.VC1973A.gnm6.ann1.M1Qs.gene_models_main.gff3.gz
+Vr%02d,vigra.VC1973A.gnm6.Vr%02d,vigra.Vr\d+
+http://localhost:6427/gcv
+strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

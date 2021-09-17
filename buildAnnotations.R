@@ -30,6 +30,9 @@ build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
     # the Names in the new file have additional prefixing that miust be stripped off before the linkout service will 
     # function properly
     df.annot$name <- gsub("^medtr\\.A17_HM341\\.", "medtr.", df.annot$name)
+  } else if (key == "Mung bean") {
+    # should be like "vigra.Vradi01g00010"
+    df.annot$name <- paste0("vigra.", df.annot$name)
   }
   # Convert the Note/description column from a list to a URL-decoded character vector,
   # replacing missing values with a blank string

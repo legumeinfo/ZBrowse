@@ -17,6 +17,10 @@ lis.datastore.info[["Cowpea GWAS"]] <- list(
   mrkFilter = "vigna:unguiculata",
   chrRegex = "vigun.IT97K-499-35.gnm1.(Vu\\d+)"
 )
+lis.datastore.info[["Mung bean GWAS"]] <- list(
+  mrkFilter = "vigna:radiata",
+  chrRegex = "vigra.VC1973A.gnm6.(Vr\\d+)"
+)
 lis.datastore.info[["Peanut GWAS"]] <- list(
   mrkFilter = "arachis:hypogaea",
   chrRegex = "arahy.Tifrunner.gnm1.(Arahy.\\d+)"
@@ -62,29 +66,33 @@ scrub.gff <- function(df.gff.in, what) {
   df.gff[!is.na(df.gff$chromosome), ]
 }
 
+# Read metadata from README file in same directory as input file
+read.metadata <- function(fin) {
+  directory <- dirname(fin)
+  collection <- basename(directory)
+  fReadme <- sprintf("%s/README.%s.yml", directory, collection)
+  ll <- readLines(fReadme)
+  ss <- strsplit(ll, split = ":")
+  ss <- ss[lapply(ss, length) == 2]
+  name <- doi <- ""
+  ws <- "[ \t\r\n\"]" # strip quotes as well as whitespace
+  for (s in ss) {
+    if (s[1] == "identifier") name <- trimws(s[2], whitespace = ws)
+    else if (s[1] == "publication_doi") doi <- trimws(s[2], whitespace = ws)
+  }
+  metadata <- list()
+  metadata$publication <- ifelse(nchar(doi) == 0, name,
+    sprintf("<a href='https://doi.org/%s' target=_blank>%s</a>", doi, name))
+  metadata
+}
+
 read.gwas.lis.datastore <- function(fin) {
   tmp <- tempfile()
   download.file(fin, tmp)
-  ll <- readLines(gzfile(tmp))
-  # read metadata before line beginning "#identifier"
-  src.name <- src.url <- ""
-  i <- 1
-  while (!startsWith(ll[i], "#")) {
-    ss <- unlist(strsplit(ll[i], split = "\t"))
-    if (ss[1] == "Name") {
-      src.name <- ss[2]
-    } else if (ss[1] == "DOI") {
-      src.url <- ifelse(is.na(ss[2]) || ss[2] == "none", NA, paste0("https://doi.org/", ss[2]))
-    } else if (ss[1] == "PMID") {
-      src.url <- ifelse(is.na(ss[2]) || ss[2] == "none", NA, paste0("https://pubmed.ncbi.nlm.nih.gov/", ss[2], "/"))
-    }
-    i <- i + 1
-  }
-  # read the rest
-  df.gwas <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  df.gwas <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
   df.gwas <- df.gwas[, 1:4]
   names(df.gwas) <- c("identifier", "phenotype", "marker", "p_value") # clean up column names
-  df.gwas$publication <- ifelse(is.na(src.url), src.name, paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>"))
+  df.gwas$publication <- read.metadata(fin)$publication
   df.gwas
 }
 
@@ -158,10 +166,10 @@ build.gwas.from.lis.datastore <- function(key) {
 
 gwas.sources <- data.frame(
   name = c("CyVerse", "DSCensor", "LIS Data Store"),
-  # use more basic URLs
+  # TODO: replace with more basic URLs
   url = c(paste(url_cyverse, "dl/d/F61A306C-92D2-4595-8226-A195D46EBB50/FT10.gwas", sep = "/"),
           url_dscensor,
-          paste(url_lis, "data/public/Glycine_max/mixed.gwas.1W14/glyma.mixed.gwas.1W14.KGK20170707-1.gwas.tsv.gz", sep = "/")),
+          paste(url_lis, "data/v2/Glycine/max/gwas/mixed.gwas.Bandillo_Jarquin_2015/mixed.gwas.Bandillo_Jarquin_2015.gwas.tsv.gz", sep = "/")),
   status = FALSE,
   stringsAsFactors = FALSE
 )
