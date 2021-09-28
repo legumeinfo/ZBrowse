@@ -3,5 +3,5 @@ Gm01:56831624,Gm02:48577505,Gm03:45779781,Gm04:52389146,Gm05:42234498,Gm06:51416
 Glycine max,G.max,Glyma
 https://legumeinfo.org/data/public/Glycine_max/Wm82.gnm2.ann1.RVB6/glyma.Wm82.gnm2.ann1.RVB6.gene_models_main.gff3.gz
 Gm%02d,glyma.Wm82.gnm2.Gm%02d,glyma.Gm\d+
-http://localhost:6427/gcv
+default
 strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

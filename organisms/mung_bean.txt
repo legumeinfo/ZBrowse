@@ -3,5 +3,5 @@ Vr01:36501346,Vr02:25360630,Vr03:12950713,Vr04:20812224,Vr05:37180910,Vr06:37436
 Vigna radiata,V.radiata,Vigra
 https://legumeinfo.org/data/public/Vigna_radiata/VC1973A.gnm6.ann1.M1Qs/vigra.VC1973A.gnm6.ann1.M1Qs.gene_models_main.gff3.gz
 Vr%02d,vigra.VC1973A.gnm6.Vr%02d,vigra.Vr\d+
-http://localhost:6427/gcv
+default
 strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

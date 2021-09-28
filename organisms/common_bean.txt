@@ -3,5 +3,5 @@ Chr01:52205531,Chr02:49040938,Chr03:52284309,Chr04:45960019,Chr05:40819286,Chr06
 Phaseolus vulgaris,P.vulgaris,Phavu
 https://legumeinfo.org/data/index/public/Phaseolus_vulgaris/G19833.gnm1.ann1.pScz/phavu.G19833.gnm1.ann1.pScz.gene_models_main.gff3.gz
 Chr%02d,phavu.G19833.gnm1.Chr%02d,phavu.Chr\d+
-http://localhost:6427/gcv
+default
 strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description

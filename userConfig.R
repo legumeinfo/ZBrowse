@@ -2,6 +2,8 @@
 userConfig <- list()
 
 # Default values for communication with GCV
+# GCV base URL (may override in organism files)
+userConfig$default_gcv_url <- "https://gcv-microservices.lis.ncgr.org/lis"
 # for micro-synteny
 userConfig$bcName <- "GCV"
 userConfig$neighbors <- 20
