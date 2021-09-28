@@ -259,14 +259,14 @@ shinyServer(function(input, output, session) {
   }
   createMacrosyntenyPanel <- function() {
     val.m <- isolate(values$urlFields$macroMatched)
-    if (is.null(val.m)) val.m <- private$macroMatched
+    if (is.null(val.m)) val.m <- userConfig$macroMatched
     val.i <- isolate(values$urlFields$macroIntermediate)
-    if (is.null(val.i)) val.i <- private$macroIntermediate
+    if (is.null(val.i)) val.i <- userConfig$macroIntermediate
     val.mask <- isolate(values$urlFields$macroMask)
-    if (is.null(val.mask)) val.mask <- private$macroMask
+    if (is.null(val.mask)) val.mask <- userConfig$macroMask
     val.dd <- isolate(values$urlFields$macroDistance)
     if (is.null(val.dd)) {
-      val.dd <- unlist(strsplit(private$macroDistance, split = ":"))
+      val.dd <- unlist(strsplit(userConfig$macroDistance, split = ":"))
     } else {
       val.dd <- unlist(strsplit(val.dd, split = ":"))
     }
@@ -298,13 +298,13 @@ shinyServer(function(input, output, session) {
   }
   createGenomicLinkageSidebar <- function() {
     val.bcName <- isolate(values$urlFields$bcName)
-    if (is.null(val.bcName)) val.bcName <- private$bcName
+    if (is.null(val.bcName)) val.bcName <- userConfig$bcName
     val.n <- isolate(values$urlFields$neighbors)
-    if (is.null(val.n)) val.n <- private$neighbors
+    if (is.null(val.n)) val.n <- userConfig$neighbors
     val.m <- isolate(values$urlFields$matched)
-    if (is.null(val.m)) val.m <- private$matched
+    if (is.null(val.m)) val.m <- userConfig$matched
     val.i <- isolate(values$urlFields$intermediate)
-    if (is.null(val.i)) val.i <- private$intermediate
+    if (is.null(val.i)) val.i <- userConfig$intermediate
     tags$div(id = "tour-genLink", wellPanel(
       h5("Genomic Linkage options"),
       textInput("bcName", "Broadcast Channel name:", value = val.bcName),
@@ -1336,9 +1336,9 @@ shinyServer(function(input, output, session) {
     # Clear any existing macro-synteny blocks before proceeding
     values$pairwiseBlocks <- list(NULL, NULL)
 
-    if (!validNumericInput("macroMatched", private$macroMatched, 5, 50)) return()
-    if (!validNumericInput("macroIntermediate", private$macroIntermediate, 1, 25)) return()
-    if (!validNumericInput("macroMask", private$macroMask, 1, 50)) return()
+    if (!validNumericInput("macroMatched", userConfig$macroMatched, 5, 50)) return()
+    if (!validNumericInput("macroIntermediate", userConfig$macroIntermediate, 1, 25)) return()
+    if (!validNumericInput("macroMask", userConfig$macroMask, 1, 50)) return()
     if (is.null(input$macroDistance)) return()
     if (!validNumericInput("macroNgram", 1, 1, 2)) return()
     if (is.null(input$macroReversals)) return()
@@ -1392,9 +1392,9 @@ shinyServer(function(input, output, session) {
   observe({
     # User selected a gene in the organism 1 zChart, or in the URL
     if (is.null(input$selectedGene)) return()
-    if (!validNumericInput("neighbors", private$neighbors, 1, 20)) return()
-    if (!validNumericInput("matched", private$matched, 1, 20)) return()
-    if (!validNumericInput("intermediate", private$intermediate, 1, 10)) return()
+    if (!validNumericInput("neighbors", userConfig$neighbors, 1, 20)) return()
+    if (!validNumericInput("matched", userConfig$matched, 1, 20)) return()
+    if (!validNumericInput("intermediate", userConfig$intermediate, 1, 10)) return()
     isolate({
       org1 <- values$organism
       values$glSelectedGene <- input$selectedGene

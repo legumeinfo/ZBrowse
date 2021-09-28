@@ -25,6 +25,8 @@ library(jsonlite)
 library(shinyjs)
 library(rintrojs)
 
+source("./userConfig.R")
+
 #find the non-numeric values in a vector
 which.nonnum <- function(x) {
   badNum <- is.na(suppressWarnings(as.numeric(as.character(x))))
@@ -250,6 +252,3 @@ macrosyntenyColors <- c(
 # default window center and half-width
 defaultCenter <- 100000
 defaultWindowSize <- 250000
-
-# locally configurable global variables
-source("private.R")

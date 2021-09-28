@@ -41,7 +41,3 @@ Thumbs.db
 #####################
 .Rproj.user
 .Rhistory
-
-# Local configuration files #
-#############################
-private.R
