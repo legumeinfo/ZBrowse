@@ -355,6 +355,7 @@ shinyServer(function(input, output, session) {
       conditionalPanel(condition = manageTabSelected,
         actionLink("zbrowseTour", "Start Tour"),
         wellPanel(h5("Connection Status"), displayConnectionStatus()),
+        actionButton("swap", "\u21f5 Swap Datasets"),
         createManageSidebar(1),
         createManageSidebar(2),
         tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) {
@@ -445,6 +446,12 @@ shinyServer(function(input, output, session) {
 #     }
   })  
   outputOptions(output, "ui_finder", suspendWhenHidden=FALSE)
+
+  observeEvent(input$swap, {
+    dataset1 <- input$datasets
+    updateSelectInput(session, "datasets", selected = input$datasets2)
+    updateSelectInput(session, "datasets2", selected = dataset1)
+  })
 
   # create the menu for selecting the jth dataset
   renderDatasets <- function(j, defaultDataset) {
