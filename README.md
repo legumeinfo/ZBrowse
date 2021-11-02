@@ -67,3 +67,7 @@ The Start Tour link (in the Manage tab) launches a guided tour (or tutorial) of 
 #### Connection Status
 
 This panel (also in the Manage tab) indicates when remote data sources are unavailable, relieving user angst.
+
+#### Swap Datasets
+
+Exchanges Species 1 and Species 2.
