@@ -3,5 +3,5 @@ Arabidopsis thaliana
 Arabidopsis thaliana,A.thaliana,Arath
 ./annotations/mergedTAIR10Annotations.modifiedForBrowser.csv
 NA,NA,arath.Col.Chr\d+
-http://localhost:6427/gcv
+https://gcv-microservices.lis.ncgr.org/legfedoutgroups
 strand,+,-,transcript_start,transcript_end,https://bar.utoronto.ca/thalemine/gene:%s,name,name,chromosome,short_description
