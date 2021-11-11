@@ -46,7 +46,7 @@ The Show in GCV link tells the GCV to focus on the same region of the Species 1 
 
 <img src="img/load-data.png" align=left> The original ZBrowse allowed loading your own local GWAS data files, but assigned each to a new, standalone dataset. Our implementation does not create new datasets on the fly, but instead adds user data to existing ones. We hope this feature will benefit researchers desiring to superimpose their own bleeding-edge GWAS data on previously published results.
 
-We provide GWAS datasets for common bean, cowpea, peanut, pigeonpea, and soybean, while the _Medicago truncatula_ and _Arabidopsis thaliana_ datasets are initially empty (a few traits are available through the Remote Trait Files selector).
+We provide GWAS datasets for common bean, cowpea, mung bean, peanut, pigeonpea, and soybean, while the _Medicago truncatula_ and _Arabidopsis thaliana_ datasets are initially empty (a few traits are available through the Remote Trait Files selector).
 
 To add your own local GWAS data, first prepare them as a delimited text file with a header row listing the column names. Required columns are chromosome, position, trait (= phenotype), and p-value (or other significance metric) for each SNP, but you may include others. Click the Local Trait Files/Browse button to specify which file(s) to load, then click the Load Data button to append the GWAS data. Finally, tweak any details (such as whether to take the negative logarithm of the reported p-value) through the Manage tab.
 
