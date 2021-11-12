@@ -1680,7 +1680,9 @@ shinyServer(function(input, output, session) {
   # View the current genomic linkage query in the Genome Context Viewer
   # (this does not involve Broadcast Channel)
   observeEvent(input$viewInGCV, {
-    if (!is.null(values$glSelectedGene)) {
+    if (is.null(values$glSelectedGene)) {
+      alert("No gene selected.")
+    } else {
       gcvQuery <- sprintf("window.open('https://legumefederation.org/gcv/phytozome_10_2/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
         values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
       runjs(gcvQuery)
