@@ -285,9 +285,9 @@ shinyServer(function(input, output, session) {
     }
     tags$div(id = "tour-macrosynteny", wellPanel(
       h5("Macro-synteny options"),
-      numericInput("macroMatched", "Matched:", min = 5, max = 50, value = val.m),
-      numericInput("macroIntermediate", "Intermediate:", min = 1, max = 25, value = val.i),
-      numericInput("macroMask", "Mask:", min = 1, max = 50, value = val.mask),
+      numericInput("macroMatched", "Matched:", min = 1, max = 100, value = val.m),
+      numericInput("macroIntermediate", "Intermediate:", min = 0, max = 100, value = val.i),
+      numericInput("macroMask", "Mask:", min = 1, max = 100, value = val.mask),
       selectInput("macroDistance", "Distance metric:", choices = c("Jaccard", "Levenshtein"), selected = stri_trans_totitle(val.dist)),
       conditionalPanel("input.macroDistance == 'Jaccard'",
         numericInput("macroNgram", "n-gram size:", min = 1, max = 2, value = val.ngram),
@@ -318,9 +318,9 @@ shinyServer(function(input, output, session) {
       checkboxInput('boolListenToBC', 'Listen', TRUE),
       tags$div(id = "tour-microsynteny", wellPanel(
         uiOutput("selectedGene"),
-        numericInput("neighbors", "Neighbors:", min = 1, max = 20, value = val.n),
-        numericInput("matched", "Matched:", min = 1, max = 20, value = val.m),
-        numericInput("intermediate", "Intermediate:", min = 1, max = 10, value = val.i),
+        numericInput("neighbors", "Neighbors:", min = 1, max = 100, value = val.n),
+        textInput("matched", "Matched:", value = val.m),
+        numericInput("intermediate", "Intermediate:", min = 0, max = 100, value = val.i),
         conditionalPanel("input.boolBroadcastToBC == true",
           actionLink("viewInGCV", "View in GCV")
         ),
@@ -1676,7 +1676,7 @@ shinyServer(function(input, output, session) {
     if (is.null(values$glSelectedGene)) {
       alert("No gene selected.")
     } else {
-      gcvQuery <- sprintf("window.open('%s/gene;lis=%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
+      gcvQuery <- sprintf("window.open('%s/gene;lis=%s?neighbors=%d&matched=%s&intermediate=%d&regexp=%s', 'gcv');",
         userConfig$gcv_client_url, values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
       runjs(gcvQuery)
     }
@@ -1812,40 +1812,43 @@ shinyServer(function(input, output, session) {
   }, ignoreInit = TRUE)
 
   # Validate numericInputs
-  validNumericInput <- function(inputId, default, min, max = Inf) {
-    if (!is.numeric(input[[inputId]])) {
-      updateNumericInput(session, inputId, value = default)
+  validNumericInput <- function(inputId, default, min, max = Inf, FUN = updateNumericInput) {
+    ii <- input[[inputId]]
+    if (length(ii) == 0) return(FALSE)
+    x <- suppressWarnings(as.numeric(ii))
+    if (is.na(x)) {
+      FUN(session, inputId, value = default)
       return(FALSE)
-    } else if (input[[inputId]] < min) {
-      updateNumericInput(session, inputId, value = min)
+    } else if (x < min) {
+      FUN(session, inputId, value = min)
       return(FALSE)
-    } else if (max < Inf && input[[inputId]] > max) {
-      updateNumericInput(session, inputId, value = max)
+    } else if (max < Inf && x > max) {
+      FUN(session, inputId, value = max)
       return(FALSE)
     }
     TRUE
   }
 
   observeEvent(input$macroMatched, {
-    validNumericInput("macroMatched", userConfig$macroMatched, 5, 50)
+    validNumericInput("macroMatched", userConfig$macroMatched, 1, 100)
   })
   observeEvent(input$macroIntermediate, {
-    validNumericInput("macroIntermediate", userConfig$macroIntermediate, 1, 25)
+    validNumericInput("macroIntermediate", userConfig$macroIntermediate, 0, 100)
   })
   observeEvent(input$macroMask, {
-    validNumericInput("macroMask", userConfig$macroMask, 1, 50)
+    validNumericInput("macroMask", userConfig$macroMask, 1, 100)
   })
   observeEvent(input$macroNgram, {
     validNumericInput("macroNgram", 1, 1, 2)
   })
   observeEvent(input$neighbors, {
-    validNumericInput("neighbors", userConfig$neighbors, 1, 20)
+    validNumericInput("neighbors", userConfig$neighbors, 1, 100)
   })
   observeEvent(input$matched, {
-    validNumericInput("matched", userConfig$matched, 1, 20)
+    validNumericInput("matched", userConfig$matched, 0.01, 100, updateTextInput)
   })
   observeEvent(input$intermediate, {
-    validNumericInput("intermediate", userConfig$intermediate, 1, 10)
+    validNumericInput("intermediate", userConfig$intermediate, 0, 100)
   })
 
 })#end server
