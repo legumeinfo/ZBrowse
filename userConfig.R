@@ -1,11 +1,15 @@
 # User-configurable global variables
 userConfig <- list()
 
-# Default values for communication with GCV
-# GCV base URL (may override in organism files)
-userConfig$default_gcv_url <- "https://gcv-microservices.lis.ncgr.org/lis"
-# for micro-synteny
+# GCV microservices base URL (may override in organism files)
+userConfig$default_gcv_microservices_url <- "https://gcv-microservices.lis.ncgr.org/lis"
+# GCV client URL (for Broadcast Channel communication)
+# if NULL, it will default to <url_protocol>//<url_hostname>:<url_port>/gcv2 from session$clientData fields,
+# or you may explicitly set it here
+userConfig$gcv_client_url <- NULL
 userConfig$bcName <- "GCV"
+
+# for micro-synteny
 userConfig$neighbors <- 20
 userConfig$matched <- 4
 userConfig$intermediate <- 5

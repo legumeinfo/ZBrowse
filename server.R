@@ -86,6 +86,10 @@ shinyServer(function(input, output, session) {
   # Extract initial values specified in the URL
   isolate({
     values$urlFields <- parseQueryString(session$clientData$url_search)
+    # set GCV client URL if necessary
+    if (is.null(userConfig$gcv_client_url)) {
+      userConfig$gcv_client_url <- sprintf("%s//%s:%s/gcv2", session$clientData$url_protocol, session$clientData$url_hostname, session$clientData$url_port)
+    }
   })
 
   # what to do when the user changes the jth dataset selection
@@ -1683,8 +1687,8 @@ shinyServer(function(input, output, session) {
     if (is.null(values$glSelectedGene)) {
       alert("No gene selected.")
     } else {
-      gcvQuery <- sprintf("window.open('https://legumefederation.org/gcv/phytozome_10_2/search/lis/%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
-        values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
+      gcvQuery <- sprintf("window.open('%s/gene;lis=%s?neighbors=%d&matched=%d&intermediate=%d&regexp=%s', 'gcv');",
+        userConfig$gcv_client_url, values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
       runjs(gcvQuery)
     }
   })

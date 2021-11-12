@@ -142,7 +142,7 @@ for(i in 1:length(files)){
     if (!any(is.na(chr2i))) locValue$chromosome <- as.character(chr2i)
     org.annotGeneLoc[key]<-list(locValue)
 
-    org.gcvUrlBase[key] <- ifelse(data[6] == "default", userConfig$default_gcv_url, data[6])
+    org.gcvUrlBase[key] <- ifelse(data[6] == "default", userConfig$default_gcv_microservices_url, data[6])
 
     # Annotations table may have different column names (etc) for different species,
     # so define them in the organism file
