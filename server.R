@@ -620,21 +620,35 @@ shinyServer(function(input, output, session) {
           tags$div(id = "tour-pChart", showOutput("pChart", "highcharts")),
           tags$div(id = "tour-zChart", showOutput("zChart", "highcharts")),
           tags$script('Shiny.addCustomMessageHandler("customMsg", function(bandOpts){
+            hc = $("#pChartMacro").highcharts()
+            if (hc != undefined) {
+              chartXAxis = hc.xAxis[0]
+              chartXAxis.removePlotBand()
+              chartXAxis.addPlotBand(bandOpts)
+            }
             hc = $("#pChart").highcharts()
-            if (hc == undefined) return;
-            chartXAxis = hc.xAxis[0]
-            chartXAxis.removePlotBand()
-            chartXAxis.addPlotBand(bandOpts)
+            if (hc != undefined) {
+              chartXAxis = hc.xAxis[0]
+              chartXAxis.removePlotBand()
+              chartXAxis.addPlotBand(bandOpts)
+            }
           })'),
           style = paste0("background-color: ", bgColors[1], ";")
         ),
         wellPanel(showOutput("zChart2", "highcharts"), showOutput("pChart2", "highcharts"),
           tags$script('Shiny.addCustomMessageHandler("customMsg2", function(bandOpts){
+            hc = $("#pChartMacro2").highcharts()
+            if (hc != undefined) {
+              chartXAxis = hc.xAxis[0]
+              chartXAxis.removePlotBand()
+              chartXAxis.addPlotBand(bandOpts)
+            }
             hc = $("#pChart2").highcharts()
-            if (hc == undefined) return;
-            chartXAxis = hc.xAxis[0]
-            chartXAxis.removePlotBand()
-            chartXAxis.addPlotBand(bandOpts)
+            if (hc != undefined) {
+              chartXAxis = hc.xAxis[0]
+              chartXAxis.removePlotBand()
+              chartXAxis.addPlotBand(bandOpts)
+            }
           })'),
           style = paste0("background-color: ", bgColors[2], ";")
         )
