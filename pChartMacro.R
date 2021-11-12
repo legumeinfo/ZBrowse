@@ -22,12 +22,13 @@ create_pChartMacro <- function(j, input, values) {
   # Display macro-synteny blocks
   blocks <- values$pairwiseBlocks[[j]]
   if (!is.null(blocks)) {
+    macroDistanceMetric <- isolate(input$macroDistance)
     blocks <- blocks[blocks$chromosome == trailingInteger(input[[jth_ref("chr", j)]]), ]
     if (j == 1) {
       a$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
     } else {
-      ylab2 <- paste(input$macroDistance, "distance")
-      if (input$macroDistance == "Levenshtein") ylab2 <- paste("Normalized", ylab2)
+      ylab2 <- paste(macroDistanceMetric, "distance")
+      if (macroDistanceMetric == "Levenshtein") ylab2 <- paste("Normalized", ylab2)
       a$yAxis(title=list(text=ylab2),min=0,max=1,reversed=TRUE,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
     }
     apply(blocks, 1, function(r) {
@@ -36,14 +37,14 @@ create_pChartMacro <- function(j, input, values) {
         yh <- 0.5
       } else {
         yh <- as.numeric(r$distance)
-        if (input$macroDistance == "Levenshtein") yh <- yh*2/(as.numeric(r$n1) + as.numeric(r$n2))
+        if (macroDistanceMetric == "Levenshtein") yh <- yh*2/(as.numeric(r$n1) + as.numeric(r$n2))
       }
       r.data <- vector("list", 2)
       r.data[[1]]$x <- as.numeric(r$fmin)
       r.data[[2]]$x <- as.numeric(r$fmax)
       r.data[[1]]$y <- r.data[[2]]$y <- yh
       r.distance <- sprintf("%4.3f", as.numeric(r$distance))
-      if (input$macroDistance == "Levenshtein") r.distance <- sprintf("%d", as.integer(r$distance))
+      if (macroDistanceMetric == "Levenshtein") r.distance <- sprintf("%d", as.integer(r$distance))
       a$series(
         type = "line",
         data = r.data,
@@ -57,7 +58,7 @@ create_pChartMacro <- function(j, input, values) {
               prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ",")),
             sprintf("<b>Macro-synteny</b><br>%s chromosome %d (%d genes)<br>Location %s-%s Orientation: %s<br>with %s chromosome %d (%d genes)<br>Blocks %d-%d<br>%s distance: %s",
               values$organism2, as.integer(r$chromosome), as.integer(r$n2), prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ","), r$orientation,
-              values$organism, as.integer(r$chr1), as.integer(r$n1), as.integer(r$i), as.integer(r$j), input$macroDistance, r.distance)
+              values$organism, as.integer(r$chr1), as.integer(r$n1), as.integer(r$i), as.integer(r$j), macroDistanceMetric, r.distance)
           ),
           pointFormat = '',
           followPointer = TRUE

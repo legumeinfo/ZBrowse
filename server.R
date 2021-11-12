@@ -113,6 +113,7 @@ shinyServer(function(input, output, session) {
       if (!is.null(values$organism)) chrNames1 <- c(chrNames1, chrName[[values$organism]])
       updateSelectInput(session, "macroChromosome", choices = chrNames1)
     }
+    shinyjs::click("submitMacroSynteny")
     
     # Uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
     updateTextInput(session, inputId = jth_ref("traitFilter", j), value = "")
@@ -294,6 +295,7 @@ shinyServer(function(input, output, session) {
           checkboxInput('macroReversals', 'Reversals?', value = val.rev)
         )
       ),
+      actionButton("submitMacroSynteny", "Update"),
       conditionalPanel(condition = wholeGenomeTabSelected,
         selectInput("macroChromosome", "Species 1 Chromosome:", choices = "All")
       )
@@ -1357,48 +1359,41 @@ shinyServer(function(input, output, session) {
   })
 
   # Recompute macro-synteny blocks
-  observe({
+  observeEvent(input$submitMacroSynteny, {
     # Clear any existing macro-synteny blocks before proceeding
     values$pairwiseBlocks <- list(NULL, NULL)
 
-    if (!validNumericInput("macroMatched", userConfig$macroMatched, 5, 50)) return()
-    if (!validNumericInput("macroIntermediate", userConfig$macroIntermediate, 1, 25)) return()
-    if (!validNumericInput("macroMask", userConfig$macroMask, 1, 50)) return()
-    if (is.null(input$macroDistance)) return()
-    if (!validNumericInput("macroNgram", 1, 1, 2)) return()
-    if (is.null(input$macroReversals)) return()
     org1 <- values$organism
     org2 <- values$organism2
     if (is.null(org1) || is.null(org2)) return()
     if (!("family" %in% names(org.annotGeneLoc[[org1]]) && "family" %in% names(org.annotGeneLoc[[org2]]))) return()
 
-    isolate({
-      # Consider all pairs of chromosomes between species 1 and 2
-      for (chr1 in chrName[[org1]]) {
-        # drop = TRUE to avoid contaminating the JSON in the macroSyntenyBlocksMicroservice() call
-        ff <- subset(org.annotGeneLoc[[org1]], chromosome == chr1, select = family, drop = TRUE)
-        chr2fmt <- gsub("\\\\d\\+", "", org.gcvChrFormat[[org2]])
-        nchr2 <- length(chrName[[org2]])
-        tt <- sapply(1:nchr2, function(chr2) {
-          paste0(chr2fmt, ifelse(nchr2 < 10 || chr2 >= 10, "", "0"), chr2)
-        })
-        distanceMetric <- tolower(input$macroDistance)
-        if (distanceMetric == "jaccard") distanceMetric <- paste(distanceMetric, input$macroNgram, tolower(input$macroReversals), sep = ":")
-        blocks <- macroSyntenyBlocksMicroservice(org.gcvUrlBase[[org1]], ff, input$macroMatched, input$macroIntermediate, input$macroMask, tt, distanceMetric, chr1, org1, org2)
-        if (!is.null(results$error)) {
-          print(results$error)
-        } else {
-          for (j in 1:2) {
-            if (is.null(blocks[[j]])) next
-            if (is.null(values$pairwiseBlocks[[j]])) {
-              values$pairwiseBlocks[[j]] <- blocks[[j]]
-            } else {
-              values$pairwiseBlocks[[j]] <- rbind(values$pairwiseBlocks[[j]], blocks[[j]])
-            }
+    # Consider all pairs of chromosomes between species 1 and 2
+    for (chr1 in chrName[[org1]]) {
+      # drop = TRUE to avoid contaminating the JSON in the macroSyntenyBlocksMicroservice() call
+      ff <- subset(org.annotGeneLoc[[org1]], chromosome == chr1, select = family, drop = TRUE)
+      chr2fmt <- gsub("\\\\d\\+", "", org.gcvChrFormat[[org2]])
+      nchr2 <- length(chrName[[org2]])
+      tt <- sapply(1:nchr2, function(chr2) {
+        paste0(chr2fmt, ifelse(nchr2 < 10 || chr2 >= 10, "", "0"), chr2)
+      })
+      distanceMetric <- tolower(input$macroDistance)
+      if (distanceMetric == "jaccard") distanceMetric <- paste(distanceMetric, input$macroNgram, tolower(input$macroReversals), sep = ":")
+      blocks <- macroSyntenyBlocksMicroservice(org.gcvUrlBase[[org1]], ff, input$macroMatched, input$macroIntermediate, input$macroMask, tt, distanceMetric, chr1, org1, org2)
+      if (!is.null(results$error)) {
+        print(results$error)
+      } else {
+        for (j in 1:2) {
+          if (is.null(blocks[[j]])) next
+          if (is.null(values$pairwiseBlocks[[j]])) {
+            values$pairwiseBlocks[[j]] <- blocks[[j]]
+          } else {
+            values$pairwiseBlocks[[j]] <- rbind(values$pairwiseBlocks[[j]], blocks[[j]])
           }
         }
       }
-    })
+    }
+    updateURL()
   })
 
   clearGenomicLinkages <- function() {
@@ -1414,107 +1409,103 @@ shinyServer(function(input, output, session) {
   })
 
   # Determine genomic linkages using the GCV microservices
-  observe({
+  observeEvent(input$selectedGene, {
     # User selected a gene in the organism 1 zChart, or in the URL
     if (is.null(input$selectedGene)) return()
-    if (!validNumericInput("neighbors", userConfig$neighbors, 1, 20)) return()
-    if (!validNumericInput("matched", userConfig$matched, 1, 20)) return()
-    if (!validNumericInput("intermediate", userConfig$intermediate, 1, 10)) return()
-    isolate({
-      org1 <- values$organism
-      values$glSelectedGene <- input$selectedGene
-      df.genes <- subset(org.annotGeneLoc[[org1]], chromosome == input$chr,
-        select = c(name, chromosome, transcript_start, transcript_end, strand, family))
-      n0 <- which(df.genes$name == values$glSelectedGene)
-      n <- input$neighbors
-      nn <- n0 + (-n:n)
-      # if at either end of the chromosome, adjust to retain (2*n + 1) genes
-      if (nn[1] < 1) {
-        nn <- nn - (nn[1] - 1)
-      } else if (tail(nn, 1) > length(df.genes$name)) {
-        nn <- nn - (tail(nn, 1) - length(df.genes$name))
-      }
-      values$glGenes <- df.genes[nn, ]
-      values$glGenes2 <- NULL # to disable redrawing the zCharts until we have the micro-synteny-search results
 
-      # Send to the micro-synteny-search service
-      results <- microSyntenySearchMicroservice(org.gcvUrlBase[[org1]], values$glGenes$family, input$matched, input$intermediate)
-      if (!is.null(results$error)) {
-        print(results$error)
-      } else {
-        if (length(results$tracks) == 0) {
-          clearGenomicLinkages()
-          return()
-        }
-        # Parse related genes from species 2
-        for (i in 1:length(results$tracks)) {
-          results$tracks[[i]]$id <- i
-        }
-        org2 <- values$organism2
-        df.annot <- subset(org.annotGeneLoc[[org2]], select = c(name, chromosome, transcript_start, transcript_end, strand, family))
-        values$glGenes2 <- do.call(rbind, lapply(results$tracks, FUN = function(tr) {
-          if (paste(substr(tr$genus, 1, 1), tr$species, sep = ".") == org.G.species[[org2]]) {
-            df.genes <- data.frame(name = unlist(tr$genes), trackId = tr$id, stringsAsFactors = FALSE)
-            # workaround for A. thaliana: convert gene names like "arath.Col.AT1G28130" back to "AT1G28130"
-            if (org2 == "Arabidopsis thaliana") {
-              df.genes$name <- stri_match_first(df.genes$name, regex = "^arath.Col.(.+)$")[, 2]
-            }
-            df.genes <- merge(df.genes, df.annot)
-            if (nrow(df.genes) == 0) return()
-            df.genes <- df.genes[nchar(df.genes$family) > 0, ]
-            df.genes
+    org1 <- values$organism
+    values$glSelectedGene <- input$selectedGene
+    df.genes <- subset(org.annotGeneLoc[[org1]], chromosome == input$chr,
+      select = c(name, chromosome, transcript_start, transcript_end, strand, family))
+    n0 <- which(df.genes$name == values$glSelectedGene)
+    n <- input$neighbors
+    nn <- n0 + (-n:n)
+    # if at either end of the chromosome, adjust to retain (2*n + 1) genes
+    if (nn[1] < 1) {
+      nn <- nn - (nn[1] - 1)
+    } else if (tail(nn, 1) > length(df.genes$name)) {
+      nn <- nn - (tail(nn, 1) - length(df.genes$name))
+    }
+    values$glGenes <- df.genes[nn, ]
+    values$glGenes2 <- NULL # to disable redrawing the zCharts until we have the micro-synteny-search results
+
+    # Send to the micro-synteny-search service
+    results <- microSyntenySearchMicroservice(org.gcvUrlBase[[org1]], values$glGenes$family, input$matched, input$intermediate)
+    if (!is.null(results$error)) {
+      print(results$error)
+    } else {
+      if (length(results$tracks) == 0) {
+        clearGenomicLinkages()
+        return()
+      }
+      # Parse related genes from species 2
+      for (i in 1:length(results$tracks)) {
+        results$tracks[[i]]$id <- i
+      }
+      org2 <- values$organism2
+      df.annot <- subset(org.annotGeneLoc[[org2]], select = c(name, chromosome, transcript_start, transcript_end, strand, family))
+      values$glGenes2 <- do.call(rbind, lapply(results$tracks, FUN = function(tr) {
+        if (paste(substr(tr$genus, 1, 1), tr$species, sep = ".") == org.G.species[[org2]]) {
+          df.genes <- data.frame(name = unlist(tr$genes), trackId = tr$id, stringsAsFactors = FALSE)
+          # workaround for A. thaliana: convert gene names like "arath.Col.AT1G28130" back to "AT1G28130"
+          if (org2 == "Arabidopsis thaliana") {
+            df.genes$name <- stri_match_first(df.genes$name, regex = "^arath.Col.(.+)$")[, 2]
           }
-        }))
-
-        # Highlight families common to both genomes
-        families <- intersect(values$glGenes$family, values$glGenes2$family)
-        nf <- length(families)
-        if (nf == 0) {
-          clearGenomicLinkages()
-          return()
+          df.genes <- merge(df.genes, df.annot)
+          if (nrow(df.genes) == 0) return()
+          df.genes <- df.genes[nchar(df.genes$family) > 0, ]
+          df.genes
         }
+      }))
 
-        # Create nf colors
-        fc <- getRainbowColors(nf)
-        familyColors <- list()
-        lapply(1:nf, FUN = function(i) familyColors[[families[i]]] <<- stri_sub(fc[i], 1, 7))
-
-        # Construct the chart data
-        values$glGenes <- values$glGenes[values$glGenes$family %in% families, ]
-        values$glGenes$color <- familyColors[values$glGenes$family]
-        values$glGenes2 <- values$glGenes2[values$glGenes2$family %in% families, ]
-        values$glGenes2$color <- familyColors[values$glGenes2$family]
-        values$glColors <- familyColors
-
-        # Construct the related regions (each corresponds to a track from results$tracks)
-        glTrackIds <- unique(values$glGenes2$trackId)
-        glRelatedRegions <- do.call(rbind.data.frame, lapply(glTrackIds, FUN = function(tr.id) {
-          tr.genes <- subset(values$glGenes2, trackId == tr.id)
-          tr.chr <- tr.genes$chr[1]
-          # Prepend "chr" if chromosome name is a number
-          chrd <- ifelse(hasNumericChromosomeNames(org2), paste0("chr", tr.chr), tr.chr)
-          tr.minBP <- min(tr.genes$transcript_start)
-          tr.maxBP <- max(tr.genes$transcript_end)
-          list(region = sprintf("%s %3.2f-%3.2f Mbp", chrd, tr.minBP*1.0e-6, tr.maxBP*1.0e-6),
-            chr = tr.chr, minBP = tr.minBP, maxBP = tr.maxBP)
-        }))
-        # Sort the related regions
-        glRelatedRegions <- glRelatedRegions[with(glRelatedRegions, order(chr, minBP)), ]
-
-        # Recenter the window around the selected gene
-        centerBP1 <- (as.integer(values$glGenes$transcript_start[1]) + as.integer(values$glGenes$transcript_end[nrow(values$glGenes)])) %/% 2
-        updateNumericInput(session, "selected", value = centerBP1)
-        # Select the related region specified in the URL (if any)
-        selectedRegion <- values$urlFields$relatedRegion
-        if (!(is.null(selectedRegion) || selectedRegion %in% glRelatedRegions$region)) {
-          # If the user-specified region does not exist, select the first one
-          # (TODO: select the best match instead)
-          selectedRegion <- NULL
-        }
-        values$urlFields$relatedRegion <- NULL # to reset it
-        updateSelectInput(session, "relatedRegions", choices = glRelatedRegions$region, selected = selectedRegion)
+      # Highlight families common to both genomes
+      families <- intersect(values$glGenes$family, values$glGenes2$family)
+      nf <- length(families)
+      if (nf == 0) {
+        clearGenomicLinkages()
+        return()
       }
-    })
+
+      # Create nf colors
+      fc <- getRainbowColors(nf)
+      familyColors <- list()
+      lapply(1:nf, FUN = function(i) familyColors[[families[i]]] <<- stri_sub(fc[i], 1, 7))
+
+      # Construct the chart data
+      values$glGenes <- values$glGenes[values$glGenes$family %in% families, ]
+      values$glGenes$color <- familyColors[values$glGenes$family]
+      values$glGenes2 <- values$glGenes2[values$glGenes2$family %in% families, ]
+      values$glGenes2$color <- familyColors[values$glGenes2$family]
+      values$glColors <- familyColors
+
+      # Construct the related regions (each corresponds to a track from results$tracks)
+      glTrackIds <- unique(values$glGenes2$trackId)
+      glRelatedRegions <- do.call(rbind.data.frame, lapply(glTrackIds, FUN = function(tr.id) {
+        tr.genes <- subset(values$glGenes2, trackId == tr.id)
+        tr.chr <- tr.genes$chr[1]
+        # Prepend "chr" if chromosome name is a number
+        chrd <- ifelse(hasNumericChromosomeNames(org2), paste0("chr", tr.chr), tr.chr)
+        tr.minBP <- min(tr.genes$transcript_start)
+        tr.maxBP <- max(tr.genes$transcript_end)
+        list(region = sprintf("%s %3.2f-%3.2f Mbp", chrd, tr.minBP*1.0e-6, tr.maxBP*1.0e-6),
+          chr = tr.chr, minBP = tr.minBP, maxBP = tr.maxBP)
+      }))
+      # Sort the related regions
+      glRelatedRegions <- glRelatedRegions[with(glRelatedRegions, order(chr, minBP)), ]
+
+      # Recenter the window around the selected gene
+      centerBP1 <- (as.integer(values$glGenes$transcript_start[1]) + as.integer(values$glGenes$transcript_end[nrow(values$glGenes)])) %/% 2
+      updateNumericInput(session, "selected", value = centerBP1)
+      # Select the related region specified in the URL (if any)
+      selectedRegion <- values$urlFields$relatedRegion
+      if (!(is.null(selectedRegion) || selectedRegion %in% glRelatedRegions$region)) {
+        # If the user-specified region does not exist, select the first one
+        # (TODO: select the best match instead)
+        selectedRegion <- NULL
+      }
+      values$urlFields$relatedRegion <- NULL # to reset it
+      updateSelectInput(session, "relatedRegions", choices = glRelatedRegions$region, selected = selectedRegion)
+    }
   })
 
   # Handle Broadcast Channel messages from the Genome Context Viewer
@@ -1802,17 +1793,8 @@ shinyServer(function(input, output, session) {
       input$chr2
       input$selected2
       input$window2
-      input$neighbors
-      input$matched
-      input$intermediate
       values$glSelectedGene
       input$relatedRegions
-      input$macroMatched
-      input$macroIntermediate
-      input$macroMask
-      input$macroDistance
-      input$macroNgram
-      input$macroReversals
       input$datatabs
     },
     handlerExpr = updateURL(), ignoreInit = TRUE)
@@ -1843,5 +1825,27 @@ shinyServer(function(input, output, session) {
     }
     TRUE
   }
+
+  observeEvent(input$macroMatched, {
+    validNumericInput("macroMatched", userConfig$macroMatched, 5, 50)
+  })
+  observeEvent(input$macroIntermediate, {
+    validNumericInput("macroIntermediate", userConfig$macroIntermediate, 1, 25)
+  })
+  observeEvent(input$macroMask, {
+    validNumericInput("macroMask", userConfig$macroMask, 1, 50)
+  })
+  observeEvent(input$macroNgram, {
+    validNumericInput("macroNgram", 1, 1, 2)
+  })
+  observeEvent(input$neighbors, {
+    validNumericInput("neighbors", userConfig$neighbors, 1, 20)
+  })
+  observeEvent(input$matched, {
+    validNumericInput("matched", userConfig$matched, 1, 20)
+  })
+  observeEvent(input$intermediate, {
+    validNumericInput("intermediate", userConfig$intermediate, 1, 10)
+  })
 
 })#end server
