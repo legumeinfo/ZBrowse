@@ -1536,12 +1536,8 @@ shinyServer(function(input, output, session) {
       isMacroSyntenyBlock <- (flags == 33)
       isMacroSyntenyOrganism <- (flags == 1)
       isMicroSyntenyRow <- (flags == 23)
-      isMicroSyntenyGene <- isMicroSyntenyFamily <- FALSE
-      if (flags == 12) {
-        # note that input$bc_gcv$targets$genes is a list
-        isMicroSyntenyGene <- (length(input$bc_gcv$targets$genes) == 1)
-        isMicroSyntenyFamily <- !isMicroSyntenyGene
-      }
+      isMicroSyntenyGene <- (flags == 12)
+      isMicroSyntenyFamily <- (flags == 8)
       # TODO:
       # isDotPlot <- isMicroSyntenyGene # they have the same fields
       # Multi-view fields:
@@ -1638,14 +1634,16 @@ shinyServer(function(input, output, session) {
         fam <- input$bc_gcv$targets$family
 
       } else if (isMicroSyntenyFamily) {
-        # Highlight the selected genes
-        values$highlightGenes <- unlist(input$bc_gcv$targets$genes)
-        # Check for singleton and orphan genes
         fam <- input$bc_gcv$targets$family
+        # Check for singleton and orphan genes
         isSingletons <- startsWith(fam, "singleton")
-        # Parse "singleton,phytozome_10_2.xxxxxxxx,phytozome_10_2.yyyyyyyy,..."
+        # Parse "singleton,<family 1>,<family 2>,..."
         if (isSingletons) fam <- unlist(strsplit(fam, split = ","))[-1]
-        isOrphans <- (fam == "")
+        # isOrphans <- (fam == "")
+
+        # Determine and highlight the selected genes
+        values$highlightGenes <- subset(org.annotGeneLoc[[values$organism]], family %in% fam, select = name)
+        values$highlightGenes <- unlist(union(values$highlightGenes, subset(org.annotGeneLoc[[values$organism2]], family %in% fam, select = name)))
       }
     }
   })
