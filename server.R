@@ -564,12 +564,27 @@ shinyServer(function(input, output, session) {
   output$nrowDataset <- reactive(createNrowDataset(1))
   output$nrowDataset2 <- reactive(createNrowDataset(2))
 
+  createDatasetSynopsis <- function(j) {
+    if (is.null(input[[jth_ref("datasets", j)]])) return()
+    dat <- getdata(j)
+    if (is.null(dat) || nrow(dat) == 0 || is.null(dat$publication)) return()
+
+    pubs <- unique(dat$publication)
+    ss <- sapply(pubs, function(pub) stri_match_first(pub,
+      regex = "title='(.+)' target=_blank>(.+)</a>"))
+    pp <- sort(sprintf("<p>%s. %s</p>", ss[3, ], ss[2, ]))
+    paste(pp, collapse = "")
+  }
+  output$datasetSynopsis <- reactive(createDatasetSynopsis(1))
+  output$datasetSynopsis2 <- reactive(createDatasetSynopsis(2))
+
   createColumnSettingsPanel <- function(j) {
     tags$div(id = jth_ref("tour-columnSettings", j), wellPanel(
       style = paste0("background-color: ", bgColors[j], ";"),
 
       htmlOutput(jth_ref("htmlDataExample", j)),
       htmlOutput(jth_ref("nrowDataset", j)),
+      htmlOutput(jth_ref("datasetSynopsis", j)),
 
       #tags$p(tags$br()),
       row(
