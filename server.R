@@ -180,6 +180,12 @@ shinyServer(function(input, output, session) {
   wholeGenomeOrChromosomeTabSelected <- paste(wholeGenomeTabSelected, "||", chromosomeTabSelected)
   annotationsOrChromosomeTabSelected <- paste(annotationsTabSelected, "||", chromosomeTabSelected)
 
+  # for one- or two-species mode
+  comparing2Species <- "input.compare2species"
+  andComparing2Species <- function(condition) {
+    paste0("(", condition, ") && ", comparing2Species)
+  }
+
   createManageSidebar <- function(j) {
     list(
       tags$div(id = jth_ref("tour-dataset", j), wellPanel(
@@ -361,9 +367,15 @@ shinyServer(function(input, output, session) {
       conditionalPanel(condition = manageTabSelected,
         actionLink("zbrowseTour", "Start Tour"),
         wellPanel(h5("Connection Status"), displayConnectionStatus()),
-        actionButton("swap", "\u21f5 Swap Datasets"),
+        checkboxInput("compare2species", "Two Species",
+          value = isolate(is.null(values$urlFields$twoSpecies) || !(values$urlFields$twoSpecies %in% c("n", "N")))),
+        conditionalPanel(condition = comparing2Species,
+          actionButton("swap", "\u21f5 Swap Datasets")
+        ),
         createManageSidebar(1),
-        createManageSidebar(2),
+        conditionalPanel(condition = comparing2Species,
+          createManageSidebar(2)
+        ),
         tags$script("Shiny.addCustomMessageHandler('resetFileInputHandler', function(x) {
           var id = '#' + x;
           var idProgress = id + '_progress';
@@ -393,7 +405,9 @@ shinyServer(function(input, output, session) {
 
       conditionalPanel(condition = dataTableTabSelected,
         tags$div(id = "tour-datatableSidebar", createDataTableSidebar(1)),
-        createDataTableSidebar(2),
+        conditionalPanel(condition = comparing2Species,
+          createDataTableSidebar(2)
+        ),
         helpModal('Data Table View','view',includeMarkdown("tools/manage.md"))      
       ),#end conditional Table
 
@@ -411,22 +425,22 @@ shinyServer(function(input, output, session) {
       conditionalPanel(condition = annotationsTabSelected,
         createDownloadAnnotationsSidebar(1)
       ),
-      conditionalPanel(condition = chromosomeTabSelected,
+      conditionalPanel(condition = andComparing2Species(chromosomeTabSelected),
         createGenomicLinkageSidebar() # goes between the sidebars for organism 1 (above) and organism 2 (below)
       ),
-      conditionalPanel(condition = wholeGenomeOrChromosomeTabSelected,
+      conditionalPanel(condition = andComparing2Species(wholeGenomeOrChromosomeTabSelected),
         createTraitsSidebar(2)
       ),
-      conditionalPanel(condition = chromosomeTabSelected,
+      conditionalPanel(condition = andComparing2Species(chromosomeTabSelected),
         createChromosomeSidebar(2)
       ),
-      conditionalPanel(condition = annotationsOrChromosomeTabSelected,
+      conditionalPanel(condition = andComparing2Species(annotationsOrChromosomeTabSelected),
         createAnnotationWindowSidebar(2)
       ),
-      conditionalPanel(condition = annotationsTabSelected,
+      conditionalPanel(condition = andComparing2Species(annotationsTabSelected),
         createDownloadAnnotationsSidebar(2)
       ),
-      conditionalPanel(condition = wholeGenomeOrChromosomeTabSelected,
+      conditionalPanel(condition = andComparing2Species(wholeGenomeOrChromosomeTabSelected),
         createMacrosyntenyPanel()
       ),
       # end sidebar panels for remaining tabs
@@ -616,27 +630,37 @@ shinyServer(function(input, output, session) {
     tabsetPanel(id = "datatabs",      
       tabPanel(title="Manage",value="Manage",
         createColumnSettingsPanel(1),
-        createColumnSettingsPanel(2)
+        conditionalPanel(condition = comparing2Species,
+          createColumnSettingsPanel(2)
+        )
       ),
       tabPanel(title="Data Table",value="Table",
         tags$div(id = "tour-datatable",
           wellPanel(dataTableOutput("dataviewer"), style = paste0("background-color: ", bgColors[1], ";"))
         ),
-        wellPanel(dataTableOutput("dataviewer2"), style = paste0("background-color: ", bgColors[2], ";"))
+        conditionalPanel(condition = comparing2Species,
+          wellPanel(dataTableOutput("dataviewer2"), style = paste0("background-color: ", bgColors[2], ";"))
+        )
       ),
       tabPanel(title="Whole Genome View",value="WhGen",
-        wellPanel(showOutput("gChartMacro", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
-        tags$div(id = "tour-wholegenome-macrosynteny",
-          wellPanel(showOutput("gChartMacro2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
+        conditionalPanel(condition = comparing2Species,
+          wellPanel(showOutput("gChartMacro", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
+          tags$div(id = "tour-wholegenome-macrosynteny",
+            wellPanel(showOutput("gChartMacro2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
+          )
         ),
         tags$div(id = "tour-wholegenome",
           wellPanel(showOutput("gChart", "highcharts"), style = paste0("background-color: ", bgColors[1], ";"))
         ),
-        wellPanel(showOutput("gChart2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
+        conditionalPanel(condition = comparing2Species,
+          wellPanel(showOutput("gChart2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
+        )
       ),
       tabPanel(title="Chromosome View",value="Chrom",
-        wellPanel(showOutput("pChartMacro", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
-        wellPanel(showOutput("pChartMacro2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";")),
+        conditionalPanel(condition = comparing2Species,
+          wellPanel(showOutput("pChartMacro", "highcharts"), style = paste0("background-color: ", bgColors[1], ";")),
+          wellPanel(showOutput("pChartMacro2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
+        ),
         wellPanel(
           tags$div(id = "tour-pChart", showOutput("pChart", "highcharts")),
           tags$div(id = "tour-zChart", showOutput("zChart", "highcharts")),
@@ -656,7 +680,8 @@ shinyServer(function(input, output, session) {
           })'),
           style = paste0("background-color: ", bgColors[1], ";")
         ),
-        wellPanel(showOutput("zChart2", "highcharts"), showOutput("pChart2", "highcharts"),
+        conditionalPanel(condition = comparing2Species,
+          wellPanel(showOutput("zChart2", "highcharts"), showOutput("pChart2", "highcharts"),
           tags$script('Shiny.addCustomMessageHandler("customMsg2", function(bandOpts){
             hc = $("#pChartMacro2").highcharts()
             if (hc != undefined) {
@@ -672,13 +697,15 @@ shinyServer(function(input, output, session) {
             }
           })'),
           style = paste0("background-color: ", bgColors[2], ";")
-        )
+        ))
       ),
       tabPanel(title="Annotations Table",value="Annot",
         tags$div(id = "tour-annotations",
           wellPanel(dataTableOutput("annotViewer"), style = paste0("background-color: ", bgColors[1], ";"))
         ),
-        wellPanel(dataTableOutput("annotViewer2"), style = paste0("background-color: ", bgColors[2], ";"))
+        conditionalPanel(condition = comparing2Species,
+          wellPanel(dataTableOutput("annotViewer2"), style = paste0("background-color: ", bgColors[2], ";"))
+        )
       )
     )#end tabsetPanel
   })#end data tabs
@@ -1728,7 +1755,13 @@ shinyServer(function(input, output, session) {
   updateURL <- function() {
     # required for query string: selected tab; inputs for each organism
     url.q <- paste0("?tab=", isolate(input$datatabs))
-    ss <- outer(c("datasets", "chr", "selected", "window"), 1:2, FUN = jth_ref)
+    # number of species to display
+    cmp2sp <- isolate(input$compare2species)
+    twoSpecies <- (is.null(cmp2sp) || cmp2sp)
+    ts <- ifelse(twoSpecies, "y", "n")
+    ns <- ifelse(twoSpecies, 2, 1)
+    url.q <- paste0(url.q, "&twoSpecies=", ts)
+    ss <- outer(c("datasets", "chr", "selected", "window"), 1:ns, FUN = jth_ref)
     for (s in ss) {
       x <- isolate(input[[s]])
       if (!is.null(x)) {
@@ -1736,14 +1769,14 @@ shinyServer(function(input, output, session) {
       }
     }
     # remote GWAS traits to load
-    for (j in 1:2) {
+    for (j in 1:ns) {
       gwj <- jth_ref("gwasTraits", j)
       if (!is.null(values[[gwj]])) {
         url.q <- paste0(url.q, "&", gwj, "=", paste(values[[gwj]], collapse = ";"))
       }
     }
     # selected traits
-    for (j in 1:2) {
+    for (j in 1:ns) {
       numTraits <- 0
       allTraits <- isolate(input[[jth_ref("datasets", j)]])
       traits <- ""
@@ -1760,34 +1793,36 @@ shinyServer(function(input, output, session) {
       if (traits != "") url.q <- paste0(url.q, "&", trj, "=", traits)
     }
     # optional: genomic linkage information
-    if (isolate(!is.null(values$glSelectedGene))) {
-      ss.gl <- c("neighbors", "matched", "intermediate")
+    if (twoSpecies) {
+      if (isolate(!is.null(values$glSelectedGene))) {
+        ss.gl <- c("neighbors", "matched", "intermediate")
+        for (s in ss.gl) {
+          x <- isolate(input[[s]])
+          if (!is.null(x)) {
+            url.q <- paste0(url.q, "&", s, "=", x)
+          }
+        }
+        # optional: selected gene and related region
+        if (!is.null(values$glSelectedGene)) {
+          url.q <- paste0(url.q, "&selectedGene=", values$glSelectedGene)
+        }
+        if (!is.null(isolate(input$relatedRegions))) {
+          url.q <- paste0(url.q, "&relatedRegion=", isolate(input$relatedRegions))
+        }
+      }
+      # optional: macro-synteny information
+      ss.gl <- c("macroMatched", "macroIntermediate", "macroMask", "macroDistance")
       for (s in ss.gl) {
         x <- isolate(input[[s]])
         if (!is.null(x)) {
+          if (s == "macroDistance") {
+            x <- tolower(x)
+            if (x == "jaccard") {
+              x <- paste(x, isolate(input$macroNgram), tolower(isolate(input$macroReversals)), sep = ":")
+            }
+          }
           url.q <- paste0(url.q, "&", s, "=", x)
         }
-      }
-      # optional: selected gene and related region
-      if (!is.null(values$glSelectedGene)) {
-        url.q <- paste0(url.q, "&selectedGene=", values$glSelectedGene)
-      }
-      if (!is.null(isolate(input$relatedRegions))) {
-        url.q <- paste0(url.q, "&relatedRegion=", isolate(input$relatedRegions))
-      }
-    }
-    # optional: macro-synteny information
-    ss.gl <- c("macroMatched", "macroIntermediate", "macroMask", "macroDistance")
-    for (s in ss.gl) {
-      x <- isolate(input[[s]])
-      if (!is.null(x)) {
-        if (s == "macroDistance") {
-          x <- tolower(x)
-          if (x == "jaccard") {
-            x <- paste(x, isolate(input$macroNgram), tolower(isolate(input$macroReversals)), sep = ":")
-          }
-        }
-        url.q <- paste0(url.q, "&", s, "=", x)
       }
     }
     updateQueryString(url.q)
@@ -1811,6 +1846,7 @@ shinyServer(function(input, output, session) {
       values$glSelectedGene
       input$relatedRegions
       input$datatabs
+      input$compare2species
     },
     handlerExpr = updateURL(), ignoreInit = TRUE)
 
