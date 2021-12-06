@@ -536,7 +536,7 @@ create_zChart <- function(j, input, values) {
   # User clicked on a point -> display trait in popup
   #doClickOnPoint <- "#! function(event) { alert(this.trait); } !#"
   # User clicked on a line -> various possible responses:
-  bGenomicLinkage <- ifelse(j == 1, 1, 0)
+  bGenomicLinkage <- ifelse(j == 1 && input$compare2species, 1, 0)
   doClickOnLine <- sprintf(paste(
     "#! function() {",
       "if (this.url.includes('legumeinfo.org')) {",
