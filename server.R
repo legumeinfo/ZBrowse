@@ -555,7 +555,7 @@ shinyServer(function(input, output, session) {
       values$urlFields$tab <- NULL # to reset it
     }
 
-    html <- print(xtable::xtable(dat), type='html', print.results = FALSE)
+    html <- print(xtable::xtable(dat), type='html', include.rownames = FALSE, print.results = FALSE)
     html <- sub("<TABLE border=1>","<table class='table table-condensed table-hover'>", html)
     Encoding(html) <- 'UTF-8'
     html
@@ -759,7 +759,7 @@ shinyServer(function(input, output, session) {
     dat <- data.frame(dat[, input[[jth_ref("columns", j)]], drop = FALSE])
     dat
     
-    # html <- print(xtable::xtable(dat), type='html', print.results = FALSE)
+    # html <- print(xtable::xtable(dat), type='html', include.rownames = FALSE, print.results = FALSE)
     # html <- sub("<TABLE border=1>","<table class='table table-condensed table-hover'>", html)
     # html
   }
