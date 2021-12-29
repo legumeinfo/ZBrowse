@@ -3,7 +3,9 @@
 # --------------------------------------------------------------
 
 # LIS Data Store information
+lis.datastore.chrRegex[["Common Bean QTL"]] <- lis.datastore.chrRegex[["Common Bean GWAS"]]
 lis.datastore.chrRegex[["Cowpea QTL"]] <- lis.datastore.chrRegex[["Cowpea GWAS"]]
+lis.datastore.chrRegex[["Peanut QTL"]] <- lis.datastore.chrRegex[["Peanut GWAS"]]
 lis.datastore.qtlUrls <- readLines(paste0(lis.datastore.localDir, "datasets-qtl.txt"))
 
 read.qtl.lis.datastore <- function(fin.qtl) {
