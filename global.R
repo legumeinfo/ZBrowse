@@ -35,7 +35,6 @@ which.nonnum <- function(x) {
 
 # Frequently used URLs
 url_cyverse <- "http://de.cyverse.org"
-url_dscensor <- "https://dscensor.legumeinfo.org"
 url_lis <- "https://legumeinfo.org"
 
 # whether to dynamically assign interval height in charts

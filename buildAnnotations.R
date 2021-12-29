@@ -26,13 +26,11 @@ build.annotations <- function(key, filename, chrLengths, annotChrFormat) {
   }
   names(df.annot) <- c("chromosome", "transcript_start", "transcript_end", "strand", "id", "name", "description")
   df.annot$chromosome <- trailingChromosomeName(df.annot$chromosome, organism = key)
-  if (key == "Medicago truncatula") {
-    # the Names in the new file have additional prefixing that miust be stripped off before the linkout service will 
-    # function properly
-    df.annot$name <- gsub("^medtr\\.A17_HM341\\.", "medtr.", df.annot$name)
-  } else if (key == "Mung bean") {
-    # should be like "vigra.Vradi01g00010"
-    df.annot$name <- paste0("vigra.", df.annot$name)
+  # Add prefixes ("gensp.") to the Name field if necessary
+  # (only pigeonpea and soybean already have them)
+  gensp.dot <- paste0(tolower(org.Gensp[[key]]), ".")
+  if (!startsWith(df.annot$name[1], gensp.dot)) {
+    df.annot$name <- paste0(gensp.dot, df.annot$name)
   }
   # Convert the Note/description column from a list to a URL-decoded character vector,
   # replacing missing values with a blank string

@@ -3,61 +3,75 @@
 # --------------------------------------------------------------
 
 # LIS Data Store information
-lis.datastore.info[["Cowpea QTL"]] <- lis.datastore.info[["Cowpea GWAS"]]
+lis.datastore.chrRegex[["Cowpea QTL"]] <- lis.datastore.chrRegex[["Cowpea GWAS"]]
+lis.datastore.qtlUrls <- readLines(paste0(lis.datastore.localDir, "datasets-qtl.txt"))
 
-read.qtl.lis.datastore <- function(fin.expt, fin.marker) {
-  # first read QTL metadata
-  zz <- gzcon(url(fin.expt, "r"))
-  ll <- readLines(zz)
-  close(zz)
-  # read metadata before line beginning "#identifier"
-  src.name <- src.url <- ""
-  i <- 1
-  while (!startsWith(ll[i], "#")) {
-    ss <- unlist(strsplit(ll[i], split = "\t"))
-    if (ss[1] == "Name") src.name <- ss[2]
-    else if (ss[1] == "DOI") src.url <- paste0("https://doi.org/", ss[2])
-    else if (ss[1] == "PMID") src.url <- paste0("https://pubmed.ncbi.nlm.nih.gov/", ss[2], "/")
-    i <- i + 1
-  }
-  # read the rest
-  df.expt <- read.csv(textConnection(ll[i:length(ll)]), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
-  names(df.expt) <- c("identifier", "trait")
-  df.expt$publication <- paste0("<a href='", src.url, "' target=_blank>", src.name, "</a>")
+read.qtl.lis.datastore <- function(fin.qtl) {
+  tmp <- tempfile()
+  download.file(fin.qtl, tmp, method = "wget", quiet = TRUE)
+  df.qtl <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  df.qtl <- df.qtl[, 1:2]
+  names(df.qtl) <- c("identifier", "trait_id")
 
-  # then read QTL markers (first two columns)
-  zz <- gzcon(url(fin.marker, "r"))
-  ll <- readLines(zz)
-  close(zz)
-  df.marker <- read.csv(textConnection(ll), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-  df.marker <- df.marker[, 1:2]
-  names(df.marker) <- c("identifier", "marker")
+  # QTL -> marker
+  fin.qtlmrk <- gsub("\\.qtl\\.tsv\\.gz", "\\.qtlmrk\\.tsv\\.gz", fin.qtl)
+  download.file(fin.qtlmrk, tmp, method = "wget", quiet = TRUE)
+  df.qtlmrk <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  df.qtlmrk <- df.qtlmrk[, 1:2]
+  names(df.qtlmrk) <- c("identifier", "marker")
+  df.qtl <- merge(df.qtlmrk, df.qtl, by = "identifier", sort = FALSE)
 
-  # finally, merge them
-  df.qtl <- merge(df.expt, df.marker, by = "identifier")
+  # trait id -> trait ontology -> trait name
+  fin.obo <- gsub("\\.qtl\\.tsv\\.gz", "\\.obo\\.tsv\\.gz", fin.qtl)
+  download.file(fin.obo, tmp, method = "wget", quiet = TRUE)
+  df.obo <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  unlink(tmp)
+
+  names(df.obo) <- c("trait_id", "ontology_code")
+  df.to <- df.obo[startsWith(df.obo$ontology_code, "TO:"), ]
+  ontologyId <- sapply(df.qtl$trait_id, function(id) {
+    # prioritize TO
+    oids <- df.to$ontology_code[df.to$trait_id == id]
+    if (length(oids) == 0) oids <- df.obo$ontology_code[df.obo$trait_id == id]
+    ifelse(length(oids) == 0, "", oids[1]) # choose the first one
+  }, USE.NAMES = FALSE)
+  trait <- sapply(ontologyId, function(oid) {
+    traitName <- allOntologies$name[allOntologies$id == oid] # there should be at most one
+    ifelse(length(traitName) == 0, "", stri_trans_totitle(traitName, type = "sentence"))
+  }, USE.NAMES = FALSE)
+  # for missing ones, use the trait id
+  bb <- which(nchar(trait) == 0)
+  trait[bb] <- df.qtl$trait_id[bb]
+  df.qtl$trait <- trait
+
+  df.qtl$publication <- read.metadata(fin.qtl)$publication
   df.qtl
 }
 
 merge.qtl <- function(df.qtl, df.gff) {
-  # df.qtl is the QTL data frame merged from expt and marker files:
-  #   identifier,trait,publication,marker
+  # df.qtl is the QTL data frame merged from qtlmrk, qtl, obo files:
+  #   identifier,marker,trait_id,trait,publication
   # df.gff is the processed GFF file:
   #   marker,chromosome,position
 
-  # Merge on marker to convert to marker,identifier,trait,publication,chromosome,position
+  # Merge on marker to convert to marker,identifier,trait_id,trait,publication,chromosome,position
   df.1 <- merge(df.qtl, df.gff, by = "marker", sort = FALSE)
   # Determine start and end position for each QTL identifier
-  df.2 <- df.1[, c("identifier", "position")]
-  f3 <- function(r) c(min(r), max(r), (min(r) + max(r)) %/% 2)
-  df.3 <- do.call(function(...) data.frame(..., stringsAsFactors = FALSE),
-    aggregate(position ~ identifier, data = df.2, FUN = f3))
-  names(df.3) <- c("identifier", "start_pos", "end_pos", "center_pos")
+  f2 <- function(r) c(min(r), max(r), (min(r) + max(r)) %/% 2)
+  df.2 <- do.call(function(...) data.frame(..., stringsAsFactors = FALSE),
+    aggregate(position ~ identifier, data = df.1, FUN = f2))
+  names(df.2) <- c("identifier", "start_pos", "end_pos", "center_pos")
+  df.2$markers <- sapply(df.2$identifier, function(id) {
+    markers <- sort(df.1$marker[df.1$identifier == id])
+    numMarkers <- length(markers)
+    ifelse(numMarkers <= 3, paste(markers, collapse = ", "), sprintf("%d markers", numMarkers))
+  }, USE.NAMES = FALSE)
   # Merge relevant columns
-  df.4 <- unique(df.1[, c("identifier", "trait", "publication", "chromosome")])
-  df.merged <- merge(df.4, df.3, by = "identifier", sort = FALSE)
+  df.3 <- unique(df.1[, c("identifier", "trait_id", "trait", "publication", "chromosome")])
+  df.merged <- merge(df.3, df.2, by = "identifier", sort = FALSE)
 
-  # Clean up column order (identifier, trait, chromosome, start_pos, end_pos, center_pos, publication)
-  df.merged <- df.merged[, c(1, 2, 4, 5, 6, 7, 3)]
+  # Clean up column order
+  df.merged <- df.merged[, c("identifier", "trait_id", "trait", "markers", "chromosome", "start_pos", "end_pos", "center_pos", "publication")]
   df.merged
 }
 
@@ -65,44 +79,49 @@ build.qtl.from.lis.datastore <- function(key) {
   nid <- paste0("load.", gsub(" ", ".", key))
   showNotification(paste("Loading", key, "data. Please wait."), duration = NULL, id = nid, type = "message")
 
-  # TODO: Discover GFF and QTL files from DSCensor (instead of as below)
+  # Read GFF and QTL files from file (instead of DSCensor)
   df.qtl <- init.qtl(key)
-  gffBaseUrl <- paste(url_dscensor, "api/v1/nodes/labels/", sep = "/")
-  qtlBaseUrl <- paste(url_lis, "data/public/Vigna_unguiculata/mixed.qtl.KF1G/", sep = "/")
-  qtlPrefix <- "vigun.mixed.qtl.KF1G."
-  qtlFileNumbers <- c("22691139", "25620880", "26450274", "27658053", "29356213", "29674702", "30143525")
-  exptFiles <- paste0(qtlBaseUrl, qtlPrefix, qtlFileNumbers, ".expt.tsv.gz")
-  markerFiles <- paste0(qtlBaseUrl, qtlPrefix, qtlFileNumbers, ".marker.tsv.gz")
 
   # GFF (marker) files
-  query.mrk <- fromJSON(paste0(gffBaseUrl, "mrk:", lis.datastore.info[[key]]$mrkFilter))
-  if (length(query.mrk$data) > 0) {
-    df.mrk <- query.mrk$data[endsWith(query.mrk$data$url, ".gff3.gz"), ]
-    if (nrow(df.mrk) > 0) {
-      for (i in 1:nrow(df.mrk)) {
-        df.gff <- read.gff3.lis.datastore(df.mrk[i, "url"])
-        df.gff <- scrub.gff(df.gff, lis.datastore.info[[key]])
+  organism <- stri_match(key, regex = ".*(?= QTL)")[, 1]
+  org.filter <- paste0("/", gsub(" ", "/", org.Genus_species[[organism]]), "/")
+  markerUrls <- readLines(paste0(lis.datastore.localDir, "markers.txt"))
+  markerUrls <- markerUrls[!startsWith(markerUrls, "#")]
+  markerUrls <- markerUrls[grepl(org.filter, markerUrls)]
+  if (length(markerUrls) > 0) {
+    ll.mrk <- lapply(markerUrls, function(u) {
+      df.mrku <- read.gff3.lis.datastore(u)
+      df.mrku <- scrub.gff(df.mrku, lis.datastore.chrRegex[[key]])
+      df.mrku
+    })
+    df.gff <- do.call(rbind, ll.mrk)
+  }
 
-        # Associated QTL files
-        # query.qtl <- fromJSON(paste0(qtlBaseUrl, "qtl:", lis.datastore.info[[key]]$mrkFilter))
-        # if (length(query.qtl$data) == 0) next
-
-        # Read the QTL files, merge with the GFF data, and append the results
-        for (j in 1:length(exptFiles)) {
-          df.f <- read.qtl.lis.datastore(exptFiles[j], markerFiles[j])
-          df.f2 <- merge.qtl(df.f, df.gff)
-          if (nrow(df.qtl) == 0) {
-            df.qtl <- df.f2
-          } else {
-            df.qtl <- rbind(df.qtl, df.f2)
-          }
-        }
-      }
+  # QTL files
+  qtlUrls <- lis.datastore.qtlUrls
+  qtlUrls <- qtlUrls[!startsWith(qtlUrls, "#")]
+  qtlUrls <- qtlUrls[grepl(org.filter, qtlUrls)]
+  if (length(qtlUrls) > 0) {
+    ll.qtl <- lapply(qtlUrls, function(u) {
+      df.q <- NULL
+      tryCatch({
+        df.q <- read.qtl.lis.datastore(u)
+      }, error = function(e) {
+        print(e)
+      })
+      df.q
+    })
+    nn <- sapply(ll.qtl, is.null)
+    if (any(nn)) ll.qtl <- ll.qtl[-which(nn)]
+    if (length(ll.qtl) > 0) {
+      df.f <- do.call(rbind, ll.qtl)
+      # Merge QTL and marker data frames
+      df.qtl <- merge.qtl(df.f, df.gff)
     }
   }
-  # Add spurious column for QTL y axis position,
-  # as we will assign it dynamically in each chart
+  # Add spurious column for QTL y axis position, as we will assign it dynamically in each chart
   df.qtl$val <- 0
+
   removeNotification(nid)
   # deduplicate the results (TODO: do we need to?)
   unique(df.qtl)

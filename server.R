@@ -23,33 +23,33 @@ shinyServer(function(input, output, session) {
   for(i in dataFiles){
     dataFile.i <- paste0(dataPath, i)
     if (i %in% legumeInfo.gwas) {
-      df.gwas <- init.gwas(i)
+      df.data <- init.gwas(i)
     } else if (i %in% lis.datastore.gwas) {
       if (file.exists(dataFile.i)) {
-        df.gwas <- read.csv(dataFile.i, header = TRUE, stringsAsFactors = FALSE)
+        df.data <- read.csv(dataFile.i, header = TRUE, stringsAsFactors = FALSE)
       } else {
         # assemble and cache it
-        df.gwas <- build.gwas.from.lis.datastore(i)
-        write.csv(df.gwas, file = dataFile.i, row.names = FALSE, quote = FALSE)
+        df.data <- build.gwas.from.lis.datastore(i)
+        write.csv(df.data, file = dataFile.i, row.names = FALSE)
       }
     } else if (i %in% lis.datastore.qtl) {
       if (file.exists(dataFile.i)) {
-        df.gwas <- read.csv(dataFile.i, header = TRUE, stringsAsFactors = FALSE)
+        df.data <- read.csv(dataFile.i, header = TRUE, stringsAsFactors = FALSE)
       } else {
         # assemble and cache it
-        df.gwas <- build.qtl.from.lis.datastore(i)
-        write.csv(df.gwas, file = dataFile.i, row.names = FALSE)
+        df.data <- build.qtl.from.lis.datastore(i)
+        write.csv(df.data, file = dataFile.i, row.names = FALSE)
       }
     } else {
-      df.gwas <- read.table(dataFile.i,sep=",",stringsAsFactors=FALSE,head=TRUE)
+      df.data <- read.table(dataFile.i,sep=",",stringsAsFactors=FALSE,head=TRUE)
     }
     # Force the chromosome column to be a string
     # (Note: there must be exactly one column whose name starts with "chr", case-insensitive)
-    cols <- tolower(names(df.gwas))
+    cols <- tolower(names(df.data))
     k <- which(startsWith(cols, "chr"))
-    df.gwas[, k] <- as.character(df.gwas[, k])
+    df.data[, k] <- as.character(df.data[, k])
 
-    values[[i]] <- df.gwas
+    values[[i]] <- df.data
   }  
   values$datasetlist <- dataFiles
   values$datasetToOrganism <- NULL # map each dataset to an organism
