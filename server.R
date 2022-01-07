@@ -114,8 +114,8 @@ shinyServer(function(input, output, session) {
       updateSelectInput(session, "macroChromosome", choices = chrNames1)
     }
     shinyjs::click("submitMacroSynteny")
-    
-    # Uncheck the Append to Current Dataset checkbox and clear any previously selected GWAS files
+
+    # Reset GWAS/QTL traits
     updateTextInput(session, inputId = jth_ref("traitFilter", j), value = "")
     trait.choices <- gwas.traits[[values[[jth_ref("organism", j)]]]]
     if (is.null(trait.choices)) trait.choices <- character(0)
@@ -125,16 +125,17 @@ shinyServer(function(input, output, session) {
     if (!is.null(selectedGwasTraits)) {
       selectedGwasTraits <- unlist(strsplit(selectedGwasTraits, split = ";"))
     }
+    # This update triggers a call to remoteTraitsSelected(j) (below), which loads the remote data
     updateSelectizeInput(session, gwj, choices = trait.choices, selected = selectedGwasTraits)
-    # this update will trigger a call to remoteTraitsSelected(j) (below), which loads the remote data
+    # Clear loaded remote GWAS traits if the jth organism changes
+    values[[gwj]] <- NULL
 
-    # As there is no updateFileInput() method,
-    # send a custom message (to clear the progress bar) and clear values$needsToUploadFiles
+    # Check the Append to Current Dataset checkbox and clear any previously selected GWAS files.
+    # As there is no updateFileInput() method, send a custom message (to clear the progress bar) and clear values$needsToUploadFiles.
     session$sendCustomMessage(type = "resetFileInputHandler", jth_ref("uploadfile", j))
     values[[jth_ref("needsToUploadFiles", j)]] <- FALSE
     updateCheckboxInput(session, jth_ref("appendSNPs", j), value = TRUE)
-    # Clear loaded remote GWAS traits if the jth organism changes
-    values[[jth_ref("gwasTraits", j)]] <- NULL
+
     # Clear all genomic linkages if either organism changes
     values$glSelectedGene <- NULL
     clearGenomicLinkages()
@@ -220,7 +221,7 @@ shinyServer(function(input, output, session) {
     )
   }
   observeEvent(input$appendSNPs, shinyjs::disable("appendSNPs"))
-  observeEvent(input$appendSNPs, shinyjs::disable("appendSNPs2"))
+  observeEvent(input$appendSNPs2, shinyjs::disable("appendSNPs2"))
   
   createDataTableSidebar <- function(j) {
     wellPanel(
