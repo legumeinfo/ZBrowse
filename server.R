@@ -655,7 +655,8 @@ shinyServer(function(input, output, session) {
         ),
         conditionalPanel(condition = comparing2Species,
           wellPanel(showOutput("gChart2", "highcharts"), style = paste0("background-color: ", bgColors[2], ";"))
-        )
+        ),
+        HTML("<style>.rChart { width: 100%; }</style>") # to expand charts to full width
       ),
       tabPanel(title="Chromosome View",value="Chrom",
         conditionalPanel(condition = comparing2Species,
@@ -698,7 +699,8 @@ shinyServer(function(input, output, session) {
             }
           })'),
           style = paste0("background-color: ", bgColors[2], ";")
-        ))
+        )),
+        HTML("<style>.rChart { width: 100%; }</style>") # to expand charts to full width
       ),
       tabPanel(title="Annotations Table",value="Annot",
         tags$div(id = "tour-annotations",
