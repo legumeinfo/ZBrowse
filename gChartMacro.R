@@ -40,55 +40,59 @@ create_gChartMacro <- function(j, input, values) {
 
   # Display macro-synteny blocks
   blocks <- values$pairwiseBlocks[[j]]
-  if (!is.null(blocks)) {
-    macroDistanceMetric <- isolate(input$macroDistance)
-    chr1 <- trailingInteger(input$macroChromosome) # to filter by macro-synteny species 1 chromosome
-    if (j == 1) {
-      if (!is.na(chr1)) blocks <- blocks[blocks$chromosome == chr1, ]
-      c$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
-    } else {
-      if (!is.na(chr1)) blocks <- blocks[blocks$chr1 == chr1, ]
-      ylab2 <- paste(macroDistanceMetric, "distance")
-      if (macroDistanceMetric == "Levenshtein") ylab2 <- paste("Normalized", ylab2)
-      c$yAxis(title=list(text=ylab2),min=0,max=1,reversed=TRUE,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
-    }
-    apply(blocks, 1, function(r) {
-      r <- data.frame(as.list(r), stringsAsFactors = FALSE) # to avoid "$ operator is invalid for atomic vectors" warning
-      if (j == 1) {
-        yh <- 0.5
-      } else {
-        yh <- as.numeric(r$distance)
-        if (macroDistanceMetric == "Levenshtein") yh <- yh*2/(as.numeric(r$n1) + as.numeric(r$n2))
-      }
-      r.data <- vector("list", 2)
-      r.data[[1]]$x <- as.numeric(r$cumfmin)
-      r.data[[2]]$x <- as.numeric(r$cumfmax)
-      r.data[[1]]$y <- r.data[[2]]$y <- yh
-      r.distance <- sprintf("%4.3f", as.numeric(r$distance))
-      if (macroDistanceMetric == "Levenshtein") r.distance <- sprintf("%d", as.integer(r$distance))
-      c$series(
-        type = "line",
-        data = r.data,
-        color = r$color,
-        lineWidth = 6,
-        showInLegend = FALSE,
-        tooltip = list(
-          headerFormat = ifelse(j == 1,
-            sprintf("<b>Macro-synteny</b><br>%s chromosome %d<br>Blocks %d-%d<br>Location %s-%s",
-              values$organism, as.integer(r$chromosome), as.integer(r$i), as.integer(r$j),
-              prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ",")),
-            sprintf("<b>Macro-synteny</b><br>%s chromosome %d (%d genes)<br>Location %s-%s Orientation: %s<br>with %s chromosome %d (%d genes)<br>Blocks %d-%d<br>%s distance: %s",
-              values$organism2, as.integer(r$chromosome), as.integer(r$n2), prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ","), r$orientation,
-              values$organism, as.integer(r$chr1), as.integer(r$n1), as.integer(r$i), as.integer(r$j), macroDistanceMetric, r.distance)
-          ),
-          pointFormat = '',
-          followPointer = TRUE
-        ),
-        # put shortest blocks on top (note zIndex < 0 for macrosynteny blocks)
-        zIndex = as.integer(r$fmin) - as.integer(r$fmax)
-      )
-    })
+  if (is.null(blocks)) {
+    # make an empty data frame in order to display the x axis
+    columns <- c("i", "j", "chromosome")
+    blocks <- data.frame(matrix(nrow = 0, ncol = length(columns)))
+    names(blocks) <- columns
   }
+  macroDistanceMetric <- isolate(input$macroDistance)
+  chr1 <- trailingInteger(input$macroChromosome) # to filter by macro-synteny species 1 chromosome
+  if (j == 1) {
+    if (!is.na(chr1)) blocks <- blocks[blocks$chromosome == chr1, ]
+    c$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
+  } else {
+    if (!is.na(chr1)) blocks <- blocks[blocks$chr1 == chr1, ]
+    ylab2 <- paste(macroDistanceMetric, "distance")
+    if (macroDistanceMetric == "Levenshtein") ylab2 <- paste("Normalized", ylab2)
+    c$yAxis(title=list(text=ylab2),min=0,max=1,reversed=TRUE,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
+  }
+  apply(blocks, 1, function(r) {
+    r <- data.frame(as.list(r), stringsAsFactors = FALSE) # to avoid "$ operator is invalid for atomic vectors" warning
+    if (j == 1 && nrow(blocks) > 0) {
+      yh <- 0.5
+    } else {
+      yh <- as.numeric(r$distance)
+      if (macroDistanceMetric == "Levenshtein") yh <- yh*2/(as.numeric(r$n1) + as.numeric(r$n2))
+    }
+    r.data <- vector("list", 2)
+    r.data[[1]]$x <- as.numeric(r$cumfmin)
+    r.data[[2]]$x <- as.numeric(r$cumfmax)
+    r.data[[1]]$y <- r.data[[2]]$y <- yh
+    r.distance <- sprintf("%4.3f", as.numeric(r$distance))
+    if (macroDistanceMetric == "Levenshtein") r.distance <- sprintf("%d", as.integer(r$distance))
+    c$series(
+      type = "line",
+      data = r.data,
+      color = r$color,
+      lineWidth = 6,
+      showInLegend = FALSE,
+      tooltip = list(
+        headerFormat = ifelse(j == 1,
+          sprintf("<b>Macro-synteny</b><br>%s chromosome %d<br>Blocks %d-%d<br>Location %s-%s",
+            values$organism, as.integer(r$chromosome), as.integer(r$i), as.integer(r$j),
+            prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ",")),
+          sprintf("<b>Macro-synteny</b><br>%s chromosome %d (%d genes)<br>Location %s-%s Orientation: %s<br>with %s chromosome %d (%d genes)<br>Blocks %d-%d<br>%s distance: %s",
+            values$organism2, as.integer(r$chromosome), as.integer(r$n2), prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ","), r$orientation,
+            values$organism, as.integer(r$chr1), as.integer(r$n1), as.integer(r$i), as.integer(r$j), macroDistanceMetric, r.distance)
+        ),
+        pointFormat = '',
+        followPointer = TRUE
+      ),
+      # put shortest blocks on top (note zIndex < 0 for macrosynteny blocks)
+      zIndex = as.integer(r$fmin) - as.integer(r$fmax)
+    )
+  })
 
   chartHeight <- ifelse(j == 1, 150, 300)
   c$chart(height=chartHeight,zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
@@ -105,9 +109,6 @@ create_gChartMacro <- function(j, input, values) {
     )
   )
   c$exporting(enabled=TRUE,filename='genomeChartMacro',sourceWidth=2000)
-  if(!is.null(input[[jth_ref("legend", j)]]) & input[[jth_ref("legend", j)]] == TRUE){
-    c$legend(enabled=FALSE)
-  }
 
   removeNotification(nid)
 

@@ -42,12 +42,14 @@ create_gChart <- function(j, input, values) {
   if(nrow(genomeChart)==0){ #nothing is in the window, but lets still make a data.frame
     genomeChart <- values[[input[[jth_ref("datasets", j)]]]][1,]
     genomeChart[,input[[jth_ref("yAxisColumn", j)]]] <- -1    
-genomeChart$totalBP <- 1
+    genomeChart$totalBP <- 1
     if(length(input[[jth_ref("traitColumns", j)]]) > 1){
       genomeChart$trait <- do.call(paste,c(genomeChart[,input[[jth_ref("traitColumns", j)]]],sep="_"))    
     }else{
       genomeChart$trait <- genomeChart[,input[[jth_ref("traitColumns", j)]]]
-    }             
+    }
+    # workaround to display x axis when no data exist
+    genomeChart[is.na(genomeChart)] <- -1
   }
   
   #take -log10 of y-axis column if requested
@@ -185,20 +187,16 @@ genomeChart$totalBP <- 1
           color = colorTable$color[colorTable$trait == as.character(unique(x$loc_el))])})            
     }
   }
-  if (genomeChart[1, input[[jth_ref("yAxisColumn", j)]]] != -1) {
-    invisible(sapply(genomeSeries, function(x) {
-      if (length(x) == 0) {
-        return()
-      }
-      c$series(
-        data = x,
-        turboThreshold = 5000,
-        type = "scatter",
-        color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)],
-        name = x[[1]]$trait
-      )
-    }))
-  }
+
+  invisible(sapply(genomeSeries, function(x) {
+    c$series(
+      data = x,
+      turboThreshold = 5000,
+      type = "scatter",
+      color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)],
+      name = x[[1]]$trait
+    )
+  }))
 
   c$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
   c$title(text=paste(input[[jth_ref("datasets", j)]]," Results",sep=" "))
@@ -275,9 +273,10 @@ genomeChart$totalBP <- 1
   #c$tooltip(useHTML = T, formatter = "#! function() { return this.point.name; } !#")
   #c$tooltip(formatter = "#! function() { return this.point.name; } !#")
   c$exporting(enabled=TRUE,filename='genomeChart',sourceWidth=2000)
-  if(!is.null(input[[jth_ref("legend", j)]]) & input[[jth_ref("legend", j)]] == TRUE){
-    c$legend(enabled=FALSE)
-  }
+  hideLegend <- input[[jth_ref("legend", j)]]
+  if (is.null(hideLegend)) hideLegend <- FALSE
+  hideLegend <- hideLegend || (genomeChart[1, input[[jth_ref("yAxisColumn", j)]]] == -1)
+  c$legend(enabled = !hideLegend)
 
   removeNotification(nid)
 

@@ -44,7 +44,9 @@ create_pChart <- function(j, input, values) {
       chromChart$trait <- do.call(paste,c(chromChart[,input[[jth_ref("traitColumns", j)]]],sep="_"))
     }else{
       chromChart$trait <- chromChart[,input[[jth_ref("traitColumns", j)]]]
-    }             
+    }
+    # workaround to display x axis when no data exist
+    chromChart[is.na(chromChart)] <- -1
   }    
   colorTable <- getColorTable(j, input)
   
@@ -163,21 +165,16 @@ create_pChart <- function(j, input, values) {
       })
     }
   }
-  
-  if (chromChart[1, input[[jth_ref("yAxisColumn", j)]]] != -1) {
-    invisible(sapply(pkSeries, function(x) {
-      if (length(x) == 0) {
-        return()
-      }
-      a$series(
-        data = x,
-        type = "scatter",
-        turboThreshold = 5000,
-        name = x[[1]]$trait,
-        color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)]
-      )
-    }))
-  }
+
+  invisible(sapply(pkSeries, function(x) {
+    a$series(
+      data = x,
+      type = "scatter",
+      turboThreshold = 5000,
+      name = x[[1]]$trait,
+      color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)]
+    )
+  }))
 
   a$chart(zoomType="x", alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
   a$title(text=paste(input[[jth_ref("datasets", j)]],"Results for Chromosome",input[[jth_ref("chr", j)]],sep=" "))
@@ -233,6 +230,10 @@ create_pChart <- function(j, input, values) {
   removeNotification(nid)
 
   a$exporting(enabled=TRUE,filename='chromChart',sourceWidth=2000)
+  hideLegend <- input[[jth_ref("legend", j)]]
+  if (is.null(hideLegend)) hideLegend <- FALSE
+  hideLegend <- hideLegend || (chromChart[1, input[[jth_ref("yAxisColumn", j)]]] == -1)
+  a$legend(enabled = !hideLegend)
   a$credits(enabled=TRUE)
   a$set(dom = jth_ref('pChart', j))
   return(a)
