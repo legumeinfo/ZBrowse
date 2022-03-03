@@ -5,6 +5,7 @@ shinyUI(pageWithSidebar(
   singleton(tags$head(tags$title("ZZBrowse")))),
   sidebarPanel(
     includeCSS('www/style.css'),
+    h4(HTML("<a href='https://legumeinfo.org' target='_blank'><img src='lis-6044923.png' width='40px' height='40px'></a> ZZBrowse")),
 #    wellPanel(
 #      uiOutput("datasets")
 #    ),
