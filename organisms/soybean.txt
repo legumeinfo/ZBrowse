@@ -1,7 +1,7 @@
 Soybean
 Gm01:56831624,Gm02:48577505,Gm03:45779781,Gm04:52389146,Gm05:42234498,Gm06:51416486,Gm07:44630646,Gm08:47837940,Gm09:50189764,Gm10:51566898,Gm11:34766867,Gm12:40091314,Gm13:45874162,Gm14:49042192,Gm15:51756343,Gm16:37887014,Gm17:41641366,Gm18:58018742,Gm19:50746916,Gm20:47904181
 Glycine max,G.max,Glyma
-https://legumeinfo.org/data/v2/Glycine/max/annotations/Wm82.gnm2.ann1.RVB6/glyma.Wm82.gnm2.ann1.RVB6.gene_models_main.gff3.gz
+https://data.legumeinfo.org/Glycine/max/annotations/Wm82.gnm2.ann1.RVB6/glyma.Wm82.gnm2.ann1.RVB6.gene_models_main.gff3.gz
 Gm%02d,glyma.Wm82.gnm2.Gm%02d,glyma.Gm\d+
 default
-strand,+,-,transcript_start,transcript_end,https://legumeinfo.org/gene_links/%s/json,name,name,chromosome,description
+strand,+,-,transcript_start,transcript_end,https://legacy.legumeinfo.org/gene_links/%s/json,name,name,chromosome,description
