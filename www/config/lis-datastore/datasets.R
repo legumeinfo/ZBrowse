@@ -2,7 +2,8 @@
 # Scan for GWAS and QTL files in the LIS data store, as in the specifications:
 # https://github.com/legumeinfo/datastore-specifications/tree/main/Genus/species/genetic
 
-# TODO: investigate why this works with curl 7.64.1 but not 7.54.0
+# TODO: investigate why this works with curl >= 7.59.0 but not <= 7.54.0
+# (https://curl.se/changes.html - not sure at which version it starts working)
 # --------------------------------------------------------------
 library(RCurl)
 library(readr)
