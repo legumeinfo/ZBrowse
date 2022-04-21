@@ -52,7 +52,7 @@ To add your own local GWAS data, first prepare them as a delimited text file wit
 
 #### Importing local QTL data
 
-We provide a QTL dataset for cowpea. To add your own QTL data, prepare a similar delimited text file as for GWAS data, but including columns for start and end position of the QTL interval. In the position column, put the center position of the interval.
+We provide QTL datasets for common bean, cowpea, peanut, and soybean. To add your own QTL data, prepare a similar delimited text file as for GWAS data, but including columns for start and end position of the QTL interval. In the position column, put the center position of the interval.
 
 #### Application state
 

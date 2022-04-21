@@ -11,7 +11,7 @@ lis.datastore.chrRegex[["Common Bean GWAS"]] <- "phavu.G19833.gnm\\d{1}.(Chr\\d+
 lis.datastore.chrRegex[["Cowpea GWAS"]] <- "vigun.IT97K-499-35.gnm1.(Vu\\d+)"
 lis.datastore.chrRegex[["Mung bean GWAS"]] <- "vigra.VC1973A.gnm6.(Vr\\d+)"
 lis.datastore.chrRegex[["Peanut GWAS"]] <- "arahy.Tifrunner.gnm1.(Arahy.\\d+)"
-lis.datastore.chrRegex[["Soybean GWAS"]] <- "glyma.Wm82.gnm2.(Gm\\d+)"
+lis.datastore.chrRegex[["Soybean GWAS"]] <- "glyma.Wm82.gnm\\d{1}.(Gm\\d+)"
 lis.datastore.mrkRegex <- "Name=(\\w[^;]+);?"
 lis.datastore.localDir <- "www/config/lis-datastore/"
 lis.datastore.gwasUrls <- readLines(paste0(lis.datastore.localDir, "datasets-gwas.txt"))
@@ -68,7 +68,7 @@ read.metadata <- function(fin) {
 read.gwas.lis.datastore <- function(fin) {
   tmp <- tempfile()
   download.file(fin, tmp, method = "wget", quiet = TRUE)
-  df.gwas <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  df.gwas <- read.csv(gzfile(tmp), header = FALSE, skip = 1, sep = '\t', stringsAsFactors = FALSE)
 
   # trait id -> trait ontology -> trait name
   fin.obo <- gsub("\\.([^\\.]+)\\.tsv\\.gz", "\\.obo\\.tsv\\.gz", fin)

@@ -23,5 +23,6 @@ combineGWASandQTL <- function(species) {
 # combineGWASandQTL("Common Bean")
 # combineGWASandQTL("Cowpea")
 # combineGWASandQTL("Peanut")
+# combineGWASandQTL("Soybean")
 
 # --------------------------------------------------------------

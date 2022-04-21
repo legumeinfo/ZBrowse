@@ -13,21 +13,22 @@ library(stringi)
 # setwd(".../ZZBrowse/www/config/lis-datastore")
 # --------------------------------------------------------------
 
-url.data.store.v2 <- "https://legumeinfo.org/data/v2/"
+url.data.store <- "https://data.legumeinfo.org/"
 genus.species <- c("Arachis/hypogaea/", "Cajanus/cajan/",
   "Glycine/max/", "Medicago/truncatula/", "Phaseolus/vulgaris/",
   "Vigna/radiata/", "Vigna/unguiculata/")
 
-buildFileList <- function(gsDirs, folders, types, fout) {
+buildFileList <- function(gsDirs, folders, types, mtypes, fout) {
+  rgx.xx <- paste0(gsub("\\/$", "", url.data.store), "(.+)")
   if (file.exists(fout)) file.remove(fout)
   ftmp <- tempfile()
   for (gs in gsDirs) {
     for (ff in folders) {
-      url.i <- paste0(url.data.store.v2, gs, ff, "/")
+      url.i <- paste0(url.data.store, gs, ff, "/")
       if (!url.exists(url.i)) next
       system(sprintf('curl -s %s -o %s', url.i, ftmp))
       txt <- read_file(ftmp)
-      xx <- stri_match_first(url.i, regex = "https://legumeinfo.org(.+)")[, 2]
+      xx <- stri_match_first(url.i, regex = rgx.xx)[, 2]
       rgx <- paste0('<a href="', xx, '([^<>]+)">([^<>]+)</a>')
       dd <- URLdecode(stri_match_all(txt, regex = rgx)[[1]][, 2])
       urls.j <- paste0(url.i, dd)
@@ -35,12 +36,21 @@ buildFileList <- function(gsDirs, folders, types, fout) {
         if (!url.exists(url.j)) next
         system(sprintf('curl -s %s -o %s', url.j, ftmp))
         txt <- read_file(ftmp)
-        xx <- stri_match_first(url.i, regex = "https://legumeinfo.org(.+)")[, 2]
+        xx <- stri_match_first(url.i, regex = rgx.xx)[, 2]
         rgx <- paste0('<a href="', xx, '([^<>]+)">([^<>]+)</a>')
         dd2 <- URLdecode(stri_match_all(txt, regex = rgx)[[1]][, 2])
         bb <- rep(FALSE, length(dd2))
         for (tt in types) {
           bb <- bb | endsWith(dd2, tt)
+        }
+        dd2 <- dd2[bb]
+        # check that each data file in dd2 has a counterpart of each type in mtypes
+        bb <- rep(TRUE, length(dd2))
+        for (k in 1:length(dd2)) {
+          for (mtype in mtypes) {
+            dd2.m <- paste0(url.i, gsub(types[1], mtype, dd2[k]))
+            bb[k] <- bb[k] && url.exists(dd2.m)
+          }
         }
         dd2 <- dd2[bb]
         if (length(dd2) > 0) write(paste0(url.i, dd2), fout, append = TRUE)
@@ -53,15 +63,16 @@ buildFileList <- function(gsDirs, folders, types, fout) {
 # GWAS datasets
 buildFileList(gsDirs = genus.species,
   folders = c("genetic"),
-  # types = c(".gwas.tsv.gz", ".result.tsv.gz", ".results.tsv.gz"), # for files matching earlier specifications
-  types = c(".results.tsv.gz"), # TODO: check for obo files
+  types = c(".result.tsv.gz"),
+  mtypes = c(".obo.tsv.gz"),
   fout = "datasets-gwas.txt"
 )
 
 # QTL datasets
 buildFileList(gsDirs = genus.species,
   folders = c("genetic"),
-  types = c(".qtl.tsv.gz"), # TODO: check for qtlmrk and obo files
+  types = c(".qtl.tsv.gz"),
+  mtypes = c(".qtlmrk.tsv.gz", ".obo.tsv.gz"),
   fout = "datasets-qtl.txt"
 )
 
@@ -69,6 +80,7 @@ buildFileList(gsDirs = genus.species,
 buildFileList(gsDirs = genus.species,
   folders = c("markers"),
   types = c(".gff3.gz"),
+  mtypes = character(0),
   fout = "markers.txt"
 )
 

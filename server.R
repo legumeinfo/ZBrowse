@@ -18,7 +18,7 @@ shinyServer(function(input, output, session) {
   # Add your organism to lis.datastore.gwas if its GWAS files live in the LIS data store.
   lis.datastore.gwas <- c("Common Bean GWAS", "Cowpea GWAS", "Mung bean GWAS", "Peanut GWAS", "Soybean GWAS")
   # unique() removes duplicates from lis.datastore.gwas, if already cached
-  lis.datastore.qtl <- c("Common Bean QTL", "Cowpea QTL", "Peanut QTL")
+  lis.datastore.qtl <- c("Common Bean QTL", "Cowpea QTL", "Peanut QTL", "Soybean QTL")
   dataFiles <- unique(c(dataFiles, legumeInfo.gwas, lis.datastore.gwas, lis.datastore.qtl))
   for(i in dataFiles){
     dataFile.i <- paste0(dataPath, i)

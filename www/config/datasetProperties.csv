@@ -13,3 +13,5 @@
 "Common Bean GWAS-QTL","chromosome {character}","position {integer}","trait {character}","p_value {numeric}",TRUE,FALSE,0,1,"Common Bean",FALSE,TRUE,"p_value","start_pos","end_pos",FALSE,0,1
 "Peanut QTL","chromosome {character}","center_pos {integer}","trait {character}","val {numeric}",FALSE,FALSE,0,1,"Peanut",FALSE,TRUE,"val","start_pos","end_pos",FALSE,0,1
 "Peanut GWAS-QTL","chromosome {character}","position {integer}","trait {character}","p_value {numeric}",TRUE,FALSE,0,1,"Peanut",FALSE,TRUE,"p_value","start_pos","end_pos",FALSE,0,1
+"Soybean QTL","chromosome {character}","center_pos {integer}","trait {character}","val {numeric}",FALSE,FALSE,0,1,"Soybean",FALSE,TRUE,"val","start_pos","end_pos",FALSE,0,1
+"Soybean GWAS-QTL","chromosome {character}","position {integer}","trait {character}","p_value {numeric}",TRUE,FALSE,0,1,"Soybean",FALSE,TRUE,"p_value","start_pos","end_pos",FALSE,0,1

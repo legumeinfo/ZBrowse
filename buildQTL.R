@@ -6,12 +6,13 @@
 lis.datastore.chrRegex[["Common Bean QTL"]] <- lis.datastore.chrRegex[["Common Bean GWAS"]]
 lis.datastore.chrRegex[["Cowpea QTL"]] <- lis.datastore.chrRegex[["Cowpea GWAS"]]
 lis.datastore.chrRegex[["Peanut QTL"]] <- lis.datastore.chrRegex[["Peanut GWAS"]]
+lis.datastore.chrRegex[["Soybean QTL"]] <- lis.datastore.chrRegex[["Soybean GWAS"]]
 lis.datastore.qtlUrls <- readLines(paste0(lis.datastore.localDir, "datasets-qtl.txt"))
 
 read.qtl.lis.datastore <- function(fin.qtl) {
   tmp <- tempfile()
   download.file(fin.qtl, tmp, method = "wget", quiet = TRUE)
-  df.qtl <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  df.qtl <- read.csv(gzfile(tmp), header = FALSE, skip = 1, sep = '\t', stringsAsFactors = FALSE)
   df.qtl <- df.qtl[, 1:2]
   names(df.qtl) <- c("identifier", "trait_id")
 
@@ -19,7 +20,7 @@ read.qtl.lis.datastore <- function(fin.qtl) {
   fin.qtlmrk <- gsub("\\.qtl\\.tsv\\.gz", "\\.qtlmrk\\.tsv\\.gz", fin.qtl)
   download.file(fin.qtlmrk, tmp, method = "wget", quiet = TRUE)
   df.qtlmrk <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
-  df.qtlmrk <- df.qtlmrk[, 1:2]
+  df.qtlmrk <- df.qtlmrk[, c(1, 3)] # was 1:2 (still is for most species, which have not been updated)
   names(df.qtlmrk) <- c("identifier", "marker")
   df.qtl <- merge(df.qtlmrk, df.qtl, by = "identifier", sort = FALSE)
 
