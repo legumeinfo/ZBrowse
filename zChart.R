@@ -567,8 +567,8 @@ create_zChart <- function(j, input, values) {
         # Broadcast the gene family to the Genome Context Viewer
         "Shiny.onInputChange('gcvGeneFamily', this.name);",
       "} else {",
-        # Go to the gene family's web page (extract from legfed_v1_0.<family>)
-        "window.open('https://funnotate.legumeinfo.org/?family=' + this.name.substring(12));",
+        # Go to the gene family's web page (in Funnotate)
+        "window.open('https://funnotate.legumeinfo.org/?family=' + this.name);",
       "}",
       "return false;", # and disable toggling the legend item
     "} !#"
