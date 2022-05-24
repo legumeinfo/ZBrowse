@@ -6,6 +6,7 @@ provideMultipleURLs <- function(includeGenomicLinkage) {
     # Note that this.url = 'https://legacy.legumeinfo.org/gene_links/' + geneId + '/json'
     #  (the first part of which has 41 characters)
     # And for now, add the gene family phylogram URL by hand.
+    "var geneFamily = this.family;",
     "$.getJSON(this.url, function(data) {",
       "var geneId = this.url.substring(41, this.url.indexOf('/json'));",
       "var content = '';",
@@ -15,7 +16,7 @@ provideMultipleURLs <- function(includeGenomicLinkage) {
         "$.each(data, function(i, obj) {",
           "content = content + '<p><a href=' + obj.href + ' target=_blank>' + obj.text + '</a></p>';",
           "if (i == 0) {",
-            "var urlPhylogram = 'http://legacy.legumeinfo.org/chado_gene_phylotree_v2?gene_name=' + geneId;",
+            "var urlPhylogram = 'https://funnotate.legumeinfo.org/?family=' + geneFamily + '&genes=' + geneId;",
             "var textPhylogram = 'View LIS gene family phylogram page for : ' + geneId;",
             "content = content + '<p><a href=' + urlPhylogram + ' target=_blank>' + textPhylogram + '</a></p>';",
           "}",
@@ -261,6 +262,7 @@ create_zChart <- function(j, input, values) {
         brAt(x[[org.tag_desc[[org.j]]]])
       ),
       gene = x[[org.tag_id[[org.j]]]],
+      family = x[["family"]],
       marker = c(NA, "Arrow", NA),
       stringsAsFactors = FALSE
     )
@@ -279,6 +281,7 @@ create_zChart <- function(j, input, values) {
         brAt(x[[org.tag_desc[[org.j]]]])
       ),
       gene = x[[org.tag_id[[org.j]]]],
+      family = x[["family"]],
       marker = c(NA, "Arrow", NA),
       stringsAsFactors = FALSE
     )
@@ -286,11 +289,11 @@ create_zChart <- function(j, input, values) {
   #annotTable <- annotTable[,c("x","y","name","url","marker")]
   if (nrow(annotTable) == 0) {
     annotTable <- data.frame(x = character(0), y = character(0), name = character(0),
-      url = character(0), gene = character(0), stringsAsFactors = FALSE)
+      url = character(0), gene = character(0), family = character(0), stringsAsFactors = FALSE)
   }
   highlight <- (annotTable$gene %in% values$highlightGenes)
   hasHighlightsForward <- (sum(highlight) > 0)
-  annotTable <- annotTable[,c("x","y","name","url","gene")]
+  annotTable <- annotTable[, c("x", "y", "name", "url", "gene", "family")]
   if (hasHighlightsForward) {
     annotTableH <- annotTable[highlight, ]
     annotTable <- annotTable[!highlight, ]
@@ -300,11 +303,11 @@ create_zChart <- function(j, input, values) {
   #annotTableReverse <- annotTableReverse[,c("x","y","name","url","marker")]
   if (nrow(annotTableReverse) == 0) {
     annotTableReverse <- data.frame(x = character(0), y = character(0), name = character(0),
-      url = character(0), gene = character(0), stringsAsFactors = FALSE)
+      url = character(0), gene = character(0), family = character(0), stringsAsFactors = FALSE)
   }
   highlight <- (annotTableReverse$gene %in% values$highlightGenes)
   hasHighlightsReverse <- (sum(highlight) > 0)
-  annotTableReverse <- annotTableReverse[,c("x","y","name","url","gene")]
+  annotTableReverse <- annotTableReverse[, c("x", "y", "name", "url", "gene", "family")]
   if (hasHighlightsReverse) {
     annotTableReverseH <- annotTableReverse[highlight, ]
     annotTableReverse <- annotTableReverse[!highlight, ]

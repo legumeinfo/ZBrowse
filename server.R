@@ -61,7 +61,7 @@ shinyServer(function(input, output, session) {
     # skip if gene families already exist (on reload, or with values specified in URL)
     if ("family" %in% names(org.annotGeneLoc[[org]])) next
     # initialize gene family to "" to avoid NULL values
-    org.annotGeneLoc[[org]][, "family"] <- ""
+    org.annotGeneLoc[[org]][, "family"] <<- ""
 
     dfmt <- ifelse(length(chrName[[org]]) < 10, "%d", "%02d")
     for (chr in chrName[[org]]) {
@@ -78,7 +78,7 @@ shinyServer(function(input, output, session) {
         }
         ff <- unlist(results$chromosome$families)
         bb <- gg %in% org.annotGeneLoc[[org]]$name
-        org.annotGeneLoc[[org]][match(gg[bb], org.annotGeneLoc[[org]]$name), "family"] <- ff[bb]
+        org.annotGeneLoc[[org]][match(gg[bb], org.annotGeneLoc[[org]]$name), "family"] <<- ff[bb]
       }
     }
   }
