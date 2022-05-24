@@ -88,7 +88,8 @@ shinyServer(function(input, output, session) {
     values$urlFields <- parseQueryString(session$clientData$url_search)
     # set GCV client URL if necessary
     if (is.null(userConfig$gcv_client_url)) {
-      userConfig$gcv_client_url <- sprintf("%s//%s:%s/gcv2", session$clientData$url_protocol, session$clientData$url_hostname, session$clientData$url_port)
+      colon_port <- ifelse(is.null(session$clientData$url_port), "", paste0(":", session$clientData$url_port))
+      userConfig$gcv_client_url <- sprintf("%s//%s%s/gcv2", session$clientData$url_protocol, session$clientData$url_hostname, colon_port)
     }
   })
 
