@@ -4,4 +4,4 @@ Vigna radiata,V.radiata,Vigra
 https://data.legumeinfo.org/Vigna/radiata/annotations/VC1973A.gnm6.ann1.M1Qs/vigra.VC1973A.gnm6.ann1.M1Qs.gene_models_main.gff3.gz
 Vr%02d,vigra.VC1973A.gnm6.Vr%02d,vigra.Vr\d+
 default
-strand,+,-,transcript_start,transcript_end,https://legacy.legumeinfo.org/gene_links/%s/json,name,name,chromosome,description
+strand,+,-,transcript_start,transcript_end,https://legacy.legumeinfo.org/gene_links/%s/json,id,name,chromosome,description

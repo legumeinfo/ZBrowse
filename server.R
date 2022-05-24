@@ -1360,7 +1360,8 @@ shinyServer(function(input, output, session) {
    observe(updatePlotbandWindow(2))
 
   output$selectedGene <- renderUI({
-    h5(values$glSelectedGene)
+    # break lines at '.' to ensure visibility
+    h5(HTML(gsub("\\.", "\\.<br>", values$glSelectedGene)))
   })
   output$relatedRegions <- renderUI({
     selectInput("relatedRegions", "Related Regions:", choices = NULL, selectize = FALSE)
@@ -1462,15 +1463,16 @@ shinyServer(function(input, output, session) {
     org1 <- values$organism
     values$glSelectedGene <- input$selectedGene
     df.genes <- subset(org.annotGeneLoc[[org1]], chromosome == input$chr,
-      select = c(name, chromosome, transcript_start, transcript_end, strand, family))
-    n0 <- which(df.genes$name == values$glSelectedGene)
+      select = c(id, chromosome, transcript_start, transcript_end, strand, family))
+    nt <- nrow(df.genes)
+    n0 <- which(df.genes$id == values$glSelectedGene)
     n <- input$neighbors
     nn <- n0 + (-n:n)
     # if at either end of the chromosome, adjust to retain (2*n + 1) genes
     if (nn[1] < 1) {
       nn <- nn - (nn[1] - 1)
-    } else if (tail(nn, 1) > length(df.genes$name)) {
-      nn <- nn - (tail(nn, 1) - length(df.genes$name))
+    } else if (tail(nn, 1) > nt) {
+      nn <- nn - (tail(nn, 1) - nt)
     }
     values$glGenes <- df.genes[nn, ]
     values$glGenes2 <- NULL # to disable redrawing the zCharts until we have the micro-synteny-search results

@@ -3,22 +3,20 @@ source("common.R")
 provideMultipleURLs <- function(includeGenomicLinkage) {
   paste(
     # From the JSON at this.url, extract the URLs related to this gene.
-    # Note that this.url = 'https://legacy.legumeinfo.org/gene_links/' + geneString + '/json'
+    # Note that this.url = 'https://legacy.legumeinfo.org/gene_links/' + geneId + '/json'
     #  (the first part of which has 41 characters)
-    #  and geneString = <5-character species abbreviation>.geneName
     # And for now, add the gene family phylogram URL by hand.
     "$.getJSON(this.url, function(data) {",
-      "var geneString = this.url.substring(41, this.url.indexOf('/json'));",
-      "var geneName = geneString.substring(6);",
+      "var geneId = this.url.substring(41, this.url.indexOf('/json'));",
       "var content = '';",
       "if (data.length == 0) {",
-        "content = '<p>No ' + geneName + ' links found.</p>';",
+        "content = '<p>No ' + geneId + ' links found.</p>';",
       "} else {",
         "$.each(data, function(i, obj) {",
           "content = content + '<p><a href=' + obj.href + ' target=_blank>' + obj.text + '</a></p>';",
           "if (i == 0) {",
-            "var urlPhylogram = 'http://legacy.legumeinfo.org/chado_gene_phylotree_v2?gene_name=' + geneString;",
-            "var textPhylogram = 'View LIS gene family phylogram page for : ' + geneName;",
+            "var urlPhylogram = 'http://legacy.legumeinfo.org/chado_gene_phylotree_v2?gene_name=' + geneId;",
+            "var textPhylogram = 'View LIS gene family phylogram page for : ' + geneId;",
             "content = content + '<p><a href=' + urlPhylogram + ' target=_blank>' + textPhylogram + '</a></p>';",
           "}",
         "});",
@@ -27,14 +25,14 @@ provideMultipleURLs <- function(includeGenomicLinkage) {
           "content = content + '<p><button",
             # button actions: first close the dialog, then handle genomic linkages
             "onclick=\"$(this).closest(&quot;.ui-dialog-content&quot;).dialog(&quot;close&quot;);",
-            "Shiny.onInputChange(&quot;selectedGene&quot;, &quot;' + geneString + '&quot;);\"",
+            "Shiny.onInputChange(&quot;selectedGene&quot;, &quot;' + geneId + '&quot;);\"",
           ">Genomic Linkage</button></p>';"
         )),
       "}",
       "var $div = $('<div></div>');",
       "$div.html(content);",
       "$div.dialog({",
-        "title: geneName + ' Links',",
+        "title: geneId + ' Links',",
         "width: 512,",
         "height: 'auto',",
         "modal: true",
@@ -255,14 +253,14 @@ create_zChart <- function(j, input, values) {
       y = c(annotYvalForward, annotYvalForward, NA),
       url = sprintf(org.urlFormat[[org.j]], x[[org.tag_id[[org.j]]]]),
       name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'><b>%1$s</b><br>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
-        x[[org.tag_name[[org.j]]]],
+        x[[org.tag_id[[org.j]]]],
         prettyNum(x[[org.tag_start[[org.j]]]], big.mark = ","),
         prettyNum(x[[org.tag_end[[org.j]]]], big.mark = ","),
         x[[org.tag_chr[[org.j]]]],
         x[[org.tag_strand[[org.j]]]],
         brAt(x[[org.tag_desc[[org.j]]]])
       ),
-      gene = x[[org.tag_name[[org.j]]]],
+      gene = x[[org.tag_id[[org.j]]]],
       marker = c(NA, "Arrow", NA),
       stringsAsFactors = FALSE
     )
@@ -273,14 +271,14 @@ create_zChart <- function(j, input, values) {
       y = c(annotYvalReverse, annotYvalReverse, NA),
       url = sprintf(org.urlFormat[[org.j]], x[[org.tag_id[[org.j]]]]),
       name = sprintf("<table cellpadding='4' style='line-height:1.5'><tr><td align='left'><b>%1$s</b><br>Location: %2$s-%3$s<br>Chromosome: %4$s, Strand: %5$s<br>%6$s</td></tr></table>",
-        x[[org.tag_name[[org.j]]]],
+        x[[org.tag_id[[org.j]]]],
         prettyNum(x[[org.tag_start[[org.j]]]], big.mark = ","),
         prettyNum(x[[org.tag_end[[org.j]]]], big.mark = ","),
         x[[org.tag_chr[[org.j]]]],
         x[[org.tag_strand[[org.j]]]],
         brAt(x[[org.tag_desc[[org.j]]]])
       ),
-      gene = x[[org.tag_name[[org.j]]]],
+      gene = x[[org.tag_id[[org.j]]]],
       marker = c(NA, "Arrow", NA),
       stringsAsFactors = FALSE
     )
@@ -518,7 +516,7 @@ create_zChart <- function(j, input, values) {
           lineWidth = 12,
           yAxis = 1,
           tooltip = list(
-            headerFormat = sprintf("<b>%s</b><br>%s", g$name, g$family),
+            headerFormat = sprintf("<b>%s</b><br>%s", g$id, g$family),
             pointFormat = '',
             followPointer = TRUE
           ),

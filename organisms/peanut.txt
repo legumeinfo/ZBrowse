@@ -4,4 +4,4 @@ Arachis hypogaea,A.hypogaea,Arahy
 https://data.legumeinfo.org/Arachis/hypogaea/annotations/Tifrunner.gnm1.ann1.CCJH/arahy.Tifrunner.gnm1.ann1.CCJH.gene_models_main.gff3.gz
 Arahy.%02d,arahy.Tifrunner.gnm1.Arahy.%02d,arahy.Arahy.\d+
 default
-strand,+,-,transcript_start,transcript_end,https://legacy.legumeinfo.org/gene_links/%s/json,name,name,chromosome,description
+strand,+,-,transcript_start,transcript_end,https://legacy.legumeinfo.org/gene_links/%s/json,id,name,chromosome,description
