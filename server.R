@@ -1427,8 +1427,8 @@ shinyServer(function(input, output, session) {
       distanceMetric <- tolower(input$macroDistance)
       if (distanceMetric == "jaccard") distanceMetric <- paste(distanceMetric, input$macroNgram, tolower(input$macroReversals), sep = ":")
       blocks <- macroSyntenyBlocksMicroservice(org.gcvUrlBase[[org1]], ff, input$macroMatched, input$macroIntermediate, input$macroMask, tt, distanceMetric, chr1, org1, org2)
-      if (!is.null(results$error)) {
-        print(results$error)
+      if (!is.null(blocks$error)) {
+        print(blocks$error)
       } else {
         for (j in 1:2) {
           if (is.null(blocks[[j]])) next
