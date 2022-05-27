@@ -16,7 +16,7 @@ provideMultipleURLs <- function(includeGenomicLinkage) {
         "$.each(data, function(i, obj) {",
           "content = content + '<p><a href=' + obj.href + ' target=_blank>' + obj.text + '</a></p>';",
           "if (i == 0) {",
-            "var urlPhylogram = 'https://funnotate.legumeinfo.org/?family=' + geneFamily + '&genes=' + geneId;",
+            "var urlPhylogram = 'https://funnotate.legumeinfo.org/?family=' + geneFamily + '&gene_name=' + geneId;",
             "var textPhylogram = 'View LIS gene family phylogram page for : ' + geneId;",
             "content = content + '<p><a href=' + urlPhylogram + ' target=_blank>' + textPhylogram + '</a></p>';",
           "}",
