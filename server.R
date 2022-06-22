@@ -1724,8 +1724,11 @@ shinyServer(function(input, output, session) {
     if (is.null(values$glSelectedGene)) {
       alert("No gene selected.")
     } else {
+      # filter by organism 2 genome prefix to avoid displaying similar tracks from different genomes
+      gene2 <- org.annotGeneLoc[[values$organism2]]$id[1]
+      regexp2 <- stri_match_first(gene2, regex = "(^.+)\\.ann\\d+\\.")[, 2]
       gcvQuery <- sprintf("window.open('%s/gene;lis=%s?neighbors=%d&matched=%s&intermediate=%d&regexp=%s', 'gcv');",
-        userConfig$gcv_client_url, values$glSelectedGene, input$neighbors, input$matched, input$intermediate, tolower(org.Gensp[values$organism2]))
+        userConfig$gcv_client_url, values$glSelectedGene, input$neighbors, input$matched, input$intermediate, regexp2)
       runjs(gcvQuery)
     }
   })
