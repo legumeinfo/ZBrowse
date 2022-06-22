@@ -1681,8 +1681,8 @@ shinyServer(function(input, output, session) {
         # isOrphans <- (fam == "")
 
         # Determine and highlight the selected genes
-        values$highlightGenes <- subset(org.annotGeneLoc[[values$organism]], family %in% fam, select = name)
-        values$highlightGenes <- unlist(union(values$highlightGenes, subset(org.annotGeneLoc[[values$organism2]], family %in% fam, select = name)))
+        values$highlightGenes <- subset(org.annotGeneLoc[[values$organism]], family %in% fam, select = id)
+        values$highlightGenes <- unlist(union(values$highlightGenes, subset(org.annotGeneLoc[[values$organism2]], family %in% fam, select = id)))
       }
     }
   })
