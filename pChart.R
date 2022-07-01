@@ -37,7 +37,9 @@ create_pChart <- function(j, input, values) {
     chromChart <- findGWASOverlaps(chromChart, j, input)
   }
   
+  gwas.data.exist <- TRUE
   if(nrow(chromChart)==0){ #nothing is in the window, but lets still make a data.frame
+    gwas.data.exist <- FALSE
     chromChart <- values[[input[[jth_ref("datasets", j)]]]][1,]
     chromChart[,input[[jth_ref("yAxisColumn", j)]]] <- -1    
     if(length(input[[jth_ref("traitColumns", j)]]) > 1){
@@ -51,7 +53,7 @@ create_pChart <- function(j, input, values) {
   colorTable <- getColorTable(j, input)
   
   #take -log10 of y-axis column if requested
-  if(input[[jth_ref("logP", j)]] == TRUE && chromChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
+  if (input[[jth_ref("logP", j)]] == TRUE && gwas.data.exist) {
     chromChart[,input[[jth_ref("yAxisColumn", j)]]] <- -log(chromChart[,input[[jth_ref("yAxisColumn", j)]]],10)
   }
   
@@ -92,8 +94,11 @@ create_pChart <- function(j, input, values) {
   })
   
   #build JL series
+  qtl.data.exist <- FALSE
   if(input[[jth_ref("supportInterval", j)]]==TRUE){
+    qtl.data.exist <- TRUE
     if(nrow(SIchart)==0){ #nothing is in the window, but lets still make a data.frame
+      qtl.data.exist <- FALSE
       SIchart <- values[[input[[jth_ref("datasets", j)]]]][1,]
       SIchart[,input[[jth_ref("SIyAxisColumn", j)]]] <- -1    
       if(length(input[[jth_ref("traitColumns", j)]]) > 1){
@@ -149,7 +154,7 @@ create_pChart <- function(j, input, values) {
       a$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,max=chart.max.height,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }
     
-    if(SIchart[1,input[[jth_ref("SIyAxisColumn", j)]]] != -1){
+    if (qtl.data.exist) {
       d_ply(jlTable,.(trait),function(x){
         a$series(
           data = toJSONArray2(x,json=F,names=T),
@@ -166,15 +171,17 @@ create_pChart <- function(j, input, values) {
     }
   }
 
-  invisible(sapply(pkSeries, function(x) {
-    a$series(
-      data = x,
-      type = "scatter",
-      turboThreshold = 5000,
-      name = x[[1]]$trait,
-      color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)]
-    )
-  }))
+  if (gwas.data.exist) {
+    invisible(sapply(pkSeries, function(x) {
+      a$series(
+        data = x,
+        type = "scatter",
+        turboThreshold = 5000,
+        name = x[[1]]$trait,
+        color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)]
+      )
+    }))
+  }
 
   a$chart(zoomType="x", alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
   a$title(text=paste(input[[jth_ref("datasets", j)]],"Results for Chromosome",input[[jth_ref("chr", j)]],sep=" "))
@@ -232,7 +239,7 @@ create_pChart <- function(j, input, values) {
   a$exporting(enabled=TRUE,filename='chromChart',sourceWidth=2000)
   hideLegend <- input[[jth_ref("legend", j)]]
   if (is.null(hideLegend)) hideLegend <- FALSE
-  hideLegend <- hideLegend || (chromChart[1, input[[jth_ref("yAxisColumn", j)]]] == -1)
+  hideLegend <- hideLegend || !(gwas.data.exist || qtl.data.exist)
   a$legend(enabled = !hideLegend)
   a$credits(enabled=TRUE)
   a$set(dom = jth_ref('pChart', j))

@@ -39,7 +39,9 @@ create_gChart <- function(j, input, values) {
   }
   
   #check if there is any data for the selected traits
+  gwas.data.exist <- TRUE
   if(nrow(genomeChart)==0){ #nothing is in the window, but lets still make a data.frame
+    gwas.data.exist <- FALSE
     genomeChart <- values[[input[[jth_ref("datasets", j)]]]][1,]
     genomeChart[,input[[jth_ref("yAxisColumn", j)]]] <- -1    
     genomeChart$totalBP <- 1
@@ -53,7 +55,7 @@ create_gChart <- function(j, input, values) {
   }
   
   #take -log10 of y-axis column if requested
-  if(input[[jth_ref("logP", j)]] == TRUE && genomeChart[1,input[[jth_ref("yAxisColumn", j)]]] != -1){
+  if (input[[jth_ref("logP", j)]] == TRUE && gwas.data.exist) {
     genomeChart[,input[[jth_ref("yAxisColumn", j)]]] <- -log(genomeChart[,input[[jth_ref("yAxisColumn", j)]]],10)
   }
   
@@ -87,8 +89,11 @@ create_gChart <- function(j, input, values) {
   })
 
   #build JL series
+  qtl.data.exist <- FALSE
   if(input[[jth_ref("supportInterval", j)]]==TRUE){
+    qtl.data.exist <- TRUE
     if(nrow(SIchart)==0){ #nothing is in the window, but lets still make a data.frame
+      qtl.data.exist <- FALSE
       SIchart <- values[[input[[jth_ref("datasets", j)]]]][1,]
       SIchart[,input[[jth_ref("SIyAxisColumn", j)]]] <- -1    
       if(length(input[[jth_ref("traitColumns", j)]]) > 1){
@@ -171,7 +176,7 @@ create_gChart <- function(j, input, values) {
       c$yAxis(visible=FALSE,title=list(text=input[[jth_ref("SIyAxisColumn", j)]]),min=0,max=chart.max.height,gridLineWidth=0,minorGridLineWidth=0,startOnTick=FALSE,opposite=TRUE,replace=FALSE)
     }
     
-    if(SIchart[1,input[[jth_ref("SIyAxisColumn", j)]]] != -1){
+    if (qtl.data.exist) {
       d_ply(jlTable,.(trait),function(x){
         c$series(
           data = toJSONArray2(x,json=F,names=T),
@@ -188,15 +193,17 @@ create_gChart <- function(j, input, values) {
     }
   }
 
-  invisible(sapply(genomeSeries, function(x) {
-    c$series(
-      data = x,
-      turboThreshold = 5000,
-      type = "scatter",
-      color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)],
-      name = x[[1]]$trait
-    )
-  }))
+  if (gwas.data.exist) {
+    invisible(sapply(genomeSeries, function(x) {
+      c$series(
+        data = x,
+        turboThreshold = 5000,
+        type = "scatter",
+        color = colorTable$color[colorTable$trait == as.character(x[[1]]$trait)],
+        name = x[[1]]$trait
+      )
+    }))
+  }
 
   c$chart(zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
   c$title(text=paste(input[[jth_ref("datasets", j)]]," Results",sep=" "))
@@ -275,7 +282,7 @@ create_gChart <- function(j, input, values) {
   c$exporting(enabled=TRUE,filename='genomeChart',sourceWidth=2000)
   hideLegend <- input[[jth_ref("legend", j)]]
   if (is.null(hideLegend)) hideLegend <- FALSE
-  hideLegend <- hideLegend || (genomeChart[1, input[[jth_ref("yAxisColumn", j)]]] == -1)
+  hideLegend <- hideLegend || !(gwas.data.exist || qtl.data.exist)
   c$legend(enabled = !hideLegend)
 
   removeNotification(nid)
