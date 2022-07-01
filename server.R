@@ -130,6 +130,10 @@ shinyServer(function(input, output, session) {
     updateSelectizeInput(session, gwj, choices = trait.choices, selected = selectedGwasTraits)
     # Clear loaded remote GWAS traits if the jth organism changes
     values[[gwj]] <- NULL
+    # Set 'Trait names from ontology' checkbox value if specified in the URL
+    tfoj <- jth_ref("traitsFromOntology", j)
+    tfo <- isolate(values$urlFields[[tfoj]])
+    updateCheckboxInput(session, tfoj, value = is.null(tfo) || !(tfo %in% c("n", "N")))
 
     # Check the Append to Current Dataset checkbox and clear any previously selected GWAS files.
     # As there is no updateFileInput() method, send a custom message (to clear the progress bar) and clear values$needsToUploadFiles.
@@ -241,6 +245,7 @@ shinyServer(function(input, output, session) {
   createTraitsSidebar <- function(j) {
     wellPanel(
       style = paste0("background-color: ", bgColors[j], ";"),
+      checkboxInput(jth_ref("traitsFromOntology", j), label = "Trait names from ontology", value = TRUE),
       uiOutput(jth_ref("traitFilter", j)),
       uiOutput(jth_ref("traitColBoxes", j)),
       uiOutput(jth_ref("legend", j)),
@@ -1913,6 +1918,8 @@ shinyServer(function(input, output, session) {
     }
     # remote GWAS traits to load
     for (j in 1:ns) {
+      tfoj <- jth_ref("traitsFromOntology", j)
+      url.q <- paste0(url.q, "&", tfoj, "=", ifelse(input[[tfoj]], "y", "n"))
       gwj <- jth_ref("gwasTraits", j)
       if (!is.null(values[[gwj]])) {
         url.q <- paste0(url.q, "&", gwj, "=", paste(values[[gwj]], collapse = ";"))
@@ -1978,6 +1985,8 @@ shinyServer(function(input, output, session) {
       input$datasets2
       values$gwasTraits
       values$gwasTraits2
+      input$traitsFromOntology
+      input$traitsFromOntology2
       sapply(input$traitColumns, function(i) input[[jth_ref(i, 1)]])
       sapply(input$traitColumns2, function(i) input[[jth_ref(i, 2)]])
       input$chr
@@ -2088,6 +2097,15 @@ shinyServer(function(input, output, session) {
   }
   observeEvent(input$clear_pChartMacro, {
     clear_pChartMacrosyntenyBands()
+  })
+
+  observeEvent(input$traitsFromOntology, {
+    if (!("trait_id" %in% varnames(1))) return()
+    updateSelectizeInput(session, "traitColumns", selected = ifelse(input$traitsFromOntology, "trait", "trait_id"))
+  })
+  observeEvent(input$traitsFromOntology2, {
+    if (!("trait_id" %in% varnames(2))) return()
+    updateSelectizeInput(session, "traitColumns2", selected = ifelse(input$traitsFromOntology2, "trait", "trait_id"))
   })
 
 })#end server
