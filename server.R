@@ -1471,7 +1471,7 @@ shinyServer(function(input, output, session) {
      winHigh <- center + input[[jth_ref("window", j)]]
      winLow <- center - input[[jth_ref("window", j)]]
      #eventually I would use winLow/winHigh to change the plotband range
-     band = list(from = winLow, to = winHigh, color = "rgba(68, 170, 213, 0.4)")
+     band = list(from = winLow, to = winHigh, color = windowPlotBandColor)
      #print(band)
      session$sendCustomMessage(type = jth_ref("customMsg", j), band)
    }
@@ -1484,7 +1484,7 @@ shinyServer(function(input, output, session) {
     # For j = 2 there may be multiple macrosynteny regions/plot bands
     if (length(winLow) < 1) return()
     for (i in 1:length(winLow)) {
-      band <- list(id = "band1", from = winLow[i], to = winHigh[i], color = "rgba(213, 170, 68, 0.4)", erase = (i == 1))
+      band <- list(id = "band1", from = winLow[i], to = winHigh[i], color = macrosyntenyPlotBandColor, erase = (i == 1))
       session$sendCustomMessage(type = jth_ref("gChartMacroMsg", j), band)
     }
   }
@@ -1497,7 +1497,7 @@ shinyServer(function(input, output, session) {
     # For j = 2 there may be multiple macrosynteny regions/plot bands
     if (length(winLow) < 1) return()
     for (i in 1:length(winLow)) {
-      band <- list(id = "band1", from = winLow[i], to = winHigh[i], color = "rgba(213, 170, 68, 0.4)")
+      band <- list(id = "band1", from = winLow[i], to = winHigh[i], color = macrosyntenyPlotBandColor)
       session$sendCustomMessage(type = jth_ref("pChartMacroMsg", j), band)
     }
   }

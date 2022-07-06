@@ -154,7 +154,7 @@ create_gChart <- function(j, input, values) {
       )
     )
     # different color for odd plot bands
-    if (i %% 2 != 0) bigList[[i]]$color <- "rgba(68, 170, 213, 0.1)"
+    if (i %% 2 != 0) bigList[[i]]$color <- chromosomePlotBandColor
   }    
   
   c <- rCharts::Highcharts$new()

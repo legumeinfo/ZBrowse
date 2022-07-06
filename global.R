@@ -251,3 +251,8 @@ macrosyntenyColors <- c(
 # default window center and half-width
 defaultCenter <- 100000
 defaultWindowSize <- 250000
+
+# plot band colors
+chromosomePlotBandColor <- "rgba(68, 170, 213, 0.1)"
+windowPlotBandColor <- "rgba(68, 170, 213, 0.4)"
+macrosyntenyPlotBandColor <- "rgba(213, 170, 68, 0.4)"
