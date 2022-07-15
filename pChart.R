@@ -183,6 +183,11 @@ create_pChart <- function(j, input, values) {
     }))
   }
 
+  if (!(gwas.data.exist || qtl.data.exist)) {
+    # force it to show the x axis when no data exist
+    a$series(data = list(x = 0, y = -1), type = "scatter")
+  }
+
   a$chart(zoomType="x", alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))
   a$title(text=paste(input[[jth_ref("datasets", j)]],"Results for Chromosome",input[[jth_ref("chr", j)]],sep=" "))
   a$subtitle(text="Rollover for more info. Drag chart area to zoom. Click point for zoomed annotated plot.")
