@@ -137,10 +137,7 @@ create_pChart <- function(j, input, values) {
   
   a <- rCharts::Highcharts$new()
   a$LIB$url <- 'highcharts/' #use the local copy of highcharts, not the one installed by rCharts
-  chrNumber <- trailingInteger(input[[jth_ref("chr", j)]])
-  a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[[values[[jth_ref("organism", j)]]]][chrNumber],endOnTick=FALSE,
-          plotBands = list(list(from=pbWin$winLow,to=pbWin$winHigh,color=windowPlotBandColor)))
-  
+
   if(input[[jth_ref("axisLimBool", j)]] == TRUE){
     a$yAxis(title=list(text=input[[jth_ref("yAxisColumn", j)]]),min=input[[jth_ref("axisMin", j)]],max=input[[jth_ref("axisMax", j)]],startOnTick=FALSE)
   }else{
@@ -238,6 +235,26 @@ create_pChart <- function(j, input, values) {
       cursor = "pointer"
     )
   )
+
+  # set a$xAxis here to add macrosynteny plot bands, if any
+  pbList <- list(list(from = pbWin$winLow, to = pbWin$winHigh, color = windowPlotBandColor))
+  chrNumber <- trailingInteger(input[[jth_ref("chr", j)]])
+  blockChrNumber <- values[[jth_ref("chrNumber", j)]]
+  if (!is.null(blockChrNumber) && chrNumber %in% blockChrNumber) {
+    w <- which(blockChrNumber == chrNumber)
+    bls <- values[[jth_ref("blockStart", j)]][w]
+    ble <- values[[jth_ref("blockEnd", j)]][w]
+    nBlocks <- length(bls)
+    if (!is.null(bls) && nBlocks > 0) {
+      for (i in 1:nBlocks) {
+        band.i <- list(id = paste0("band", i), from = bls[i], to = ble[i], color = macrosyntenyPlotBandColor)
+        pbList[[1 + i]] <- band.i
+      }
+    }
+  }
+  a$xAxis(title = list(text = "Base Pairs"), startOnTick = TRUE, endOnTick = FALSE,
+    min = 1, max = chrSize[[values[[jth_ref("organism", j)]]]][chrNumber],
+    plotBands = pbList)
 
   removeNotification(nid)
 

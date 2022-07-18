@@ -146,8 +146,7 @@ shinyServer(function(input, output, session) {
     clearGenomicLinkages()
 
     # Clear macrosynteny bands
-    clear_gChartMacrosyntenyBands()
-    clear_pChartMacrosyntenyBands()
+    clearMacrosyntenyBands()
 
     removeNotification(nid)
   }
@@ -314,11 +313,10 @@ shinyServer(function(input, output, session) {
       ),
       actionButton("submitMacroSynteny", "Update"),
       conditionalPanel(condition = wholeGenomeTabSelected,
-        selectInput("macroChromosome", "Species 1 Chromosome:", choices = "All"),
-        actionLink("clear_gChartMacro", "Clear Macrosynteny Bands")
+        selectInput("macroChromosome", "Species 1 Chromosome:", choices = "All")
       ),
-      conditionalPanel(condition = chromosomeTabSelected,
-        actionLink("clear_pChartMacro", "Clear Macrosynteny Bands")
+      conditionalPanel(condition = wholeGenomeOrChromosomeTabSelected,
+        actionLink("clearMacrosynteny", "Clear Macrosynteny Bands")
       )
       # style = paste0("background-color: ", bgColors[1], ";")
     ))
@@ -661,63 +659,11 @@ shinyServer(function(input, output, session) {
         conditionalPanel(condition = comparing2Species,
           wellPanel(
             showOutput("gChartMacro", "highcharts"),
-            tags$script('Shiny.addCustomMessageHandler("gChartMacroClear", function(bandOpts) {
-              hc = $("#gChartMacro").highcharts();
-              if (hc != undefined) {
-                chartXAxis = hc.xAxis[0];
-                chartXAxis.removePlotBand(bandOpts.id);
-              }
-              hc = $("#gChart").highcharts();
-              if (hc != undefined) {
-                chartXAxis = hc.xAxis[0];
-                chartXAxis.removePlotBand(bandOpts.id);
-              }
-            })'),
-            tags$script('Shiny.addCustomMessageHandler("gChartMacroMsg", function(bandOpts) {
-              hc = $("#gChartMacro").highcharts();
-              if (hc != undefined) {
-                chartXAxis = hc.xAxis[0];
-                chartXAxis.removePlotBand(bandOpts.id);
-                chartXAxis.addPlotBand(bandOpts);
-              }
-              hc = $("#gChart").highcharts();
-              if (hc != undefined) {
-                chartXAxis = hc.xAxis[0];
-                chartXAxis.removePlotBand(bandOpts.id);
-                chartXAxis.addPlotBand(bandOpts);
-              }
-            })'),
             style = paste0("background-color: ", bgColors[1], ";")
           ),
           tags$div(id = "tour-wholegenome-macrosynteny",
             wellPanel(
               showOutput("gChartMacro2", "highcharts"),
-              tags$script('Shiny.addCustomMessageHandler("gChartMacroClear2", function(bandOpts) {
-                hc = $("#gChartMacro2").highcharts();
-                if (hc != undefined) {
-                  chartXAxis = hc.xAxis[0];
-                  chartXAxis.removePlotBand(bandOpts.id);
-                }
-                hc = $("#gChart2").highcharts();
-                if (hc != undefined) {
-                  chartXAxis = hc.xAxis[0];
-                  chartXAxis.removePlotBand(bandOpts.id);
-                }
-              })'),
-              tags$script('Shiny.addCustomMessageHandler("gChartMacroMsg2", function(bandOpts) {
-                hc = $("#gChartMacro2").highcharts();
-                if (hc != undefined) {
-                  chartXAxis = hc.xAxis[0];
-                  if (bandOpts.erase) chartXAxis.removePlotBand(bandOpts.id);
-                  chartXAxis.addPlotBand(bandOpts);
-                }
-                hc = $("#gChart2").highcharts();
-                if (hc != undefined) {
-                  chartXAxis = hc.xAxis[0];
-                  if (bandOpts.erase) chartXAxis.removePlotBand(bandOpts.id);
-                  chartXAxis.addPlotBand(bandOpts);
-                }
-              })'),
               style = paste0("background-color: ", bgColors[2], ";")
             )
           )
@@ -752,30 +698,6 @@ shinyServer(function(input, output, session) {
               chartXAxis.addPlotBand(bandOpts);
             }
           })'),
-          tags$script('Shiny.addCustomMessageHandler("pChartMacroClear", function(bandOpts) {
-            hc = $("#pChartMacro").highcharts();
-            if (hc != undefined) {
-              chartXAxis = hc.xAxis[0];
-              chartXAxis.removePlotBand(bandOpts.id);
-            }
-            hc = $("#pChart").highcharts();
-            if (hc != undefined) {
-              chartXAxis = hc.xAxis[0];
-              chartXAxis.removePlotBand(bandOpts.id);
-            }
-          })'),
-          tags$script('Shiny.addCustomMessageHandler("pChartMacroMsg", function(bandOpts) {
-            hc = $("#pChartMacro").highcharts();
-            if (hc != undefined) {
-              chartXAxis = hc.xAxis[0];
-              chartXAxis.addPlotBand(bandOpts);
-            }
-            hc = $("#pChart").highcharts();
-            if (hc != undefined) {
-              chartXAxis = hc.xAxis[0];
-              chartXAxis.addPlotBand(bandOpts);
-            }
-          })'),
           style = paste0("background-color: ", bgColors[1], ";")
         ),
         conditionalPanel(condition = comparing2Species,
@@ -791,30 +713,6 @@ shinyServer(function(input, output, session) {
             if (hc != undefined) {
               chartXAxis = hc.xAxis[0];
               chartXAxis.removePlotBand();
-              chartXAxis.addPlotBand(bandOpts);
-            }
-          })'),
-          tags$script('Shiny.addCustomMessageHandler("pChartMacroClear2", function(bandOpts) {
-            hc = $("#pChartMacro2").highcharts();
-            if (hc != undefined) {
-              chartXAxis = hc.xAxis[0];
-              chartXAxis.removePlotBand(bandOpts.id);
-            }
-            hc = $("#pChart2").highcharts();
-            if (hc != undefined) {
-              chartXAxis = hc.xAxis[0];
-              chartXAxis.removePlotBand(bandOpts.id);
-            }
-          })'),
-          tags$script('Shiny.addCustomMessageHandler("pChartMacroMsg2", function(bandOpts) {
-            hc = $("#pChartMacro2").highcharts();
-            if (hc != undefined) {
-              chartXAxis = hc.xAxis[0];
-              chartXAxis.addPlotBand(bandOpts);
-            }
-            hc = $("#pChart2").highcharts();
-            if (hc != undefined) {
-              chartXAxis = hc.xAxis[0];
               chartXAxis.addPlotBand(bandOpts);
             }
           })'),
@@ -1478,32 +1376,6 @@ shinyServer(function(input, output, session) {
    observe(updatePlotbandWindow(1))
    observe(updatePlotbandWindow(2))
 
-  update_gChartMacroPlotband <- function(j) {
-    winLow <- values[[jth_ref("blockCumStart", j)]]
-    winHigh <- values[[jth_ref("blockCumEnd", j)]]
-    # For j = 2 there may be multiple macrosynteny regions/plot bands
-    if (length(winLow) < 1) return()
-    for (i in 1:length(winLow)) {
-      band <- list(id = "band1", from = winLow[i], to = winHigh[i], color = macrosyntenyPlotBandColor, erase = (i == 1))
-      session$sendCustomMessage(type = jth_ref("gChartMacroMsg", j), band)
-    }
-  }
-  observe(update_gChartMacroPlotband(1))
-  observe(update_gChartMacroPlotband(2))
-
-  update_pChartMacroPlotband <- function(j) {
-    winLow <- values[[jth_ref("blockStart", j)]]
-    winHigh <- values[[jth_ref("blockEnd", j)]]
-    # For j = 2 there may be multiple macrosynteny regions/plot bands
-    if (length(winLow) < 1) return()
-    for (i in 1:length(winLow)) {
-      band <- list(id = "band1", from = winLow[i], to = winHigh[i], color = macrosyntenyPlotBandColor)
-      session$sendCustomMessage(type = jth_ref("pChartMacroMsg", j), band)
-    }
-  }
-  observe(update_pChartMacroPlotband(1))
-  observe(update_pChartMacroPlotband(2))
-
   output$selectedGene <- renderUI({
     # break lines at '.' to ensure visibility
     h5(HTML(gsub("\\.", "\\.<br>", values$glSelectedGene)))
@@ -1768,8 +1640,12 @@ shinyServer(function(input, output, session) {
           updateSelectInput(session, "chr", selected = chrRef)
           updateNumericInput(session, "selected", value = bpCenterRef)
           # updateSliderInput(session, "window", value = bpWidthRef)
+          values$chrNumber <- trailingInteger(chrRef)
           values$blockStart <- bpCenterRef - bpWidthRef
           values$blockEnd <- bpCenterRef + bpWidthRef
+          cumBp <- c(0, cumsum(as.numeric(chrSize[[values$organism]])))
+          values$blockCumStart <- values$blockStart + cumBp[values$chrNumber]
+          values$blockCumEnd <- values$blockEnd + cumBp[values$chrNumber]
           # Adjust the organism 2 Chromosome window to match the block source
           chrSrc <- trailingChromosomeName(srx$chromosome, values$organism2)
           bpStartSrc <- srx$locus[[1]]
@@ -1779,8 +1655,12 @@ shinyServer(function(input, output, session) {
           updateSelectInput(session, "chr2", selected = chrSrc)
           updateNumericInput(session, "selected2", value = bpCenterSrc)
           # updateSliderInput(session, "window2", value = bpWidthSrc)
+          values$chrNumber2 <- trailingInteger(chrSrc)
           values$blockStart2 <- bpCenterSrc - bpWidthSrc
           values$blockEnd2 <- bpCenterSrc + bpWidthSrc
+          cumBp2 <- c(0, cumsum(as.numeric(chrSize[[values$organism2]])))
+          values$blockCumStart2 <- values$blockStart2 + cumBp2[values$chrNumber2]
+          values$blockCumEnd2 <- values$blockEnd2 + cumBp2[values$chrNumber2]
         }
 
       } else if (isMacroSyntenyOrganism) {
@@ -2058,45 +1938,71 @@ shinyServer(function(input, output, session) {
     j <- input$set_gChartMacro$j
     values[[jth_ref("blockCumStart", j)]] <- input$set_gChartMacro$min
     values[[jth_ref("blockCumEnd", j)]] <- input$set_gChartMacro$max
+    cumBp_j <- c(0, cumsum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])))
+    values[[jth_ref("chrNumber", j)]] <- chr_j <- which(input$set_gChartMacro$min <= cumBp_j)[1] - 1
+    values[[jth_ref("blockStart", j)]] <- input$set_gChartMacro$min - cumBp_j[chr_j]
+    values[[jth_ref("blockEnd", j)]] <- input$set_gChartMacro$max - cumBp_j[chr_j]
     if (j == 1) {
       values$blockCumStart2 <- input$set_gChartMacro$minSrc
       values$blockCumEnd2 <- input$set_gChartMacro$maxSrc
+      cumBp2 <- c(0, cumsum(as.numeric(chrSize[[values$organism2]])))
+      # there may be multiple species 2 blocks in the pCharts
+      minSrc <- unlist(input$set_gChartMacro$minSrc)
+      maxSrc <- unlist(input$set_gChartMacro$maxSrc)
+      values$chrNumber2 <- sapply(minSrc, function(bp) which(bp <= cumBp2)[1] - 1)
+      values$blockStart2 <- minSrc - cumBp2[values$chrNumber2]
+      values$blockEnd2 <- maxSrc - cumBp2[values$chrNumber2]
     } else if (j == 2) {
       values$blockCumStart <- input$set_gChartMacro$minRef
       values$blockCumEnd <- input$set_gChartMacro$maxRef
+      cumBp <- c(0, cumsum(as.numeric(chrSize[[values$organism]])))
+      # there is only one species 1 block, otherwise we could handle multiple blocks as we do above for species 2
+      values$chrNumber <- which(input$set_gChartMacro$minRef <= cumBp)[1] - 1
+      values$blockStart <- input$set_gChartMacro$minRef - cumBp[values$chrNumber]
+      values$blockEnd <- input$set_gChartMacro$maxRef - cumBp[values$chrNumber]
     }
-  })
-  clear_gChartMacrosyntenyBands <- function(j) {
-    band <- list(id = "band1")
-    session$sendCustomMessage(type = "gChartMacroClear", band)
-    session$sendCustomMessage(type = "gChartMacroClear2", band)
-  }
-  observeEvent(input$clear_gChartMacro, {
-    clear_gChartMacrosyntenyBands()
+    updateSelectInput(session, "chr", selected = chrName[[values$organism]][values$chrNumber])
+    updateSelectInput(session, "chr2", selected = chrName[[values$organism2]][values$chrNumber2[1]])
   })
 
   observeEvent(input$set_pChartMacro, {
-    clear_pChartMacrosyntenyBands()
     j <- input$set_pChartMacro$j
+    values$chrNumber <- input$set_pChartMacro$chrNumber
+    values$chrNumber2 <- input$set_pChartMacro$chrNumber2
     values[[jth_ref("blockStart", j)]] <- input$set_pChartMacro$min
     values[[jth_ref("blockEnd", j)]] <- input$set_pChartMacro$max
+    cumBp_j <- c(0, cumsum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])))
+    chr_j <- values[[jth_ref("chrNumber", j)]]
+    values[[jth_ref("blockCumStart", j)]] <- input$set_pChartMacro$min + cumBp_j[chr_j]
+    values[[jth_ref("blockCumEnd", j)]] <- input$set_pChartMacro$max + cumBp_j[chr_j]
     if (j == 1) {
-      # also change species 2 chromosome?
       values$blockStart2 <- input$set_pChartMacro$minSrc
       values$blockEnd2 <- input$set_pChartMacro$maxSrc
+      cumBp2 <- c(0, cumsum(as.numeric(chrSize[[values$organism2]])))
+      values$blockCumStart2 <- input$set_pChartMacro$minSrc + cumBp2[values$chrNumber2]
+      values$blockCumEnd2 <- input$set_pChartMacro$maxSrc + cumBp2[values$chrNumber2]
+      # also update species 2 chromosome in Chromosome view
+      updateSelectInput(session, "chr2", selected = chrName[[values$organism2]][values$chrNumber2[1]])
     } else if (j == 2) {
-      # also change species 1 chromosome?
       values$blockStart <- input$set_pChartMacro$minRef
       values$blockEnd <- input$set_pChartMacro$maxRef
+      cumBp <- c(0, cumsum(as.numeric(chrSize[[values$organism]])))
+      values$blockCumStart <- input$set_pChartMacro$minRef + cumBp[values$chrNumber]
+      values$blockCumEnd <- input$set_pChartMacro$maxRef + cumBp[values$chrNumber]
+      # also update species 1 chromosome in Chromosome view
+      updateSelectInput(session, "chr", selected = chrName[[values$organism]][values$chrNumber])
     }
   })
-  clear_pChartMacrosyntenyBands <- function() {
-    band <- list(id = "band1")
-    session$sendCustomMessage(type = "pChartMacroClear", band)
-    session$sendCustomMessage(type = "pChartMacroClear2", band)
+
+  clearMacrosyntenyBands <- function() {
+    values$blockCumStart <- values$blockCumStart2 <- NULL
+    values$blockCumEnd <- values$blockCumEnd2 <- NULL
+    values$chrNumber <- values$chrNumber2 <- NULL
+    values$blockStart <- values$blockStart2 <- NULL
+    values$blockEnd <- values$blockEnd2 <- NULL
   }
-  observeEvent(input$clear_pChartMacro, {
-    clear_pChartMacrosyntenyBands()
+  observeEvent(input$clearMacrosynteny, {
+    clearMacrosyntenyBands()
   })
 
   observeEvent(input$traitsFromOntology, {

@@ -34,9 +34,6 @@ create_gChartMacro <- function(j, input, values) {
   
   c <- rCharts::Highcharts$new()
   c$LIB$url <- 'highcharts/'
-  c$xAxis(title = list(text = "Chromosome", margin = title.margin), startOnTick = TRUE,
-    min = 0, max = sum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])),
-    endOnTick = FALSE, labels = list(enabled = FALSE), tickWidth = 0, plotBands = bigList)
 
   # Display macro-synteny blocks
   blocks <- values$pairwiseBlocks[[j]]
@@ -133,6 +130,19 @@ create_gChartMacro <- function(j, input, values) {
     )
   )
   c$exporting(enabled=TRUE,filename='genomeChartMacro',sourceWidth=2000)
+
+  # set c$xAxis here to add macrosynteny plot bands, if any
+  bcs <- values[[jth_ref("blockCumStart", j)]]
+  bce <- values[[jth_ref("blockCumEnd", j)]]
+  nBlocks <- length(bcs)
+  if (!is.null(bcs) && nBlocks > 0) {
+    for (i in 1:nBlocks) {
+      bigList[[nBlocks + i]] <- list(id = paste0("band", i), from = bcs[i], to = bce[i], color = macrosyntenyPlotBandColor)
+    }
+  }
+  c$xAxis(title = list(text = "Chromosome", margin = title.margin), startOnTick = TRUE,
+    min = 0, max = sum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])),
+    endOnTick = FALSE, labels = list(enabled = FALSE), tickWidth = 0, plotBands = bigList)
 
   removeNotification(nid)
 

@@ -15,9 +15,6 @@ create_pChartMacro <- function(j, input, values) {
 
   a <- rCharts::Highcharts$new()
   a$LIB$url <- 'highcharts/' #use the local copy of highcharts, not the one installed by rCharts
-  chrNumber <- trailingInteger(input[[jth_ref("chr", j)]])
-  a$xAxis(title = list(text = "Base Pairs"),startOnTick=TRUE,min=1,max=chrSize[[values[[jth_ref("organism", j)]]]][chrNumber],endOnTick=FALSE,
-          plotBands = list(list(from=pbWin$winLow,to=pbWin$winHigh,color=windowPlotBandColor)))
 
   # Display macro-synteny blocks
   blocks <- values$pairwiseBlocks[[j]]
@@ -32,13 +29,11 @@ create_pChartMacro <- function(j, input, values) {
   if (j == 1) {
     a$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
     blocks2 <- values$pairwiseBlocks[[2]]
-    blocks2 <- blocks2[blocks2$chromosome == trailingInteger(input$chr2), ]
   } else {
     ylab2 <- paste(macroDistanceMetric, "distance")
     if (macroDistanceMetric == "Levenshtein") ylab2 <- paste("Normalized", ylab2)
     a$yAxis(title=list(text=ylab2),min=0,max=1,reversed=TRUE,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
     blocks1 <- values$pairwiseBlocks[[1]]
-    blocks1 <- blocks1[blocks1$chromosome == trailingInteger(input$chr), ]
   }
   apply(blocks, 1, function(r) {
     r <- data.frame(as.list(r), stringsAsFactors = FALSE) # to avoid "$ operator is invalid for atomic vectors" warning
@@ -58,6 +53,8 @@ create_pChartMacro <- function(j, input, values) {
       # there may be multiple block2s
       block2 <- blocks2[as.integer(blocks2$chr1) == as.integer(r$chromosome) & as.integer(blocks2$i) == as.integer(r$i) & as.integer(blocks2$j) == as.integer(r$j), ]
       if (length(block2$fmin) > 0) {
+        r.data[[1]]$chrNumber <- r.data[[2]]$chrNumber <- as.integer(r$chromosome)
+        r.data[[1]]$chrNumber2 <- r.data[[2]]$chrNumber2 <- as.integer(block2$chromosome)
         r.data[[1]]$minSrc <- r.data[[2]]$minSrc <- as.numeric(block2$fmin)
         r.data[[1]]$maxSrc <- r.data[[2]]$maxSrc <- as.numeric(block2$fmax)
       }
@@ -65,6 +62,8 @@ create_pChartMacro <- function(j, input, values) {
       # there should be only one block1
       block1 <- blocks1[as.integer(blocks1$chromosome) == as.integer(r$chr1) & as.integer(blocks1$i) == as.integer(r$i) & as.integer(blocks1$j) == as.integer(r$j), ]
       if (length(block1$fmin) > 0) {
+        r.data[[1]]$chrNumber <- r.data[[2]]$chrNumber <- as.integer(block1$chromosome)
+        r.data[[1]]$chrNumber2 <- r.data[[2]]$chrNumber2 <- as.integer(r$chromosome)
         r.data[[1]]$minRef <- r.data[[2]]$minRef <- as.numeric(block1$fmin)
         r.data[[1]]$maxRef <- r.data[[2]]$maxRef <- as.numeric(block1$fmax)
       }
@@ -121,6 +120,26 @@ create_pChartMacro <- function(j, input, values) {
       cursor = "pointer"
     )
   )
+
+  # set a$xAxis here to add macrosynteny plot bands, if any
+  pbList <- list(list(from = pbWin$winLow, to = pbWin$winHigh, color = windowPlotBandColor))
+  chrNumber <- trailingInteger(input[[jth_ref("chr", j)]])
+  blockChrNumber <- values[[jth_ref("chrNumber", j)]]
+  if (!is.null(blockChrNumber) && chrNumber %in% blockChrNumber) {
+    w <- which(blockChrNumber == chrNumber)
+    bls <- values[[jth_ref("blockStart", j)]][w]
+    ble <- values[[jth_ref("blockEnd", j)]][w]
+    nBlocks <- length(bls)
+    if (!is.null(bls) && nBlocks > 0) {
+      for (i in 1:nBlocks) {
+        band.i <- list(id = paste0("band", i), from = bls[i], to = ble[i], color = macrosyntenyPlotBandColor)
+        pbList[[1 + i]] <- band.i
+      }
+    }
+  }
+  a$xAxis(title = list(text = "Base Pairs"), startOnTick = TRUE, endOnTick = FALSE,
+    min = 1, max = chrSize[[values[[jth_ref("organism", j)]]]][chrNumber],
+    plotBands = pbList)
 
   removeNotification(nid)
 
