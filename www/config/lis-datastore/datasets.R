@@ -71,8 +71,8 @@ buildFileList(gsDirs = genus.species,
 # QTL datasets
 buildFileList(gsDirs = genus.species,
   folders = c("genetic"),
-  types = c(".qtl.tsv.gz"),
-  mtypes = c(".qtlmrk.tsv.gz", ".obo.tsv.gz"),
+  types = c(".qtlmrk.tsv.gz"),
+  mtypes = c(".obo.tsv.gz"),
   fout = "datasets-qtl.txt"
 )
 

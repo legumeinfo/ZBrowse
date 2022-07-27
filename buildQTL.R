@@ -9,23 +9,15 @@ lis.datastore.chrRegex[["Peanut QTL"]] <- lis.datastore.chrRegex[["Peanut GWAS"]
 lis.datastore.chrRegex[["Soybean QTL"]] <- lis.datastore.chrRegex[["Soybean GWAS"]]
 lis.datastore.qtlUrls <- readLines(paste0(lis.datastore.localDir, "datasets-qtl.txt"))
 
-read.qtl.lis.datastore <- function(fin.qtl) {
+read.qtl.lis.datastore <- function(fin.qtlmrk) {
   tmp <- tempfile()
-  download.file(fin.qtl, tmp, method = "wget", quiet = TRUE)
-  df.qtl <- read.csv(gzfile(tmp), header = FALSE, skip = 1, sep = '\t', stringsAsFactors = FALSE)
-  df.qtl <- df.qtl[, 1:2]
-  names(df.qtl) <- c("identifier", "trait_id")
-
-  # QTL -> marker
-  fin.qtlmrk <- gsub("\\.qtl\\.tsv\\.gz", "\\.qtlmrk\\.tsv\\.gz", fin.qtl)
   download.file(fin.qtlmrk, tmp, method = "wget", quiet = TRUE)
-  df.qtlmrk <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
-  df.qtlmrk <- df.qtlmrk[, c(1, 3)] # was 1:2 (still is for most species, which have not been updated)
-  names(df.qtlmrk) <- c("identifier", "marker")
-  df.qtl <- merge(df.qtlmrk, df.qtl, by = "identifier", sort = FALSE)
+  df.qtl <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
+  df.qtl <- df.qtl[, 1:3]
+  names(df.qtl) <- c("identifier", "trait_id", "marker")
 
   # trait id -> trait ontology -> trait name
-  fin.obo <- gsub("\\.qtl\\.tsv\\.gz", "\\.obo\\.tsv\\.gz", fin.qtl)
+  fin.obo <- gsub("\\.qtlmrk\\.tsv\\.gz", "\\.obo\\.tsv\\.gz", fin.qtlmrk)
   download.file(fin.obo, tmp, method = "wget", quiet = TRUE)
   df.obo <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
   unlink(tmp)
@@ -47,12 +39,12 @@ read.qtl.lis.datastore <- function(fin.qtl) {
   trait[bb] <- df.qtl$trait_id[bb]
   df.qtl$trait <- trait
 
-  df.qtl$publication <- read.metadata(fin.qtl)$publication
+  df.qtl$publication <- read.metadata(fin.qtlmrk)$publication
   df.qtl
 }
 
 merge.qtl <- function(df.qtl, df.gff) {
-  # df.qtl is the QTL data frame merged from qtlmrk, qtl, obo files:
+  # df.qtl is the QTL data frame merged from qtlmrk and obo files:
   #   identifier,marker,trait_id,trait,publication
   # df.gff is the processed GFF file:
   #   marker,chromosome,position
