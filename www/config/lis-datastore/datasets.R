@@ -144,7 +144,7 @@ buildPlantOntology()
 
 # Soy ontology
 buildSoyOntology <- function() {
-  ll <- readLines("https://data.bioontology.org/ontologies/SOY/submissions/2/download?apikey=8b5b7825-538d-40e0-9e9e-5ab9274a9aeb")
+  ll <- readLines("http://data.agroportal.lirmm.fr/ontologies/SOY/submissions/7/download?apikey=1de0a270-29c5-4dda-b043-7c3580628cd5")
   ii <- which(grepl("^id: SOY:", ll))
   soy.id <- stri_match_first(ll[ii], regex = "^id: (.+)$")[, 2]
   soy.name <- stri_match_first(ll[ii + 1], regex = "^name: (.+)$")[, 2]
