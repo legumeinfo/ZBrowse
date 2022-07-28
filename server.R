@@ -1125,6 +1125,24 @@ shinyServer(function(input, output, session) {
   output$selectedOut2 <- renderUI(createSelectedOut(2))
   outputOptions(output, "selectedOut2", suspendWhenHidden=FALSE)
 
+  observeEvent(input$chr, {
+    chr <- trailingInteger(input$chr)
+    chr_length <- chrSize[[values$organism]][chr]
+    # prevent exceeding the chromosome length
+    updateNumericInput(session, "selected", max = chr_length)
+    if (input$selected > chr_length - input$window) {
+      updateNumericInput(session, "selected", value = chr_length - input$window)
+    }
+  })
+  observeEvent(input$chr2, {
+    chr2 <- trailingInteger(input$chr2)
+    chr2_length <- chrSize[[values$organism2]][chr2]
+    # prevent exceeding the chromosome length
+    updateNumericInput(session, "selected2", max = chr2_length)
+    if (input$selected2 > chr2_length - input$window2) {
+      updateNumericInput(session, "selected2", value = chr2_length - input$window2)
+    }
+  })
   observeEvent(input$selected, {
     validNumericInput("selected", defaultCenter, 1000)
   })
@@ -1962,7 +1980,9 @@ shinyServer(function(input, output, session) {
       values$blockEnd <- input$set_gChartMacro$maxRef - cumBp[values$chrNumber]
     }
     updateSelectInput(session, "chr", selected = chrName[[values$organism]][values$chrNumber])
+    updateNumericInput(session, "selected", value = (values$blockStart + values$blockEnd) %/% 2)
     updateSelectInput(session, "chr2", selected = chrName[[values$organism2]][values$chrNumber2[1]])
+    updateNumericInput(session, "selected2", value = (values$blockStart2 + values$blockEnd2) %/% 2)
   })
 
   observeEvent(input$set_pChartMacro, {
@@ -1983,6 +2003,7 @@ shinyServer(function(input, output, session) {
       values$blockCumEnd2 <- input$set_pChartMacro$maxSrc + cumBp2[values$chrNumber2]
       # also update species 2 chromosome in Chromosome view
       updateSelectInput(session, "chr2", selected = chrName[[values$organism2]][values$chrNumber2[1]])
+      updateNumericInput(session, "selected2", value = (values$blockStart2 + values$blockEnd2) %/% 2)
     } else if (j == 2) {
       values$blockStart <- input$set_pChartMacro$minRef
       values$blockEnd <- input$set_pChartMacro$maxRef
@@ -1991,6 +2012,7 @@ shinyServer(function(input, output, session) {
       values$blockCumEnd <- input$set_pChartMacro$maxRef + cumBp[values$chrNumber]
       # also update species 1 chromosome in Chromosome view
       updateSelectInput(session, "chr", selected = chrName[[values$organism]][values$chrNumber])
+      updateNumericInput(session, "selected", value = (values$blockStart + values$blockEnd) %/% 2)
     }
   })
 
