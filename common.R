@@ -169,3 +169,43 @@ stringsThatMatchPattern <- function(ss, p) {
     }, USE.NAMES = FALSE)
   ))]
 }
+
+# Uses interval scheduling algorithm to assign the minimum number of rows to the macrosynteny blocks.
+#   blocks = data frame representing the macrosynteny blocks
+#   columns = column names (of blocks) containing the start and end base pairs
+# Output is the chart height for each block.
+computeBlockHeights <- function(blocks, columns) {
+  bb <- blocks[, columns]
+  cmin <- columns[1]
+  cmax <- columns[2]
+  n <- nrow(bb)
+  bb$i0 <- 1:n
+  yh <- numeric(n)
+
+  # order by nondecreasing fmax
+  bb <- bb[order(bb[, cmax]), ]
+  j <- 1
+  while (nrow(bb) > 0) {
+    f <- 0
+    ii <- c()
+    for (i in 1:nrow(bb)) {
+      if (f < bb[i, cmin]) {
+        ii <- c(ii, i)
+        f <- bb[i, cmax]
+      }
+    }
+    yh[bb$i0[ii]] <- 1.0 - j*0.15
+    bb <- bb[-ii, ]
+    j <- j + 1
+  }
+
+  yh
+}
+
+# Determine best contrast color (black or white) for color, according to its luminance
+contrastColor <- function(color, threshold = 0.50) {
+  rgb <- col2rgb(color)/255
+  rgb <- ifelse(rgb <= 0.03928, rgb/12.92, ((rgb + 0.055)/1.055)^2.4)
+  luminance <- as.vector(c(0.2126, 0.7152, 0.0722) %*% rgb) # flatten 1 x 1 matrix
+  ifelse(luminance <= threshold, "white", "black")
+}

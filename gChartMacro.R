@@ -42,67 +42,83 @@ create_gChartMacro <- function(j, input, values) {
     columns <- c("i", "j", "chromosome")
     blocks <- data.frame(matrix(nrow = 0, ncol = length(columns)), stringsAsFactors = FALSE)
     names(blocks) <- columns
-  }
-  macroDistanceMetric <- isolate(input$macroDistance)
-  chr1 <- trailingInteger(input$macroChromosome) # to filter by macro-synteny species 1 chromosome
-  if (j == 1) {
-    if (!is.na(chr1)) blocks <- blocks[blocks$chromosome == chr1, ]
-    c$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
-    blocks2 <- values$pairwiseBlocks[[2]]
   } else {
-    if (!is.na(chr1)) blocks <- blocks[blocks$chr1 == chr1, ]
-    ylab2 <- paste(macroDistanceMetric, "distance")
-    if (macroDistanceMetric == "Levenshtein") ylab2 <- paste("Normalized", ylab2)
-    c$yAxis(title=list(text=ylab2),min=0,max=1,reversed=TRUE,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
-    blocks1 <- values$pairwiseBlocks[[1]]
-  }
-  apply(blocks, 1, function(r) {
-    r <- data.frame(as.list(r), stringsAsFactors = FALSE) # to avoid "$ operator is invalid for atomic vectors" warning
-    if (j == 1 && nrow(blocks) > 0) {
-      yh <- 0.5
-    } else {
-      yh <- as.numeric(r$distance)
-      if (macroDistanceMetric == "Levenshtein") yh <- yh*2/(as.numeric(r$n1) + as.numeric(r$n2))
-    }
-    r.data <- vector("list", 2)
-    r.data[[1]]$x <- r.data[[1]]$min <- r.data[[2]]$min <- as.numeric(r$cumfmin)
-    r.data[[2]]$x <- r.data[[1]]$max <- r.data[[2]]$max <- as.numeric(r$cumfmax)
-    r.data[[1]]$y <- r.data[[2]]$y <- yh
-    r.distance <- sprintf("%4.3f", as.numeric(r$distance))
-    if (macroDistanceMetric == "Levenshtein") r.distance <- sprintf("%d", as.integer(r$distance))
+    macroDistanceMetric <- isolate(input$macroDistance)
+    chr1 <- trailingInteger(input$macroChromosome) # to filter by macro-synteny species 1 chromosome
     if (j == 1) {
-      # there may be multiple block2s
-      block2 <- blocks2[as.integer(blocks2$chr1) == as.integer(r$chromosome) & as.integer(blocks2$i) == as.integer(r$i) & as.integer(blocks2$j) == as.integer(r$j), ]
-      r.data[[1]]$minSrc <- r.data[[2]]$minSrc <- as.numeric(block2$cumfmin)
-      r.data[[1]]$maxSrc <- r.data[[2]]$maxSrc <- as.numeric(block2$cumfmax)
-    } else if (j == 2) {
-      # there should be only one block1
-      block1 <- blocks1[as.integer(blocks1$chromosome) == as.integer(r$chr1) & as.integer(blocks1$i) == as.integer(r$i) & as.integer(blocks1$j) == as.integer(r$j), ]
-      r.data[[1]]$minRef <- r.data[[2]]$minRef <- as.numeric(block1$cumfmin)
-      r.data[[1]]$maxRef <- r.data[[2]]$maxRef <- as.numeric(block1$cumfmax)
+      if (!is.na(chr1)) blocks <- blocks[blocks$chromosome == chr1, ]
+      blocks$yh <- computeBlockHeights(blocks, c("cumfmin", "cumfmax")) # same result as doing each chromosome by c("fmin", "fmax")
+      c$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
+      blocks2 <- values$pairwiseBlocks[[2]]
+    } else {
+      if (!is.na(chr1)) blocks <- blocks[blocks$chr1 == chr1, ]
+      ylab2 <- paste(macroDistanceMetric, "distance")
+      if (macroDistanceMetric == "Levenshtein") ylab2 <- paste("Normalized", ylab2)
+      c$yAxis(title=list(text=ylab2),min=0,max=1,reversed=TRUE,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
+      blocks1 <- values$pairwiseBlocks[[1]]
     }
-    c$series(
-      type = "line",
-      data = r.data,
-      color = r$color,
-      lineWidth = 6,
-      showInLegend = FALSE,
-      tooltip = list(
-        headerFormat = ifelse(j == 1,
-          sprintf("<b>Macro-synteny</b><br>%s chromosome %d<br>Blocks %d-%d<br>Location %s-%s",
-            values$organism, as.integer(r$chromosome), as.integer(r$i), as.integer(r$j),
-            prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ",")),
-          sprintf("<b>Macro-synteny</b><br>%s chromosome %d (%d genes)<br>Location %s-%s Orientation: %s<br>with %s chromosome %d (%d genes)<br>Blocks %d-%d<br>%s distance: %s",
-            values$organism2, as.integer(r$chromosome), as.integer(r$n2), prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ","), r$orientation,
-            values$organism, as.integer(r$chr1), as.integer(r$n1), as.integer(r$i), as.integer(r$j), macroDistanceMetric, r.distance)
-        ),
-        pointFormat = '',
-        followPointer = TRUE
-      ),
-      # put shortest blocks on top (note zIndex < 0 for macrosynteny blocks)
-      zIndex = as.integer(r$fmin) - as.integer(r$fmax)
-    )
-  })
+    apply(blocks, 1, function(r) {
+      r <- data.frame(as.list(r), stringsAsFactors = FALSE) # to avoid "$ operator is invalid for atomic vectors" warning
+      if (j == 1 && nrow(blocks) > 0) {
+        yh <- as.numeric(r$yh)
+      } else {
+        yh <- as.numeric(r$distance)
+        if (macroDistanceMetric == "Levenshtein") yh <- yh*2/(as.numeric(r$n1) + as.numeric(r$n2))
+      }
+      r.data <- vector("list", 2)
+      r.data[[1]]$x <- r.data[[1]]$min <- r.data[[2]]$min <- as.numeric(r$cumfmin)
+      r.data[[2]]$x <- r.data[[1]]$max <- r.data[[2]]$max <- as.numeric(r$cumfmax)
+      r.data[[1]]$y <- r.data[[2]]$y <- yh
+      r.distance <- sprintf("%4.3f", as.numeric(r$distance))
+      if (macroDistanceMetric == "Levenshtein") r.distance <- sprintf("%d", as.integer(r$distance))
+      if (j == 1) {
+        # there may be multiple block2s
+        block2 <- blocks2[as.integer(blocks2$chr1) == as.integer(r$chromosome) & as.integer(blocks2$i) == as.integer(r$i) & as.integer(blocks2$j) == as.integer(r$j), ]
+        r.data[[1]]$minSrc <- r.data[[2]]$minSrc <- as.numeric(block2$cumfmin)
+        r.data[[1]]$maxSrc <- r.data[[2]]$maxSrc <- as.numeric(block2$cumfmax)
+      } else if (j == 2) {
+        # there should be only one block1
+        block1 <- blocks1[as.integer(blocks1$chromosome) == as.integer(r$chr1) & as.integer(blocks1$i) == as.integer(r$i) & as.integer(blocks1$j) == as.integer(r$j), ]
+        r.data[[1]]$minRef <- r.data[[2]]$minRef <- as.numeric(block1$cumfmin)
+        r.data[[1]]$maxRef <- r.data[[2]]$maxRef <- as.numeric(block1$cumfmax)
+      }
+      c$series(
+        type = "line",
+        data = r.data,
+        color = r$color,
+        lineWidth = 6,
+        showInLegend = FALSE,
+        tooltip = list(
+          headerFormat = ifelse(j == 1,
+            sprintf("<b>Macro-synteny</b><br>%s chromosome %d<br>Blocks %d-%d<br>Location %s-%s",
+              values$organism, as.integer(r$chromosome), as.integer(r$i), as.integer(r$j),
+              prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ",")),
+            sprintf("<b>Macro-synteny</b><br>%s chromosome %d (%d genes)<br>Location %s-%s Orientation: %s<br>with %s chromosome %d (%d genes)<br>Blocks %d-%d<br>%s distance: %s",
+              values$organism2, as.integer(r$chromosome), as.integer(r$n2), prettyNum(as.integer(r$fmin), big.mark = ","), prettyNum(as.integer(r$fmax), big.mark = ","), r$orientation,
+              values$organism, as.integer(r$chr1), as.integer(r$n1), as.integer(r$i), as.integer(r$j), macroDistanceMetric, r.distance)
+          ),
+          pointFormat = '',
+          followPointer = TRUE
+        )
+      )
+      # highlight selected macrosynteny blocks, if any
+      macrosyntenyMatch <- (j == 1 && !is.null(values$chrNumber) && values$chrNumber == as.integer(r$chromosome) &&
+        values$blockCumStart == as.integer(r$cumfmin) && values$blockCumEnd == as.integer(r$cumfmax)) ||
+        (j == 2 && !is.null(values$chrNumber) && values$chrNumber == as.integer(r$chr1) &&
+        as.integer(r$cumfmin) %in% values$blockCumStart2 && as.integer(r$cumfmax) %in% values$blockCumEnd2)
+      if (macrosyntenyMatch) {
+        hcolor <- contrastColor(r$color)
+        c$series(
+          type = "line",
+          data = r.data,
+          color = hcolor,
+          lineWidth = 1,
+          showInLegend = FALSE,
+          enableMouseTracking = FALSE # to disable tooltips
+        )
+      }
+    })
+  }
 
   chartHeight <- ifelse(j == 1, 150, 300)
   c$chart(height=chartHeight,zoomType="x",alignTicks=FALSE,events=list(click = "#!function(event) {this.tooltip.hide();}!#"))

@@ -1475,6 +1475,7 @@ shinyServer(function(input, output, session) {
         }
       }
     }
+    if (!is.null(values$pairwiseBlocks[[1]])) values$pairwiseBlocks[[1]] <- unique(values$pairwiseBlocks[[1]])
     updateURL()
   })
 
@@ -1954,62 +1955,60 @@ shinyServer(function(input, output, session) {
 
   observeEvent(input$set_gChartMacro, {
     j <- input$set_gChartMacro$j
-    values[[jth_ref("blockCumStart", j)]] <- input$set_gChartMacro$min
-    values[[jth_ref("blockCumEnd", j)]] <- input$set_gChartMacro$max
+    values[[jth_ref("blockCumStart", j)]] <- unlist(input$set_gChartMacro$min)
+    values[[jth_ref("blockCumEnd", j)]] <- unlist(input$set_gChartMacro$max)
     cumBp_j <- c(0, cumsum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])))
-    values[[jth_ref("chrNumber", j)]] <- chr_j <- which(input$set_gChartMacro$min <= cumBp_j)[1] - 1
-    values[[jth_ref("blockStart", j)]] <- input$set_gChartMacro$min - cumBp_j[chr_j]
-    values[[jth_ref("blockEnd", j)]] <- input$set_gChartMacro$max - cumBp_j[chr_j]
+    values[[jth_ref("chrNumber", j)]] <- chr_j <- which(values[[jth_ref("blockCumStart", j)]] <= cumBp_j)[1] - 1
+    values[[jth_ref("blockStart", j)]] <- values[[jth_ref("blockCumStart", j)]] - cumBp_j[chr_j]
+    values[[jth_ref("blockEnd", j)]] <- values[[jth_ref("blockCumEnd", j)]] - cumBp_j[chr_j]
     if (j == 1) {
-      values$blockCumStart2 <- input$set_gChartMacro$minSrc
-      values$blockCumEnd2 <- input$set_gChartMacro$maxSrc
+      values$blockCumStart2 <- unlist(input$set_gChartMacro$minSrc)
+      values$blockCumEnd2 <- unlist(input$set_gChartMacro$maxSrc)
       cumBp2 <- c(0, cumsum(as.numeric(chrSize[[values$organism2]])))
       # there may be multiple species 2 blocks in the pCharts
-      minSrc <- unlist(input$set_gChartMacro$minSrc)
-      maxSrc <- unlist(input$set_gChartMacro$maxSrc)
-      values$chrNumber2 <- sapply(minSrc, function(bp) which(bp <= cumBp2)[1] - 1)
-      values$blockStart2 <- minSrc - cumBp2[values$chrNumber2]
-      values$blockEnd2 <- maxSrc - cumBp2[values$chrNumber2]
+      values$chrNumber2 <- sapply(values$blockCumStart2, function(bp) which(bp <= cumBp2)[1] - 1)
+      values$blockStart2 <- values$blockCumStart2 - cumBp2[values$chrNumber2]
+      values$blockEnd2 <- values$blockCumEnd2 - cumBp2[values$chrNumber2]
     } else if (j == 2) {
-      values$blockCumStart <- input$set_gChartMacro$minRef
-      values$blockCumEnd <- input$set_gChartMacro$maxRef
+      values$blockCumStart <- unlist(input$set_gChartMacro$minRef)
+      values$blockCumEnd <- unlist(input$set_gChartMacro$maxRef)
       cumBp <- c(0, cumsum(as.numeric(chrSize[[values$organism]])))
       # there is only one species 1 block, otherwise we could handle multiple blocks as we do above for species 2
-      values$chrNumber <- which(input$set_gChartMacro$minRef <= cumBp)[1] - 1
-      values$blockStart <- input$set_gChartMacro$minRef - cumBp[values$chrNumber]
-      values$blockEnd <- input$set_gChartMacro$maxRef - cumBp[values$chrNumber]
+      values$chrNumber <- which(values$blockCumStart <= cumBp)[1] - 1
+      values$blockStart <- values$blockCumStart - cumBp[values$chrNumber]
+      values$blockEnd <- values$blockCumEnd - cumBp[values$chrNumber]
     }
     updateSelectInput(session, "chr", selected = chrName[[values$organism]][values$chrNumber])
     updateNumericInput(session, "selected", value = (values$blockStart + values$blockEnd) %/% 2)
     updateSelectInput(session, "chr2", selected = chrName[[values$organism2]][values$chrNumber2[1]])
-    updateNumericInput(session, "selected2", value = (values$blockStart2 + values$blockEnd2) %/% 2)
+    updateNumericInput(session, "selected2", value = (values$blockStart2[1] + values$blockEnd2[1]) %/% 2)
   })
 
   observeEvent(input$set_pChartMacro, {
     j <- input$set_pChartMacro$j
-    values$chrNumber <- input$set_pChartMacro$chrNumber
-    values$chrNumber2 <- input$set_pChartMacro$chrNumber2
-    values[[jth_ref("blockStart", j)]] <- input$set_pChartMacro$min
-    values[[jth_ref("blockEnd", j)]] <- input$set_pChartMacro$max
+    values$chrNumber <- unlist(input$set_pChartMacro$chrNumber)
+    values$chrNumber2 <- unlist(input$set_pChartMacro$chrNumber2)
+    values[[jth_ref("blockStart", j)]] <- unlist(input$set_pChartMacro$min)
+    values[[jth_ref("blockEnd", j)]] <- unlist(input$set_pChartMacro$max)
     cumBp_j <- c(0, cumsum(as.numeric(chrSize[[values[[jth_ref("organism", j)]]]])))
     chr_j <- values[[jth_ref("chrNumber", j)]]
-    values[[jth_ref("blockCumStart", j)]] <- input$set_pChartMacro$min + cumBp_j[chr_j]
-    values[[jth_ref("blockCumEnd", j)]] <- input$set_pChartMacro$max + cumBp_j[chr_j]
+    values[[jth_ref("blockCumStart", j)]] <- values[[jth_ref("blockStart", j)]] + cumBp_j[chr_j]
+    values[[jth_ref("blockCumEnd", j)]] <- values[[jth_ref("blockEnd", j)]] + cumBp_j[chr_j]
     if (j == 1) {
-      values$blockStart2 <- input$set_pChartMacro$minSrc
-      values$blockEnd2 <- input$set_pChartMacro$maxSrc
+      values$blockStart2 <- unlist(input$set_pChartMacro$minSrc)
+      values$blockEnd2 <- unlist(input$set_pChartMacro$maxSrc)
       cumBp2 <- c(0, cumsum(as.numeric(chrSize[[values$organism2]])))
-      values$blockCumStart2 <- input$set_pChartMacro$minSrc + cumBp2[values$chrNumber2]
-      values$blockCumEnd2 <- input$set_pChartMacro$maxSrc + cumBp2[values$chrNumber2]
+      values$blockCumStart2 <- values$blockStart2 + cumBp2[values$chrNumber2]
+      values$blockCumEnd2 <- values$blockEnd2 + cumBp2[values$chrNumber2]
       # also update species 2 chromosome in Chromosome view
       updateSelectInput(session, "chr2", selected = chrName[[values$organism2]][values$chrNumber2[1]])
       updateNumericInput(session, "selected2", value = (values$blockStart2 + values$blockEnd2) %/% 2)
     } else if (j == 2) {
-      values$blockStart <- input$set_pChartMacro$minRef
-      values$blockEnd <- input$set_pChartMacro$maxRef
+      values$blockStart <- unlist(input$set_pChartMacro$minRef)
+      values$blockEnd <- unlist(input$set_pChartMacro$maxRef)
       cumBp <- c(0, cumsum(as.numeric(chrSize[[values$organism]])))
-      values$blockCumStart <- input$set_pChartMacro$minRef + cumBp[values$chrNumber]
-      values$blockCumEnd <- input$set_pChartMacro$maxRef + cumBp[values$chrNumber]
+      values$blockCumStart <- values$blockStart + cumBp[values$chrNumber]
+      values$blockCumEnd <- values$blockEnd + cumBp[values$chrNumber]
       # also update species 1 chromosome in Chromosome view
       updateSelectInput(session, "chr", selected = chrName[[values$organism]][values$chrNumber])
       updateNumericInput(session, "selected", value = (values$blockStart + values$blockEnd) %/% 2)
