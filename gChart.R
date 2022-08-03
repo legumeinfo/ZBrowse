@@ -104,10 +104,7 @@ create_gChart <- function(j, input, values) {
     }
     SIchart$loc_el <- SIchart$trait
     if (dynamic.interval.height) {
-      for (chr in unique(SIchart[[input[[jth_ref("chrColumn", j)]]]])) {
-        bb <- (SIchart[[input[[jth_ref("chrColumn", j)]]]] == chr)
-        SIchart$h[bb] <- chart.max.height - interval.bar.height*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]][bb], ties = "first")
-      }
+      SIchart$h <- computeBlockHeights(SIchart, c("SIbpStartTotal", "SIbpEndTotal"), chart.max.height, interval.bar.height)
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }

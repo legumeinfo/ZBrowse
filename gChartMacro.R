@@ -47,7 +47,7 @@ create_gChartMacro <- function(j, input, values) {
     chr1 <- trailingInteger(input$macroChromosome) # to filter by macro-synteny species 1 chromosome
     if (j == 1) {
       if (!is.na(chr1)) blocks <- blocks[blocks$chromosome == chr1, ]
-      blocks$yh <- computeBlockHeights(blocks, c("cumfmin", "cumfmax")) # same result as doing each chromosome by c("fmin", "fmax")
+      blocks$yh <- computeBlockHeights(blocks, c("cumfmin", "cumfmax"), 1.0, 0.15) # same result as doing each chromosome by c("fmin", "fmax")
       c$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
       blocks2 <- values$pairwiseBlocks[[2]]
     } else {

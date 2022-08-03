@@ -170,11 +170,13 @@ stringsThatMatchPattern <- function(ss, p) {
   ))]
 }
 
-# Uses interval scheduling algorithm to assign the minimum number of rows to the macrosynteny blocks.
-#   blocks = data frame representing the macrosynteny blocks
+# Uses interval scheduling algorithm to assign the minimum number of rows to the macrosynteny blocks and QTLs.
+#   blocks = data frame representing the macrosynteny blocks or QTLs
 #   columns = column names (of blocks) containing the start and end base pairs
-# Output is the chart height for each block.
-computeBlockHeights <- function(blocks, columns) {
+#   ymax = top of chart
+#   h = vertical width of each block
+# Output is the chart height for each block = (ymax - j*h) for the jth block.
+computeBlockHeights <- function(blocks, columns, ymax, h) {
   bb <- blocks[, columns]
   cmin <- columns[1]
   cmax <- columns[2]
@@ -194,7 +196,7 @@ computeBlockHeights <- function(blocks, columns) {
         f <- bb[i, cmax]
       }
     }
-    yh[bb$i0[ii]] <- 1.0 - j*0.15
+    yh[bb$i0[ii]] <- ymax - j*h
     bb <- bb[-ii, ]
     j <- j + 1
   }

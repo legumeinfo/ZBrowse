@@ -27,7 +27,7 @@ create_pChartMacro <- function(j, input, values) {
     blocks <- blocks[blocks$chromosome == trailingInteger(input[[jth_ref("chr", j)]]), ]
     macroDistanceMetric <- isolate(input$macroDistance)
     if (j == 1) {
-      blocks$yh <- computeBlockHeights(blocks, c("fmin", "fmax"))
+      blocks$yh <- computeBlockHeights(blocks, c("fmin", "fmax"), 1.0, 0.15)
       a$yAxis(labels=list(enabled=FALSE),title=list(text=NULL),min=0,max=1,lineWidth=0,gridLineWidth=0,minorGridLineWidth=0,lineColor="transparent",minorTickLength=0,tickLength=0,endOnTick=FALSE)
       blocks2 <- values$pairwiseBlocks[[2]]
     } else {

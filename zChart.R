@@ -183,7 +183,7 @@ create_zChart <- function(j, input, values) {
     }     
     SIchart$loc_el <- SIchart$trait
     if (dynamic.interval.height) {
-      SIchart$h <- chart.max.height - interval.bar.height*rank(SIchart[[input[[jth_ref("bpColumn", j)]]]], ties = "first")
+      SIchart$h <- computeBlockHeights(SIchart, c(input[[jth_ref("SIbpStart", j)]], input[[jth_ref("SIbpEnd", j)]]), chart.max.height, interval.bar.height)
     } else {
       SIchart$h <- SIchart[[input[[jth_ref("SIyAxisColumn", j)]]]]
     }
