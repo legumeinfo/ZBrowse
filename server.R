@@ -102,7 +102,7 @@ shinyServer(function(input, output, session) {
 
     # Make sure the organism corresponds to the selected dataset
     # (invoke values$organism first to force a single reaction)
-    if (is.null(values[[jth_ref("organism", j)]])) {
+    if (is.null(isolate(values[[jth_ref("organism", j)]]))) {
       values[[jth_ref("organism", j)]] = "Corn"
     } else {
       isolate({
