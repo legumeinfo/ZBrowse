@@ -82,14 +82,11 @@ org.tag_name <- list()
 org.tag_chr <- list()
 org.tag_desc <- list()
 
-files<-list.files(path="./organisms/")
-for(i in 1:length(files)){
-  if(tools::file_ext(files[i]) == "txt"){
-    filename=""
-    filename=paste("./organisms/",files[i],sep="")
-    conn=file(filename,open="r")
-    data<-readLines(conn)
-    
+dir.organisms <- "organisms/"
+org.filenames <- list.files(path = dir.organisms)
+for (filename in org.filenames) {
+  if (tools::file_ext(filename) == "txt") {
+    data <- readLines(paste0(dir.organisms, filename))
     organismNames[[key]] <- key <- data[1]
     #added ability to specify chrom names in organisms file by separating with a :, otherwise it just assumes they are alphanumerically sorted    
     if(length(grep(":",data[2]))){
@@ -156,8 +153,6 @@ for(i in 1:length(files)){
     org.tag_name[key] <- ss.org.annot[8] # gene name column name
     org.tag_chr[key] <- ss.org.annot[9] # chromosome column name
     org.tag_desc[key] <- ss.org.annot[10] # gene description column name
-
-    close(conn)
   }
 }
 
