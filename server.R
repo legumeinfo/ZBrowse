@@ -5,9 +5,13 @@ source("pChartMacro.R")
 source("zChart.R")
 source("gcvMicroservices.R")
 
+library(promises)
+library(future)
+plan(multisession)
+
 shinyServer(function(input, output, session) {
   #Load any saved datasets
-  values <- reactiveValues()
+  values <- reactiveValues(urlStatus = logical(nrow(gwas.sources)))
   dataPath <- "./www/config/data/"
   dataFiles <- list.files(dataPath)
   # ignore subdirectories - we can hide unused datasets there
@@ -353,13 +357,23 @@ shinyServer(function(input, output, session) {
     ))
   }
 
+  observe({
+    # test connections every minute
+    invalidateLater(60000, session)
+    future({
+      sapply(gwas.sources$url, url.exists)
+    }) %...>% (function(result) {
+      values$urlStatus <- result
+    })
+  })
+
   displayConnectionStatus <- function() {
+    gwas.sources$status <- values$urlStatus
     apply(gwas.sources, FUN = function(ci) {
       # id for each connection's label
       nn <- paste("gwasSource", ci["name"], sep = "_")
       # server part comes first
       output[[nn]] <- renderText({
-        ci["status"] <- url.exists(ci["url"])
         if (ci["status"]) {
           cc <- "green"
           ss <- ""
@@ -367,8 +381,6 @@ shinyServer(function(input, output, session) {
           cc <- "red"
           ss <- " unavailable"
         }
-        tt <- 60000 # msec between connection tests
-        invalidateLater(tt, session)
         paste0("<span style=\"color:", cc, "\">", ci["name"], ss, "</span>")
       })
       # then the ui part

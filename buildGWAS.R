@@ -1,7 +1,6 @@
 # --------------------------------------------------------------
 # Build a GWAS data frame from files accessible by HTTP
 # --------------------------------------------------------------
-library(RCurl)
 library(stringi)
 library(yaml)
 # --------------------------------------------------------------
@@ -202,7 +201,6 @@ gwas.sources <- data.frame(
   stringsAsFactors = FALSE
 )
 row.names(gwas.sources) <- gwas.sources$name
-gwas.sources$status <- sapply(gwas.sources$url, url.exists)
 
 # Start with an empty data frame
 init.gwas <- function(o.gwas) {

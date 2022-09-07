@@ -1,6 +1,8 @@
 # GCV microservices used in ZZBrowse
 # https://github.com/legumeinfo/gcv-microservices
 
+library(RCurl) # for basicTextGatherer()
+
 genesMicroservice <- function(url, genes) {
   pf <- list(genes = genes)
   btg <- basicTextGatherer()
