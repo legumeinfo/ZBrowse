@@ -1,6 +1,6 @@
 # --------------------------------------------------------------
 # Scan for GWAS and QTL files in the LIS data store, as in the specifications:
-# https://github.com/legumeinfo/datastore-specifications/tree/main/Genus/species/genetic
+# https://github.com/legumeinfo/datastore-specifications/tree/main/Genus/species/[gwas|qtl|markers]
 
 # TODO: investigate why this works with curl >= 7.59.0 but not <= 7.54.0
 # (https://curl.se/changes.html - not sure at which version it starts working)
@@ -62,7 +62,7 @@ buildFileList <- function(gsDirs, folders, types, mtypes, fout) {
 
 # GWAS datasets
 buildFileList(gsDirs = genus.species,
-  folders = c("genetic"),
+  folders = c("gwas"),
   types = c(".result.tsv.gz"),
   mtypes = c(".obo.tsv.gz"),
   fout = "datasets-gwas.txt"
@@ -70,7 +70,7 @@ buildFileList(gsDirs = genus.species,
 
 # QTL datasets
 buildFileList(gsDirs = genus.species,
-  folders = c("genetic"),
+  folders = c("qtl"),
   types = c(".qtlmrk.tsv.gz"),
   mtypes = c(".obo.tsv.gz"),
   fout = "datasets-qtl.txt"
