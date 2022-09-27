@@ -211,3 +211,7 @@ contrastColor <- function(color, threshold = 0.50) {
   luminance <- as.vector(c(0.2126, 0.7152, 0.0722) %*% rgb) # flatten 1 x 1 matrix
   ifelse(luminance <= threshold, "white", "black")
 }
+
+geneNameFromId <- function(geneId) {
+  paste0(stri_match_first(geneId, regex = "(\\w+)\\..+ann\\d+(.+)")[, -1], collapse = "")
+}

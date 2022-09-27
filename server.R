@@ -75,7 +75,7 @@ shinyServer(function(input, output, session) {
       if (!is.null(results$error)) {
         print(results$error)
       } else {
-        gg <- unlist(results$chromosome$genes)
+        gg <- sapply(unlist(results$chromosome$genes), geneNameFromId)
         # workaround for A. thaliana: convert gene names like "arath.Col.AT1G28130" back to "AT1G28130"
         if (org == "Arabidopsis thaliana") {
           gg <- stri_match_first(gg, regex = "^arath.Col.(.+)$")[, 2]
@@ -1541,8 +1541,9 @@ shinyServer(function(input, output, session) {
       org2 <- values$organism2
       df.annot <- subset(org.annotGeneLoc[[org2]], select = c(name, chromosome, transcript_start, transcript_end, strand, family))
       values$glGenes2 <- do.call(rbind, lapply(results$tracks, FUN = function(tr) {
-        if (paste(substr(tr$genus, 1, 1), tr$species, sep = ".") == org.G.species[[org2]]) {
-          df.genes <- data.frame(name = unlist(tr$genes), trackId = tr$id, stringsAsFactors = FALSE)
+        sp <- unlist(strsplit(tr$species, split = ":"))[1]
+        if (paste(substr(tr$genus, 1, 1), sp, sep = ".") == org.G.species[[org2]]) {
+          df.genes <- data.frame(name = sapply(unlist(tr$genes), geneNameFromId), trackId = tr$id, stringsAsFactors = FALSE)
           # workaround for A. thaliana: convert gene names like "arath.Col.AT1G28130" back to "AT1G28130"
           if (org2 == "Arabidopsis thaliana") {
             df.genes$name <- stri_match_first(df.genes$name, regex = "^arath.Col.(.+)$")[, 2]
