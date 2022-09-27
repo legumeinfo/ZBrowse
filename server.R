@@ -106,8 +106,8 @@ shinyServer(function(input, output, session) {
 
     # Make sure the organism corresponds to the selected dataset
     # (invoke values$organism first to force a single reaction)
-    if (is.null(isolate(values[[jth_ref("organism", j)]]))) {
-      values[[jth_ref("organism", j)]] = "Corn"
+    if (is.null(values[[jth_ref("organism", j)]])) {
+      values[[jth_ref("organism", j)]] <- ifelse(j == 2, "Arabidopsis thaliana", "Medicago truncatula")
     } else {
       isolate({
         values[[jth_ref("organism", j)]] <- values$datasetToOrganism[[input[[jth_ref("datasets", j)]]]]
