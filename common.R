@@ -185,6 +185,7 @@ computeBlockHeights <- function(blocks, columns, ymax, h) {
   yh <- numeric(n)
 
   # order by nondecreasing fmax
+  bb <- bb[!is.na(bb[, cmax]), ]
   bb <- bb[order(bb[, cmax]), ]
   j <- 1
   while (nrow(bb) > 0) {
