@@ -41,3 +41,8 @@ Thumbs.db
 #####################
 .Rproj.user
 .Rhistory
+
+# Data files related to LIS datastore #
+#######################################
+www/config/lis-datastore/*.tsv
+www/config/lis-datastore/*.txt
