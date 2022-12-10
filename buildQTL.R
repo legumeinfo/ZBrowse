@@ -13,7 +13,7 @@ read.qtl.lis.datastore <- function(fin.qtlmrk) {
   tmp <- tempfile()
   download.file(fin.qtlmrk, tmp, method = "wget", quiet = TRUE)
   df.qtl <- read.csv(gzfile(tmp), header = TRUE, sep = '\t', stringsAsFactors = FALSE)
-  df.qtl <- df.qtl[, 1:3]
+  df.qtl <- df.qtl[, c(1, 2, 4)]
   names(df.qtl) <- c("identifier", "trait_id", "marker")
 
   # trait id -> trait ontology -> trait name
@@ -102,7 +102,7 @@ build.qtl.from.lis.datastore <- function(key) {
       tryCatch({
         df.q <- read.qtl.lis.datastore(u)
       }, error = function(e) {
-        print(e)
+        print(paste(basename(u), e))
       })
       df.q
     })
