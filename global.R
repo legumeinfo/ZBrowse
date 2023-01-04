@@ -98,9 +98,7 @@ for (filename in org.filenames) {
       }else{
         numNames <- names
       }
-      numNames <- numNames[order(as.numeric(numNames$V1)),]
       nonNumNames <- names[which.nonnum(names$V1),]
-      nonNumNames <- nonNumNames[order(nonNumNames$V1),]
       namesOrdered <- rbind(numNames,nonNumNames)
       value <- namesOrdered$V2
       name <- namesOrdered$V1
