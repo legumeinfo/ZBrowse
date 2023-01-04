@@ -67,7 +67,7 @@ shinyServer(function(input, output, session) {
     # initialize gene family to "" to avoid NULL values
     org.annotGeneLoc[[org]][, "family"] <<- ""
 
-    dfmt <- ifelse(length(chrName[[org]]) < 10, "%d", "%02d")
+    dfmt <- ifelse(length(chrName[[org]]) < 10 || org == "Mung bean", "%d", "%02d")
     for (chr in chrName[[org]]) {
       gcvFmt <- gsub("\\\\d\\+", dfmt, org.gcvChrFormat[[org]])
       gcvChr <- sprintf(gcvFmt, trailingInteger(chr))
@@ -1469,7 +1469,7 @@ shinyServer(function(input, output, session) {
       chr2fmt <- gsub("\\\\d\\+", "", org.gcvChrFormat[[org2]])
       nchr2 <- length(chrName[[org2]])
       tt <- sapply(1:nchr2, function(chr2) {
-        paste0(chr2fmt, ifelse(nchr2 < 10 || chr2 >= 10, "", "0"), chr2)
+        paste0(chr2fmt, ifelse(nchr2 < 10 || chr2 >= 10 || org2 == "Mung bean", "", "0"), chr2)
       })
       distanceMetric <- tolower(input$macroDistance)
       if (distanceMetric == "jaccard") distanceMetric <- paste(distanceMetric, input$macroNgram, tolower(input$macroReversals), sep = ":")
