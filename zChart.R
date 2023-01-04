@@ -21,15 +21,15 @@ provideMultipleURLs <- function(includeGenomicLinkage) {
             "content = content + '<p><a href=' + urlPhylogram + ' target=_blank>' + textPhylogram + '</a></p>';",
           "}",
         "});",
-        # Add the Genomic Linkage button if requested
-        ifelse(!includeGenomicLinkage, "", paste(
-          "content = content + '<p><button",
-            # button actions: first close the dialog, then handle genomic linkages
-            "onclick=\"$(this).closest(&quot;.ui-dialog-content&quot;).dialog(&quot;close&quot;);",
-            "Shiny.onInputChange(&quot;selectedGene&quot;, &quot;' + geneId + '&quot;);\"",
-          ">Genomic Linkage</button></p>';"
-        )),
       "}",
+      # Add the Genomic Linkage button if requested
+      ifelse(!includeGenomicLinkage, "", paste(
+        "content = content + '<p><button",
+          # button actions: first close the dialog, then handle genomic linkages
+          "onclick=\"$(this).closest(&quot;.ui-dialog-content&quot;).dialog(&quot;close&quot;);",
+          "Shiny.onInputChange(&quot;selectedGene&quot;, &quot;' + geneId + '&quot;);\"",
+        ">Genomic Linkage</button></p>';"
+      )),
       "var $div = $('<div></div>');",
       "$div.html(content);",
       "$div.dialog({",
