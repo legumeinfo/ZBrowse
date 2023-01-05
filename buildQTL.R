@@ -7,7 +7,7 @@ lis.datastore.chrRegex[["Common Bean QTL"]] <- lis.datastore.chrRegex[["Common B
 lis.datastore.chrRegex[["Cowpea QTL"]] <- lis.datastore.chrRegex[["Cowpea GWAS"]]
 lis.datastore.chrRegex[["Peanut QTL"]] <- lis.datastore.chrRegex[["Peanut GWAS"]]
 lis.datastore.chrRegex[["Soybean QTL"]] <- lis.datastore.chrRegex[["Soybean GWAS"]]
-lis.datastore.qtlUrls <- readLines(paste0(lis.datastore.localDir, "datasets-qtl.txt"))
+lis.datastore.qtlUrls <- readLines("www/config/lis-datastore/datasets-qtl.txt")
 
 read.qtl.lis.datastore <- function(fin.qtlmrk) {
   tmp <- tempfile()
@@ -80,7 +80,7 @@ build.qtl.from.lis.datastore <- function(key) {
   # GFF (marker) files
   organism <- stri_match(key, regex = ".*(?= QTL)")[, 1]
   org.filter <- paste0("/", gsub(" ", "/", org.Genus_species[[organism]]), "/")
-  markerUrls <- readLines(paste0(lis.datastore.localDir, "markers.txt"))
+  markerUrls <- readLines("www/config/lis-datastore/markers.txt")
   markerUrls <- markerUrls[!startsWith(markerUrls, "#")]
   markerUrls <- markerUrls[grepl(org.filter, markerUrls)]
   if (length(markerUrls) > 0) {

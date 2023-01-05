@@ -11,22 +11,7 @@ lis.datastore.chrRegex[["Cowpea GWAS"]] <- "vigun.IT97K-499-35.gnm\\d{1}.(Vu\\d+
 lis.datastore.chrRegex[["Mung bean GWAS"]] <- "vigra.VC1973A.gnm\\d{1}.(chr\\d+)"
 lis.datastore.chrRegex[["Peanut GWAS"]] <- "arahy.Tifrunner.gnm\\d{1}.(Arahy.\\d+)"
 lis.datastore.chrRegex[["Soybean GWAS"]] <- "glyma.Wm82.gnm\\d{1}.(Gm\\d+)"
-lis.datastore.mrkRegex <- "Name=(\\w[^;]+);?"
-lis.datastore.localDir <- "www/config/lis-datastore/"
-lis.datastore.gwasUrls <- readLines(paste0(lis.datastore.localDir, "datasets-gwas.txt"))
-
-# Ontology terms
-traitOntology <- read.csv(paste0(lis.datastore.localDir, "traitOntology.tsv"), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-chebiOntology <- read.csv(paste0(lis.datastore.localDir, "chebiOntology.tsv"), header = TRUE, sep = "\t", quote = "", stringsAsFactors = FALSE)
-plantOntology <- read.csv(paste0(lis.datastore.localDir, "plantOntology.tsv"), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-soyOntology <- read.csv(paste0(lis.datastore.localDir, "soyOntology.tsv"), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-cropOntologyPhavu <- read.csv(paste0(lis.datastore.localDir, "cropOntology335_CommonBean.tsv"), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-cropOntologyGlyma <- read.csv(paste0(lis.datastore.localDir, "cropOntology336_Soybean.tsv"), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-cropOntologyVigun <- read.csv(paste0(lis.datastore.localDir, "cropOntology340_Cowpea.tsv"), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-cropOntologyCajca <- read.csv(paste0(lis.datastore.localDir, "cropOntology341_Pigeonpea.tsv"), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-cropOntologyVigra <- read.csv(paste0(lis.datastore.localDir, "cropOntology346_Mungbean.tsv"), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-allOntologies <- rbind(traitOntology, chebiOntology, plantOntology, soyOntology,
-  cropOntologyPhavu, cropOntologyGlyma, cropOntologyVigun, cropOntologyCajca, cropOntologyVigra)
+lis.datastore.gwasUrls <- readLines("www/config/lis-datastore/datasets-gwas.txt")
 
 # LIS Data Store methods
 read.gff3.lis.datastore <- function(fin) {
@@ -121,7 +106,7 @@ build.gwas.from.lis.datastore <- function(key) {
   # GFF (marker) files
   organism <- stri_match(key, regex = ".*(?= GWAS)")[, 1]
   org.filter <- paste0("/", gsub(" ", "/", org.Genus_species[[organism]]), "/")
-  markerUrls <- readLines(paste0(lis.datastore.localDir, "markers.txt"))
+  markerUrls <- readLines("www/config/lis-datastore/markers.txt")
   markerUrls <- markerUrls[!startsWith(markerUrls, "#")]
   markerUrls <- markerUrls[grepl(org.filter, markerUrls)]
   if (length(markerUrls) > 0) {

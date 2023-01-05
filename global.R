@@ -154,6 +154,8 @@ for (filename in org.filenames) {
   }
 }
 
+# Read ontology terms before GWAS and QTL data
+source("./ontologyTerms.R")
 # For constructing the GWAS data frame on the fly
 # (must go after creating organism-specific properties, as it uses org.Genus_species)
 source("./buildGWAS.R")
