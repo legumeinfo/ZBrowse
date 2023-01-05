@@ -1,6 +1,8 @@
 # --------------------------------------------------------------
 # Build a QTL data frame from files accessible by HTTP
 # --------------------------------------------------------------
+source("common.R")
+# --------------------------------------------------------------
 
 # LIS Data Store information
 lis.datastore.chrRegex[["Common Bean QTL"]] <- lis.datastore.chrRegex[["Common Bean GWAS"]]

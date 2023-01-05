@@ -156,11 +156,9 @@ for (filename in org.filenames) {
 
 # Read ontology terms before GWAS and QTL data
 source("./ontologyTerms.R")
-# For constructing the GWAS data frame on the fly
-# (must go after creating organism-specific properties, as it uses org.Genus_species)
+# For constructing GWAS and QTL data frames on the fly
+# (must go after creating organism-specific properties, as they use org.Genus_species)
 source("./buildGWAS.R")
-# For constructing the QTL data frame on the fly
-# (must go after creating GWAS data, as it uses the same GFF reading methods)
 source("./buildQTL.R")
 
 helpPopup <- function(title, content, placement=c('right', 'top', 'left', 'bottom'),

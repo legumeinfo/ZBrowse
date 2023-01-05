@@ -1,3 +1,9 @@
+# --------------------------------------------------------------
+library(rtracklayer)
+library(stringi)
+library(yaml)
+# --------------------------------------------------------------
+
 # Construct the full name of a named list item for species j (j = 1 or 2).
 # for example, input$datasets == input[[jth_ref("datasets", 1)]]
 # and input$datasets2 == input[[jth_ref("datasets", 2)]]
@@ -216,3 +222,44 @@ contrastColor <- function(color, threshold = 0.50) {
 geneNameFromId <- function(geneId) {
   paste0(stri_match_first(geneId, regex = "(\\w+)\\..+ann\\d+(.+)")[, -1], collapse = "")
 }
+
+# --------------------------------------------------------------
+
+# LIS Data Store methods
+
+read.gff3.lis.datastore <- function(fin) {
+  # download a temporary file as R cannot handle https
+  tmp <- tempfile()
+  download.file(fin, tmp, method = "wget", quiet = TRUE)
+  df.gff <- readGFF(tmp, columns = c("seqid", "start"), tags = "Name", filter = list(type = "genetic_marker"))
+  unlink(tmp)
+  df.gff
+}
+
+scrub.gff <- function(df.gff.in, chrRegex) {
+  # Extract chromosome
+  chromosome <- sapply(df.gff.in$seqid, function(s) stri_match_first(s, regex = chrRegex)[, 2])
+  # Restore internal commas (if any) to marker name
+  marker <- sapply(df.gff.in$Name, function(name) paste(name, collapse = ","))
+  # output
+  df.gff <- data.frame(marker, chromosome, position = df.gff.in$start, row.names = NULL, stringsAsFactors = FALSE)
+  df.gff[!is.na(df.gff$chromosome), ]
+}
+
+# Read metadata from README file in same directory as input file
+read.metadata <- function(fin) {
+  directory <- dirname(fin)
+  collection <- basename(directory)
+  fReadme <- sprintf("%s/README.%s.yml", directory, collection)
+  tmp <- tempfile()
+  download.file(fReadme, tmp, method = "wget", quiet = TRUE)
+  yy <- read_yaml(tmp)
+  unlink(tmp)
+
+  metadata <- list()
+  metadata$publication <- sprintf("<a href='https://doi.org/%s' title='%s' target=_blank>%s</a>",
+    yy$publication_doi, yy$synopsis, yy$identifier)
+  metadata
+}
+
+# --------------------------------------------------------------

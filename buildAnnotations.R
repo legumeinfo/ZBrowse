@@ -1,9 +1,6 @@
 # --------------------------------------------------------------
 # Build an annotations data frame from a tab-indexed, gzipped GFF3 file accessible by HTTP
 # --------------------------------------------------------------
-library(rtracklayer)
-library(stringi)
-
 source("common.R")
 # --------------------------------------------------------------
 
