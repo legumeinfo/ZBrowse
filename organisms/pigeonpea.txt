@@ -2,6 +2,6 @@ Pigeonpea
 Cc01:17676265,Cc02:36921656,Cc03:29476785,Cc04:12502730,Cc05:5133333,Cc06:23791330,Cc07:19579009,Cc08:20383548,Cc09:10489139,Cc10:22571102,Cc11:48970052
 Cajanus cajan,C.cajan,Cajca
 https://data.legumeinfo.org/Cajanus/cajan/annotations/ICPL87119.gnm1.ann1.Y27M/cajca.ICPL87119.gnm1.ann1.Y27M.gene_models_main.gff3.gz
-Cc%02d,cajca.ICPL87119.gnm1.Cc%02d,cajca.ICPL87119.gnm1.Cc\d+
+cajca.ICPL87119.gnm1.Cc%02d
 default
 strand,+,-,transcript_start,transcript_end,https://legacy.legumeinfo.org/gene_links/%s/json,id,name,chromosome,description

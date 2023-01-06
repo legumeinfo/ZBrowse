@@ -137,12 +137,6 @@ trailingInteger <- function(s) {
   n
 }
 
-# Test whether chromosome name returned from GCV matches organism's expected format
-isValidChromosomeName <- function(chrName, organism) {
-  chrFormat <- paste0("^", org.gcvChrFormat[organism], "$")
-  grepl(chrFormat, chrName)
-}
-
 # Return the trailing part ("Chr02") of a chromosome name like "phavu.Chr02"
 # (for peanut, extract trailing "Arahy.02")
 trailingChromosomeName <- function(s, organism) {

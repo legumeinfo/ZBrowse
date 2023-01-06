@@ -65,8 +65,8 @@ org.annotGeneLoc<-list()
 org.chrFormat <- list()
 # Full chromosome name format in annotations file
 org.annotChrFormat <- list()
-# Chromosome name format from Genome Context Viewer, for validation
-org.gcvChrFormat <- list()
+# Regular expression for matching chromosome name
+org.chrRegex <- list()
 # Base URL for Services API genomic linkage queries
 org.gcvUrlBase <- list()
 
@@ -116,19 +116,24 @@ for (filename in org.filenames) {
     annotFilename <- data[4]
 
     # chromosome name formats
-    chr.formats <- unlist(strsplit(data[5], split = ","))
-    chr.formats <- sapply(chr.formats, function(chrfmt) ifelse(chrfmt == "NA", NA, chrfmt))
-    org.chrFormat[key] <- chr.formats[1]
-    org.annotChrFormat[key] <- chr.formats[2]
-    org.gcvChrFormat[key] <- chr.formats[3]
-    if (stri_endswith_fixed(annotFilename, "gff3.gz")) {
+    org.annotChrFormat[key] <- data[5]
+    if (startsWith(key, "Arabidopsis")) {
+      org.chrFormat[key] <- NA # use chromosome numbers
+      org.chrRegex[key] <- NA
+    } else {
+      org.chrFormat[key] <- stri_match_first(org.annotChrFormat[key], regex = "gnm\\d{1}\\.(.+)$")[, 2]
+      rgx1 <- stri_match_first(org.annotChrFormat[key], regex = "(^.+gnm)")[, 2]
+      rgx2 <- gsub("%\\d*d", "\\\\d+", org.chrFormat[key])
+      org.chrRegex[key] <- sprintf("%s\\d{1}.(%s)", rgx1, rgx2)
+    }
+    if (endsWith(annotFilename, "gff3.gz")) {
       chromosome.lengths <- chrSize[[key]]
       locValue <- build.annotations(key, annotFilename, chromosome.lengths, org.annotChrFormat[[key]])
     } else {
       locValue<-read.table(annotFilename,sep=",",head=TRUE,stringsAsFactors = FALSE,quote = c("\""))
       if (startsWith(key, "Arabidopsis")) {
-        # Strip trailing ".n" from gene names, and remove Locus column (identical to name)
-        locValue$name <- stri_match_first(locValue$name, regex = "^(AT.+)\\.")[, 2]
+        # Locus column = name column without the trailing ".n", so use Locus as name
+        locValue$name <- locValue$Locus
         locValue$Locus <- NULL
       }
     }

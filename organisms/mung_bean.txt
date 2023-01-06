@@ -2,6 +2,6 @@ Mung bean
 chr1:71953299,chr2:73760808,chr3:43774486,chr4:47082489,chr5:24040500,chr6:26889420,chr7:17247009,chr8:31166200,chr9:48457796,chr10:20091720,chr11:22616306
 Vigna radiata,V.radiata,Vigra
 https://data.legumeinfo.org/Vigna/radiata/annotations/VC1973A.gnm7.ann1.RWBG/vigra.VC1973A.gnm7.ann1.RWBG.gene_models_main.gff3.gz
-chr%d,vigra.VC1973A.gnm7.chr%d,vigra.VC1973A.gnm7.chr\d+
+vigra.VC1973A.gnm7.chr%d
 default
 strand,+,-,transcript_start,transcript_end,https://legacy.legumeinfo.org/gene_links/%s/json,id,name,chromosome,description

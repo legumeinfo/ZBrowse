@@ -2,6 +2,6 @@ Arabidopsis thaliana
 30427671,19698289,23459830,18585056,26975502
 Arabidopsis thaliana,A.thaliana,Arath
 ./annotations/mergedTAIR10Annotations.modifiedForBrowser.csv
-NA,NA,arath.Col.Chr\d+
+arath.Col.Chr%d
 https://gcv-microservices.lis.ncgr.org/legfedoutgroups
 strand,+,-,transcript_start,transcript_end,https://bar.utoronto.ca/thalemine/gene:%s,name,name,chromosome,short_description

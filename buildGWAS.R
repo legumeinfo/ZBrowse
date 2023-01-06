@@ -4,13 +4,7 @@
 source("common.R")
 # --------------------------------------------------------------
 
-# LIS Data Store information
-lis.datastore.chrRegex <- list()
-lis.datastore.chrRegex[["Common Bean GWAS"]] <- "phavu.G19833.gnm\\d{1}.(Chr\\d+)" # was gnm1
-lis.datastore.chrRegex[["Cowpea GWAS"]] <- "vigun.IT97K-499-35.gnm\\d{1}.(Vu\\d+)"
-lis.datastore.chrRegex[["Mung bean GWAS"]] <- "vigra.VC1973A.gnm\\d{1}.(chr\\d+)"
-lis.datastore.chrRegex[["Peanut GWAS"]] <- "arahy.Tifrunner.gnm\\d{1}.(Arahy.\\d+)"
-lis.datastore.chrRegex[["Soybean GWAS"]] <- "glyma.Wm82.gnm\\d{1}.(Gm\\d+)"
+# List of GWAS files from LIS datastore
 lis.datastore.gwasUrls <- readLines("www/config/lis-datastore/datasets-gwas.txt")
 
 read.gwas.lis.datastore <- function(fin) {
@@ -76,7 +70,7 @@ build.gwas.from.lis.datastore <- function(key) {
   if (length(markerUrls) > 0) {
     ll.mrk <- lapply(markerUrls, function(u) {
       df.mrku <- read.gff3.lis.datastore(u)
-      df.mrku <- scrub.gff(df.mrku, lis.datastore.chrRegex[[key]])
+      df.mrku <- scrub.gff(df.mrku, org.chrRegex[[organism]])
       df.mrku
     })
     df.gff <- do.call(rbind, ll.mrk)

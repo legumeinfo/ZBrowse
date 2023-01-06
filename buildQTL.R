@@ -4,11 +4,7 @@
 source("common.R")
 # --------------------------------------------------------------
 
-# LIS Data Store information
-lis.datastore.chrRegex[["Common Bean QTL"]] <- lis.datastore.chrRegex[["Common Bean GWAS"]]
-lis.datastore.chrRegex[["Cowpea QTL"]] <- lis.datastore.chrRegex[["Cowpea GWAS"]]
-lis.datastore.chrRegex[["Peanut QTL"]] <- lis.datastore.chrRegex[["Peanut GWAS"]]
-lis.datastore.chrRegex[["Soybean QTL"]] <- lis.datastore.chrRegex[["Soybean GWAS"]]
+# List of QTL files from LIS datastore
 lis.datastore.qtlUrls <- readLines("www/config/lis-datastore/datasets-qtl.txt")
 
 read.qtl.lis.datastore <- function(fin.qtlmrk) {
@@ -88,7 +84,7 @@ build.qtl.from.lis.datastore <- function(key) {
   if (length(markerUrls) > 0) {
     ll.mrk <- lapply(markerUrls, function(u) {
       df.mrku <- read.gff3.lis.datastore(u)
-      df.mrku <- scrub.gff(df.mrku, lis.datastore.chrRegex[[key]])
+      df.mrku <- scrub.gff(df.mrku, org.chrRegex[[organism]])
       df.mrku
     })
     df.gff <- do.call(rbind, ll.mrk)
