@@ -55,7 +55,7 @@ merge.qtl <- function(df.qtl, df.gff) {
     aggregate(position ~ identifier, data = df.1, FUN = f2))
   names(df.2) <- c("identifier", "start_pos", "end_pos", "center_pos")
   df.2$markers <- sapply(df.2$identifier, function(id) {
-    markers <- sort(df.1$marker[df.1$identifier == id])
+    markers <- unique(sort(df.1$marker[df.1$identifier == id]))
     numMarkers <- length(markers)
     ifelse(numMarkers <= 3, paste(markers, collapse = ", "), sprintf("%d markers", numMarkers))
   }, USE.NAMES = FALSE)
