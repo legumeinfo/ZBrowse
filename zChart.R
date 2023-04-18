@@ -3,12 +3,12 @@ source("common.R")
 provideMultipleURLs <- function(includeGenomicLinkage) {
   paste(
     # From the JSON at this.url, extract the URLs related to this gene.
-    # Note that this.url = 'https://legacy.legumeinfo.org/gene_links/' + geneId + '/json'
-    #  (the first part of which has 41 characters)
+    # Note that this.url = 'https://linkouts.services.legumeinfo.org/gene_linkouts?genes=' + geneId
+    # (the first part of which has 61 characters)
     # And for now, add the gene family phylogram URL by hand.
     "var geneFamily = this.family;",
     "$.getJSON(this.url, function(data) {",
-      "var geneId = this.url.substring(41, this.url.indexOf('/json'));",
+      "var geneId = this.url.substring(61);",
       "var content = '';",
       "if (data.length == 0) {",
         "content = '<p>No ' + geneId + ' links found.</p>';",
