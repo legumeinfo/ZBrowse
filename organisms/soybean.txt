@@ -4,4 +4,4 @@ Glycine max,G.max,Glyma
 https://data.legumeinfo.org/Glycine/max/annotations/Wm82.gnm2.ann1.RVB6/glyma.Wm82.gnm2.ann1.RVB6.gene_models_main.gff3.gz
 glyma.Wm82.gnm2.Gm%02d
 default
-strand,+,-,transcript_start,transcript_end,https://linkouts.services.legumeinfo.org/gene_linkouts?genes=%s,id,name,chromosome,description
+strand,+,-,transcript_start,transcript_end,https://services.lis.ncgr.org/gene_linkouts?genes=%s,id,name,chromosome,description

@@ -3,12 +3,12 @@ source("common.R")
 provideMultipleURLs <- function(includeGenomicLinkage) {
   paste(
     # From the JSON at this.url, extract the URLs related to this gene.
-    # Note that this.url = 'https://linkouts.services.legumeinfo.org/gene_linkouts?genes=' + geneId
-    # (the first part of which has 61 characters)
+    # Note that this.url = 'https://services.lis.ncgr.org/gene_linkouts?genes=' + geneId
     # And for now, add the gene family phylogram URL by hand.
     "var geneFamily = this.family;",
     "$.getJSON(this.url, function(data) {",
-      "var geneId = this.url.substring(61);",
+      "const geneIdRegex = /\\?genes=(.+)$/;",
+      "var geneId = geneIdRegex.exec(this.url)[1];",
       "var content = '';",
       "if (data.length == 0) {",
         "content = '<p>No ' + geneId + ' links found.</p>';",
@@ -540,7 +540,7 @@ create_zChart <- function(j, input, values) {
   bGenomicLinkage <- ifelse(j == 1 && input$compare2species, 1, 0)
   doClickOnLine <- sprintf(paste(
     "#! function() {",
-      "if (this.url.includes('legumeinfo.org')) {",
+      "if (this.url.includes('services.lis.ncgr.org')) {",
         provideMultipleURLs(bGenomicLinkage),
       "} else {",
         # for all other species
